@@ -1,0 +1,20 @@
+Тема: {{ subject_line }} — {{ app_name }}
+
+Здравствуйте!
+
+{{ headline }}
+
+Приглашение: {{ title }}
+Кандидат: {{ public_code }}
+
+{% if accepted %}
+Контакты кандидата открыты в карточке приглашения. Свяжитесь с ним до {{ contact_until }}.
+{% else %}
+Причина: {{ reason_label }}.
+{% if can_revise %}
+Кандидат назвал условие: вы можете один раз отправить пересмотренное приглашение.
+{% endif %}
+{% endif %}
+
+Открыть приглашение:
+{{ base_url }}/employer/invitations/{{ invitation_id }}

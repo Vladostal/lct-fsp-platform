@@ -1,0 +1,9 @@
+# Направления (Арх. 5.2; приложение A, §1.4): первый вопрос опроса, в статусе кандидата — «отрасль».
+- code: development
+  title: Разработка
+- code: data
+  title: Данные и ML
+- code: quality_infra
+  title: Качество и инфраструктура
+- code: security_embedded
+  title: Безопасность и железо

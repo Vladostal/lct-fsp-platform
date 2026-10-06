@@ -1,0 +1,336 @@
+{
+  "L01": {
+    "engine_category": "none",
+    "tests": [
+      "junior"
+    ],
+    "theta_hat": -2.623,
+    "true_grade": "none"
+  },
+  "L02": {
+    "engine_category": "none",
+    "tests": [
+      "junior"
+    ],
+    "theta_hat": -2.376,
+    "true_grade": "none"
+  },
+  "L03": {
+    "engine_category": "middle",
+    "tests": [
+      "middle",
+      "senior"
+    ],
+    "theta_hat": 0.44,
+    "true_grade": "middle"
+  },
+  "L04": {
+    "engine_category": "middle",
+    "tests": [
+      "senior",
+      "middle"
+    ],
+    "theta_hat": 2.173,
+    "true_grade": "senior"
+  },
+  "L05": {
+    "engine_category": "junior",
+    "tests": [
+      "junior"
+    ],
+    "theta_hat": -0.649,
+    "true_grade": "junior"
+  },
+  "L06": {
+    "engine_category": "junior",
+    "tests": [
+      "junior"
+    ],
+    "theta_hat": -0.309,
+    "true_grade": "junior"
+  },
+  "L07": {
+    "engine_category": "middle",
+    "tests": [
+      "senior",
+      "middle"
+    ],
+    "theta_hat": 1.26,
+    "true_grade": "senior"
+  },
+  "L08": {
+    "engine_category": "middle",
+    "tests": [
+      "senior",
+      "middle"
+    ],
+    "theta_hat": 0.842,
+    "true_grade": "middle"
+  },
+  "L09": {
+    "engine_category": "none",
+    "tests": [
+      "junior"
+    ],
+    "theta_hat": -2.113,
+    "true_grade": "junior"
+  },
+  "L10": {
+    "engine_category": "none",
+    "tests": [
+      "junior"
+    ],
+    "theta_hat": -1.414,
+    "true_grade": "none"
+  },
+  "L11": {
+    "engine_category": "senior",
+    "tests": [
+      "senior"
+    ],
+    "theta_hat": 2.284,
+    "true_grade": "senior"
+  },
+  "L12": {
+    "engine_category": "none",
+    "tests": [
+      "junior"
+    ],
+    "theta_hat": -2.05,
+    "true_grade": "none"
+  },
+  "L13": {
+    "engine_category": "junior",
+    "tests": [
+      "junior"
+    ],
+    "theta_hat": -0.9,
+    "true_grade": "none"
+  },
+  "L14": {
+    "engine_category": "senior",
+    "tests": [
+      "senior"
+    ],
+    "theta_hat": 2.008,
+    "true_grade": "senior"
+  },
+  "L15": {
+    "engine_category": "none",
+    "tests": [
+      "junior"
+    ],
+    "theta_hat": -2.134,
+    "true_grade": "none"
+  },
+  "L16": {
+    "engine_category": "junior",
+    "tests": [
+      "junior"
+    ],
+    "theta_hat": -0.742,
+    "true_grade": "junior"
+  },
+  "L17": {
+    "engine_category": "middle",
+    "tests": [
+      "middle"
+    ],
+    "theta_hat": 0.536,
+    "true_grade": "middle"
+  },
+  "L18": {
+    "engine_category": "none",
+    "tests": [
+      "middle",
+      "junior",
+      "junior"
+    ],
+    "theta_hat": -1.551,
+    "true_grade": "junior"
+  },
+  "L19": {
+    "engine_category": "middle",
+    "tests": [
+      "middle"
+    ],
+    "theta_hat": 0.549,
+    "true_grade": "middle"
+  },
+  "L20": {
+    "engine_category": "middle",
+    "tests": [
+      "middle"
+    ],
+    "theta_hat": 0.554,
+    "true_grade": "middle"
+  },
+  "L21": {
+    "engine_category": "middle",
+    "tests": [
+      "senior",
+      "middle"
+    ],
+    "theta_hat": 1.655,
+    "true_grade": "senior"
+  },
+  "L22": {
+    "engine_category": "middle",
+    "tests": [
+      "middle"
+    ],
+    "theta_hat": 1.167,
+    "true_grade": "middle"
+  },
+  "L23": {
+    "engine_category": "middle",
+    "tests": [
+      "junior",
+      "middle"
+    ],
+    "theta_hat": 0.836,
+    "true_grade": "junior"
+  },
+  "L24": {
+    "engine_category": "middle",
+    "tests": [
+      "junior",
+      "middle"
+    ],
+    "theta_hat": 0.559,
+    "true_grade": "middle"
+  },
+  "L25": {
+    "engine_category": "middle",
+    "tests": [
+      "middle"
+    ],
+    "theta_hat": 0.561,
+    "true_grade": "junior"
+  },
+  "L26": {
+    "engine_category": "middle",
+    "tests": [
+      "middle",
+      "senior"
+    ],
+    "theta_hat": 1.416,
+    "true_grade": "middle"
+  },
+  "L27": {
+    "engine_category": "junior",
+    "tests": [
+      "senior",
+      "junior"
+    ],
+    "theta_hat": -0.105,
+    "true_grade": "middle"
+  },
+  "L28": {
+    "engine_category": "senior",
+    "tests": [
+      "senior"
+    ],
+    "theta_hat": 2.712,
+    "true_grade": "senior"
+  },
+  "L29": {
+    "engine_category": "none",
+    "tests": [
+      "junior"
+    ],
+    "theta_hat": -1.956,
+    "true_grade": "none"
+  },
+  "L30": {
+    "engine_category": "middle",
+    "tests": [
+      "junior",
+      "middle"
+    ],
+    "theta_hat": 0.516,
+    "true_grade": "junior"
+  },
+  "L31": {
+    "engine_category": "middle",
+    "tests": [
+      "middle"
+    ],
+    "theta_hat": 0.524,
+    "true_grade": "middle"
+  },
+  "L32": {
+    "engine_category": "middle",
+    "tests": [
+      "middle"
+    ],
+    "theta_hat": 0.651,
+    "true_grade": "junior"
+  },
+  "L33": {
+    "engine_category": "junior",
+    "tests": [
+      "junior"
+    ],
+    "theta_hat": -1.031,
+    "true_grade": "none"
+  },
+  "L34": {
+    "engine_category": "junior",
+    "tests": [
+      "middle",
+      "junior"
+    ],
+    "theta_hat": -1.031,
+    "true_grade": "junior"
+  },
+  "L35": {
+    "engine_category": "none",
+    "tests": [
+      "junior"
+    ],
+    "theta_hat": -2.246,
+    "true_grade": "none"
+  },
+  "L36": {
+    "engine_category": "middle",
+    "tests": [
+      "senior",
+      "middle"
+    ],
+    "theta_hat": 1.196,
+    "true_grade": "senior"
+  },
+  "L37": {
+    "engine_category": "senior",
+    "tests": [
+      "senior"
+    ],
+    "theta_hat": 2.024,
+    "true_grade": "senior"
+  },
+  "L38": {
+    "engine_category": "senior",
+    "tests": [
+      "senior"
+    ],
+    "theta_hat": 2.331,
+    "true_grade": "senior"
+  },
+  "L39": {
+    "engine_category": "none",
+    "tests": [
+      "junior"
+    ],
+    "theta_hat": -1.977,
+    "true_grade": "none"
+  },
+  "L40": {
+    "engine_category": "senior",
+    "tests": [
+      "senior"
+    ],
+    "theta_hat": 2.015,
+    "true_grade": "senior"
+  }
+}

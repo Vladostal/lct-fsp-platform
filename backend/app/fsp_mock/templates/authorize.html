@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Вход через ФСП ID</h1>
+<p class="lead">Выберите, кем войти. Пароль не спрашивается: это демонстрационный провайдер.</p>
+<form method="post" action="authorize/decision">
+  {% for name, value in params.items() %}
+  <input type="hidden" name="{{ name }}" value="{{ value }}">
+  {% endfor %}
+  <fieldset style="border:0;padding:0;margin:0">
+    <legend class="lead">Типовые участники</legend>
+    {% for persona in personas %}
+    <label class="persona">
+      <input type="radio" name="fsp_id" value="{{ persona.fsp_id }}"{% if loop.first %} checked{% endif %}>
+      <span><strong>{{ persona.name }}</strong><small>{{ persona.description }}</small></span>
+      <span class="tag{% if persona.busy %} busy{% endif %}">{{ "уже привязан" if persona.busy else "свободен" }}</span>
+    </label>
+    {% endfor %}
+  </fieldset>
+  <div class="picks">
+    <button type="submit" name="pick" value="{{ picks.with_history }}" formnovalidate>Случайный свободный участник с историей</button>
+    <button type="submit" name="pick" value="{{ picks.empty }}" formnovalidate>Случайный свободный участник без результатов</button>
+    <button type="submit" name="pick" value="{{ picks.new }}" formnovalidate>Новый ФСП ID без записи спортсмена</button>
+  </div>
+  <div class="access">
+    Платформа запрашивает доступ: результаты соревнований, разряды и звания, роли в командах.
+  </div>
+  <div class="actions">
+    <button class="primary" type="submit" name="decision" value="allow">Разрешить</button>
+    <button type="submit" name="decision" value="deny" formnovalidate>Отмена</button>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,30 @@
+# Дополнение к compose.yml для локальной разработки (Арх. 13.1):
+#
+#   docker compose -f compose.yml -f compose.dev.yml up -d db mailpit        (то же: make dev-db)
+#
+# Публикует порты только на 127.0.0.1: база — 5432, SMTP Mailpit — 1025, веб-ящик — http://127.0.0.1:8025/mail/.
+# На этой базе пакеты одновременно запускают тесты (каждый запуск pytest — в своей базе test_<суффикс>),
+# поэтому лимит соединений здесь выше, чем на стенде.
+#
+# У окружения разработки своё имя проекта и своя подсеть. Поэтому стенд (docker compose up / down в этом же
+# каталоге) — отдельные контейнеры, том и сеть: его запуск, остановка и «down -v» базу разработки не затрагивают.
+
+name: fsp-podbor-dev
+
+services:
+  db:
+    ports:
+      - "127.0.0.1:${DEV_DB_PORT:-5432}:5432"
+    command: !override ["postgres", "-c", "shared_buffers=128MB", "-c", "max_connections=300"]
+    mem_limit: 1g
+
+  mailpit:
+    ports:
+      - "127.0.0.1:${DEV_SMTP_PORT:-1025}:1025"
+      - "127.0.0.1:${DEV_MAIL_UI_PORT:-8025}:8025"
+
+networks:
+  stand:
+    ipam:
+      config: !override
+        - subnet: ${DEV_SUBNET:-172.28.7.0/24}

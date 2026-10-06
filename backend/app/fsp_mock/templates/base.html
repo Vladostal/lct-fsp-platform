@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>{% block title %}Демонстрационный ФСП ID{% endblock %}</title>
+<style>
+  :root { --accent: #402FFF; --bg: #f4f4f8; --card: #fff; --text: #14141f; --muted: #5d5d70; --line: #dcdce6; --warn: #fff3cd; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #14141f; --card: #1e1e2c; --text: #f2f2f8; --muted: #a8a8bd; --line: #38384d; --warn: #3b3315; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .banner { background: var(--warn); color: var(--text); text-align: center; padding: 10px 16px; font-size: 14px; border-bottom: 1px solid var(--line); }
+  .card { max-width: 640px; margin: 24px auto; padding: 24px 16px; background: var(--card); border-radius: 24px; border: 1px solid var(--line); width: calc(100% - 32px); }
+  h1 { font-size: 22px; margin: 0 0 8px; }
+  p.lead { color: var(--muted); margin: 0 0 16px; }
+  label.persona { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border: 1px solid var(--line); border-radius: 16px; margin-bottom: 8px; cursor: pointer; }
+  label.persona small { display: block; color: var(--muted); }
+  .tag { margin-left: auto; font-size: 12px; border-radius: 999px; padding: 2px 10px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+  .tag.busy { color: #b42318; border-color: #b42318; }
+  .picks { display: grid; gap: 8px; margin: 16px 0; }
+  button { font: inherit; border-radius: 999px; padding: 10px 20px; border: 1px solid var(--accent); cursor: pointer; background: transparent; color: var(--accent); }
+  button.primary { background: var(--accent); color: #fff; }
+  .access { background: var(--bg); border-radius: 16px; padding: 12px 16px; margin: 16px 0; font-size: 14px; }
+  .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+</style>
+</head>
+<body>
+<div class="banner">Демонстрационный ФСП ID. Данные синтетические, это не sso.fsp-russia.ru</div>
+<main class="card">
+{% block content %}{% endblock %}
+</main>
+</body>
+</html>

@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Профиль кандидата {{ public_code }}</title>
+<meta name="dcterms.created" content="{{ generated_iso }}">
+<meta name="generator" content="ФСП.Подбор">
+<style>
+@font-face { font-family: "Inter"; font-weight: 400; src: url("{{ fonts_uri }}/Inter-Regular.ttf"); }
+@font-face { font-family: "Inter"; font-weight: 700; src: url("{{ fonts_uri }}/Inter-Bold.ttf"); }
+@font-face { font-family: "JetBrains Mono"; font-weight: 400; src: url("{{ fonts_uri }}/JetBrainsMono-Regular.ttf"); }
+
+@page {
+  size: A4;
+  margin: {{ "12mm 14mm 16mm" if compact else "15mm 16mm 18mm" }};
+  @bottom-left { content: "Сформировано платформой {{ generated_date }}"; font: 400 7pt "Inter"; color: #6b7280; }
+  @bottom-right { content: "Страница " counter(page) " из " counter(pages); font: 400 7pt "Inter"; color: #6b7280; }
+}
+:root { --ink: #111827; --muted: #6b7280; --line: #e5e7eb; --accent: #0b5ed7; --fsp: #e11d48; --soft: #f3f4f6; }
+* { box-sizing: border-box; }
+body { font: 400 {{ "8.6pt" if compact else "9.4pt" }}/1.45 "Inter", sans-serif; color: var(--ink); margin: 0; }
+.stripe { height: 3mm; background: linear-gradient(90deg, #0b5ed7 34%, #ffffff 34%, #ffffff 67%, #e11d48 67%); border: 0.2mm solid var(--line); margin-bottom: 4mm; }
+h1 { font-size: 17pt; margin: 0 0 1mm; font-weight: 700; }
+.kicker { font-size: 8pt; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.meta { color: var(--muted); font-size: 8.4pt; margin-bottom: 3mm; }
+.code { font-family: "JetBrains Mono", monospace; color: var(--ink); }
+h2 { font-size: 10.5pt; margin: {{ "3.5mm" if compact else "5mm" }} 0 1.6mm; padding-bottom: 0.8mm; border-bottom: 0.3mm solid var(--line); font-weight: 700; break-after: avoid; }
+h2 small { font-weight: 400; color: var(--muted); font-size: 8pt; margin-left: 2mm; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-size: 7.6pt; color: var(--muted); font-weight: 400; padding: 0.8mm 1.5mm 0.8mm 0; border-bottom: 0.3mm solid var(--line); }
+td { padding: 1mm 1.5mm 1mm 0; vertical-align: top; border-bottom: 0.2mm solid var(--line); }
+tr { break-inside: avoid; }
+.muted { color: var(--muted); }
+.scale { position: relative; height: 4mm; background: var(--soft); border-radius: 1mm; margin: 3mm 0 7mm; }
+.scale .interval { position: absolute; top: 0; bottom: 0; background: #bfdbfe; border-radius: 1mm; }
+.scale .point { position: absolute; top: -0.8mm; bottom: -0.8mm; width: 0.9mm; background: var(--accent); }
+.scale .cut { position: absolute; top: 0; bottom: 0; width: 0.25mm; background: #9ca3af; }
+.scale .cut span { position: absolute; top: 4.6mm; left: -8mm; width: 16mm; text-align: center; font-size: 6.6pt; color: var(--muted); }
+dl { margin: 0; display: grid; grid-template-columns: 34mm 1fr; row-gap: 1mm; }
+dt { color: var(--muted); }
+dd { margin: 0; overflow-wrap: anywhere; }
+.about { white-space: pre-wrap; overflow-wrap: anywhere; margin: 1mm 0 0; }
+.tag { display: inline-block; background: var(--soft); border-radius: 1mm; padding: 0.2mm 1.6mm; margin: 0 1mm 1mm 0; }
+ul { margin: 0; padding-left: 4mm; }
+.legend { margin-top: 5mm; font-size: 7.6pt; color: var(--muted); }
+.legend span { margin-right: 4mm; }
+</style>
+</head>
+<body>
+<div class="stripe"></div>
+<div class="kicker">Профиль кандидата</div>
+<h1>{{ full_name }}</h1>
+<div class="meta"><span class="code">{{ public_code }}</span> · сформирован {{ generated_date }}</div>
+
+<h2>Категория</h2>
+{% if category and level %}
+<div><strong>{{ category.title }}</strong>{% if verdict_note %} · {{ verdict_note }}{% endif %}</div>
+<div class="muted">Тест пройден {{ tested_date }}, последнее подтверждение — {{ evidence_age }}</div>
+<div class="scale">
+  <div class="interval" style="left: {{ scale.lower }}%; width: {{ scale.upper - scale.lower }}%;"></div>
+  {% for cut in scale.thresholds %}
+  <div class="cut" style="left: {{ cut.pos }}%;"><span>{{ cut.title }}</span></div>
+  {% endfor %}
+  <div class="point" style="left: {{ scale.point }}%;"></div>
+</div>
+{% else %}
+<div class="muted">Категория пока не определена: тест не пройден.</div>
+{% endif %}
+
+<h2>Подтверждённые навыки</h2>
+{% if skills %}
+<table>
+  <tr><th style="width: 34%">Навык</th><th style="width: 24%">Чем подтверждён</th><th style="width: 14%">Дата</th><th>Источник</th></tr>
+  {% for item in skills %}
+  <tr>
+    <td>{{ item.skill.title }}</td>
+    <td>{{ item.kind_label }}</td>
+    <td>{% if item.confirmed_at %}{{ item.confirmed_at | date }}{% endif %}</td>
+    <td class="muted">{{ item.detail or "" }}{% if item.via_skill %}{% if item.detail %}; {% endif %}через навык «{{ item.via_skill.title }}»{% endif %}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% if skills_hidden %}<div class="muted" style="margin-top: 1mm;">и ещё {{ skills_hidden }}</div>{% endif %}
+{% else %}
+<div class="muted">Подтверждённых навыков пока нет.</div>
+{% endif %}
+
+<h2>Достижения ФСП</h2>
+{% if fsp %}
+<div><strong>{{ fsp.headline }}</strong></div>
+{% if fsp.lines %}<ul>{% for line in fsp.lines %}<li>{{ line }}</li>{% endfor %}</ul>{% endif %}
+{% else %}
+<div class="muted">Подтверждённых достижений ФСП в профиле нет. На оценку по тесту это не влияет.</div>
+{% endif %}
+
+{% if declared %}
+<h2>Заявлено кандидатом <small>не проверено платформой</small></h2>
+<dl>
+  {% if declared.city %}<dt>Город</dt><dd>{{ declared.city }}</dd>{% endif %}
+  {% if declared.experience_years is not none %}<dt>Стаж</dt><dd>{{ declared.experience_years | years }}</dd>{% endif %}
+  {% if declared.roles %}<dt>Роли</dt><dd>{{ declared.roles | join(", ") }}</dd>{% endif %}
+  {% if declared.industry_domains %}<dt>Отрасли</dt><dd>{{ declared.industry_domains | join(", ") }}</dd>{% endif %}
+  {% if declared.skills %}<dt>Навыки</dt><dd>{% for tag in declared.skills %}<span class="tag">{{ tag }}</span>{% endfor %}</dd>{% endif %}
+  {% if declared.soft_skills %}<dt>Софт-скиллы</dt><dd>{% for tag in declared.soft_skills %}<span class="tag">{{ tag }}</span>{% endfor %}</dd>{% endif %}
+  {% if declared.custom_skills %}<dt>Свои теги</dt><dd>{% for tag in declared.custom_skills %}<span class="tag">{{ tag }}</span>{% endfor %}</dd>{% endif %}
+</dl>
+{% if declared.about %}<div class="about">{{ declared.about }}</div>{% endif %}
+{% endif %}
+
+<h2>Контакты</h2>
+<dl>
+  {% if contacts.email %}<dt>E-mail</dt><dd>{{ contacts.email }}</dd>{% endif %}
+  {% if contacts.phone %}<dt>Телефон</dt><dd>{{ contacts.phone }}</dd>{% endif %}
+  {% if contacts.telegram %}<dt>Telegram</dt><dd>{{ contacts.telegram }}</dd>{% endif %}
+  {% if contacts.link %}<dt>Ссылка</dt><dd>{{ contacts.link }}</dd>{% endif %}
+  {% if not (contacts.email or contacts.phone or contacts.telegram or contacts.link) %}<dt></dt><dd class="muted">Каналы связи не переданы.</dd>{% endif %}
+</dl>
+
+<div class="legend">
+  <span><strong>Подтверждено</strong> тестом или коротким заданием платформы</span>
+  <span><strong>Достижение ФСП</strong> по данным реестра</span>
+  <span><strong>Заявлено</strong> кандидатом, не проверено</span>
+</div>
+</body>
+</html>

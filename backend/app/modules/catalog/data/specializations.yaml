@@ -1,0 +1,43 @@
+# Специализации (Арх. 5.2; приложение A, §1.1). Те же десять кодов — столбцы матрицы переноса ФСП (Арх. 7.6).
+# Признака «тест доступен» здесь нет намеренно: доступность считается по паре (специализация, грейд) и публикуется
+# модулем assessment при старте (catalog.service.publish_availability).
+- code: backend
+  title: Backend-разработка
+  title_short: Backend
+  direction_code: development
+- code: frontend
+  title: Frontend-разработка
+  title_short: Frontend
+  direction_code: development
+- code: fullstack
+  title: Fullstack-разработка
+  title_short: Fullstack
+  direction_code: development
+- code: data_ml
+  title: Данные и ML
+  title_short: Data/ML
+  direction_code: data
+- code: mobile
+  title: Мобильная разработка
+  title_short: Mobile
+  direction_code: development
+- code: analyst
+  title: Системный и бизнес-анализ
+  title_short: Analyst
+  direction_code: data
+- code: qa
+  title: Тестирование
+  title_short: QA
+  direction_code: quality_infra
+- code: devops
+  title: DevOps и инфраструктура
+  title_short: DevOps
+  direction_code: quality_infra
+- code: infosec
+  title: Информационная безопасность
+  title_short: InfoSec
+  direction_code: security_embedded
+- code: embedded
+  title: Встраиваемые системы и робототехника
+  title_short: Embedded
+  direction_code: security_embedded

@@ -1,0 +1,2099 @@
+{
+  "acceptance": {
+    "bars": [
+      {
+        "bar": 0.88,
+        "ci": [
+          0.9138,
+          0.93
+        ],
+        "experiment": "v1",
+        "label": "Точность среди решённых (исход против истинного уровня)",
+        "met": true,
+        "metric": "v1_accuracy",
+        "n": 3459,
+        "op": ">=",
+        "unit": "share",
+        "value": 0.9208
+      },
+      {
+        "bar": 0.04,
+        "ci": [
+          0.0158,
+          0.0277
+        ],
+        "experiment": "v1",
+        "label": "Ошибки дальше 0.4 от порога",
+        "met": true,
+        "metric": "v1_far_errors",
+        "n": 2777,
+        "op": "<=",
+        "unit": "share",
+        "value": 0.0216
+      },
+      {
+        "bar": 0.75,
+        "ci": [
+          0.8157,
+          0.8433
+        ],
+        "experiment": "v2",
+        "label": "Согласие решения «подтверждён или нет»",
+        "met": true,
+        "metric": "v2_agreement",
+        "n": 4000,
+        "op": ">=",
+        "unit": "share",
+        "value": 0.8293
+      },
+      {
+        "bar": 0.09,
+        "ci": [
+          0.0505,
+          0.0638
+        ],
+        "experiment": "v2",
+        "label": "Противоречия «подтверждён ↔ не подтверждён»",
+        "met": true,
+        "metric": "v2_contradictions",
+        "n": 4000,
+        "op": "<=",
+        "unit": "share",
+        "value": 0.0575
+      },
+      {
+        "bar": 0.75,
+        "ci": [
+          0.7448,
+          0.7718
+        ],
+        "experiment": "v3",
+        "label": "Итоговая категория совпала с истинным грейдом",
+        "met": false,
+        "metric": "v3_exact",
+        "n": 4000,
+        "op": ">=",
+        "unit": "share",
+        "value": 0.757
+      },
+      {
+        "bar": 0.98,
+        "ci": [
+          0.9945,
+          0.9978
+        ],
+        "experiment": "v3",
+        "label": "В пределах соседнего грейда",
+        "met": true,
+        "metric": "v3_adjacent",
+        "n": 4000,
+        "op": ">=",
+        "unit": "share",
+        "value": 0.9962
+      },
+      {
+        "bar": 0.09,
+        "ci": [
+          0.0418,
+          0.0555
+        ],
+        "experiment": "v3",
+        "label": "Завышение (категория выше истинного грейда)",
+        "met": true,
+        "metric": "v3_overgrade",
+        "n": 4000,
+        "op": "<=",
+        "unit": "share",
+        "value": 0.0485
+      },
+      {
+        "bar": 0.7,
+        "ci": [
+          0.7157,
+          0.7438
+        ],
+        "experiment": "v4",
+        "label": "Согласие итогового грейда двух путей",
+        "met": true,
+        "metric": "v4_agreement",
+        "n": 4000,
+        "op": ">=",
+        "unit": "share",
+        "value": 0.7298
+      },
+      {
+        "bar": 0.55,
+        "ci": [
+          0.5805,
+          0.6182
+        ],
+        "experiment": "v4",
+        "label": "κ Коэна итогового грейда",
+        "met": true,
+        "metric": "v4_kappa",
+        "n": 4000,
+        "op": ">=",
+        "unit": "kappa",
+        "value": 0.6006
+      },
+      {
+        "bar": 0.1,
+        "ci": [
+          0.065,
+          0.115
+        ],
+        "experiment": "v5",
+        "label": "Подтверждение за три попытки, уровень на 0.5 ниже порога, с накоплением",
+        "met": false,
+        "metric": "v5_three_attempts_05",
+        "n": 400,
+        "op": "<=",
+        "unit": "share",
+        "value": 0.09
+      },
+      {
+        "bar": 0.85,
+        "ci": [
+          0.8799,
+          0.895
+        ],
+        "experiment": "v6",
+        "label": "Корреляция оценки уровня с истинным уровнем",
+        "met": true,
+        "metric": "v6_correlation",
+        "n": 4000,
+        "op": ">=",
+        "unit": "r",
+        "value": 0.8875
+      },
+      {
+        "bar": 0.85,
+        "ci": [
+          null,
+          null
+        ],
+        "experiment": "v6",
+        "label": "AUC разделения соседних истинных грейдов (среднее)",
+        "met": true,
+        "metric": "v6_auc",
+        "n": 4000,
+        "op": ">=",
+        "unit": "auc",
+        "value": 0.8962
+      },
+      {
+        "bar": 3.0,
+        "ci": [
+          null,
+          null
+        ],
+        "experiment": "v6",
+        "label": "Испорченных семейств в нижней пятёрке (из трёх)",
+        "met": true,
+        "metric": "v6_broken_in_bottom5",
+        "n": 3,
+        "op": ">=",
+        "unit": "count",
+        "value": 3.0
+      },
+      {
+        "bar": 0.6,
+        "ci": [
+          null,
+          null
+        ],
+        "experiment": "v7",
+        "label": "Наибольшая экспозиция семейства при 1500 сессиях на категорию",
+        "met": false,
+        "metric": "v7_max_exposure",
+        "n": 1500,
+        "op": "<=",
+        "unit": "share",
+        "value": 0.7807
+      },
+      {
+        "bar": 0.0,
+        "ci": [
+          null,
+          null
+        ],
+        "experiment": "v7",
+        "label": "Неиспользуемых семейств (сумма по категориям)",
+        "met": true,
+        "metric": "v7_unused_families",
+        "n": null,
+        "op": "<=",
+        "unit": "count",
+        "value": 0.0
+      },
+      {
+        "bar": 0.15,
+        "ci": [
+          0.2,
+          0.2825
+        ],
+        "experiment": "v8",
+        "label": "Ложное подтверждение при 5 утёкших сессиях, сдвиг 0.5 (пулы семейств)",
+        "met": false,
+        "metric": "leak_false_confirm_m5",
+        "n": 400,
+        "op": "<=",
+        "unit": "share",
+        "value": 0.2425
+      }
+    ],
+    "met": 12,
+    "total": 16
+  },
+  "assumptions": "VirtualCandidate: specialization — поровну по специализациям с доступным тестом;\n    theta_true ~ N(0.2, 1.3²) на шкале теста; delta[group] ~ N(0, 0.4²);\n    true_grade по THETA_CUT (ниже −1.5 — без грейда);\n    claimed_grade: истинный 0.60, на грейд выше 0.25, ниже 0.15\n«Истинные» параметры заданий (движок их не знает):\n    a_true ~ LogNormal(ln 1.1, 0.25), обрезано до [0.5, 2.2]; b_true = b + N(0, 0.4²); дрейф варианта N(0, 0.25²)\n    P(верно) = c + (1 − c) / (1 + exp(−a_true · (theta_true + delta[group] − b_true − дрейф)))\nДвижок считает с a = 1.0 и назначенными b.",
+  "expert": {
+    "e1": "author_only",
+    "e2_kappa": null,
+    "e3": "not_done",
+    "note": "E1 — оценка автора банка: независимых оценок сложности нет. E2 не проводилась. E3 не проводился. Сложность заданий нельзя называть экспертной."
+  },
+  "meta": {
+    "bank": {
+      "available_pairs": [
+        "backend:junior",
+        "backend:middle",
+        "backend:senior"
+      ],
+      "families": 31,
+      "levels": 92,
+      "pools": {
+        "backend:junior": 26,
+        "backend:middle": 28,
+        "backend:senior": 27
+      },
+      "skipped_pairs": [
+        "frontend:junior",
+        "frontend:middle",
+        "frontend:senior",
+        "fullstack:junior",
+        "fullstack:middle",
+        "fullstack:senior",
+        "data_ml:junior",
+        "data_ml:middle",
+        "data_ml:senior"
+      ],
+      "source": "discovered"
+    },
+    "bootstrap": 200,
+    "generated_at": "2026-10-06T00:00:00+00:00",
+    "n": 4000,
+    "population": {
+      "claim_true": 0.6,
+      "claim_up": 0.25,
+      "delta_sd": 0.4,
+      "near_cuts": null,
+      "theta_mean": 0.2,
+      "theta_sd": 1.3
+    },
+    "seed": 20261005,
+    "title": "Валидация тестирования: симуляция на боевом движке",
+    "versions": {
+      "bank": "2026.10.0",
+      "engine": "1.0"
+    },
+    "world": {
+      "a_mean": 1.1,
+      "a_sd": 0.25,
+      "b_error_sd": 0.4,
+      "broken_a": 0.15,
+      "drift_sd": 0.25
+    }
+  },
+  "not_claimed": [
+    "Числа симуляции — самосогласованность механики со своими допущениями, а не валидность теста: ответы порождает та же логистическая модель, на которой построен движок, а истинный грейд задан теми же порогами.",
+    "Сложность заданий b — оценка автора банка, пока не проведена сверка E1; шкала не откалибрована на людях.",
+    "Тест не защищает от языковой модели, подмены человека и подсказок: это фильтр для категории, а не решение о найме.",
+    "Новый аккаунт на другом адресе начинает без накопления и без лимитов: вероятность ложного подтверждения растёт с числом независимых серий (строки v5_series_*). Личность кандидата в MVP не проверяется.",
+    "При сдвиге знакомства 1.0 логита защита пулами семейств заметно слабее (строка leak_false_confirm_m5_pessimistic): при целенаправленной подготовке по всем типам заданий она сходит на нет.",
+    "После исчерпания пула уровня варианты выдаются повторно (строки v7_first_repeat_*): чужой ответ подходит тому, кому выпал тот же вариант.",
+    "V6 условна по модели: наклон заданий — входной параметр симуляции.",
+    "Подтверждение отдельного навыка опирается на один-два ответа и зависит от выпавшего семейства (V10, «близнецы»)."
+  ],
+  "summary": {
+    "expert": {
+      "e1": "author_only",
+      "e2_kappa": null,
+      "e3": "not_done"
+    },
+    "generated_at": "2026-10-06T00:00:00+00:00",
+    "leak_false_confirm_m5": 0.2425,
+    "leak_false_confirm_m5_pessimistic": 0.5225,
+    "n": 4000,
+    "seed": 20261005,
+    "sessions_to_first_repeat": 74.0,
+    "v1_accuracy": 0.9208,
+    "v2_agreement": 0.8293,
+    "v3_exact": 0.757,
+    "v3_overgrade": 0.0485,
+    "v4_agreement": 0.7298,
+    "v5_three_attempts": 0.09,
+    "v6_correlation": 0.8875,
+    "versions": {
+      "bank": "2026.10.0",
+      "engine": "1.0"
+    }
+  },
+  "v1": {
+    "lengths": {
+      "14": 0.7232,
+      "20": 0.0912,
+      "26": 0.1855
+    },
+    "outcomes": {
+      "borderline": 0.1353,
+      "confirmed": 0.3648,
+      "confirmed_with_margin": 0.241,
+      "not_confirmed": 0.259
+    },
+    "rows": [
+      {
+        "bar": 0.88,
+        "ci": [
+          0.9138,
+          0.93
+        ],
+        "label": "Точность среди решённых (исход против истинного уровня)",
+        "met": true,
+        "metric": "v1_accuracy",
+        "n": 3459,
+        "op": ">=",
+        "unit": "share",
+        "value": 0.9208
+      },
+      {
+        "bar": 0.04,
+        "ci": [
+          0.0158,
+          0.0277
+        ],
+        "label": "Ошибки дальше 0.4 от порога",
+        "met": true,
+        "metric": "v1_far_errors",
+        "n": 2777,
+        "op": "<=",
+        "unit": "share",
+        "value": 0.0216
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.0754,
+          0.1157
+        ],
+        "label": "Ложное подтверждение (уровень ниже порога)",
+        "met": null,
+        "metric": "v1_false_confirm",
+        "n": 942,
+        "op": null,
+        "unit": "share",
+        "value": 0.0955
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.064,
+          0.0846
+        ],
+        "label": "Ложный отказ (уровень не ниже порога)",
+        "met": null,
+        "metric": "v1_false_reject",
+        "n": 2517,
+        "op": null,
+        "unit": "share",
+        "value": 0.0731
+      },
+      {
+        "bar": null,
+        "ci": [
+          null,
+          null
+        ],
+        "label": "Средняя длина теста, заданий",
+        "met": null,
+        "metric": "v1_mean_length",
+        "n": 4000,
+        "op": null,
+        "unit": "items",
+        "value": 16.7735
+      }
+    ]
+  },
+  "v10": {
+    "rows": [
+      {
+        "bar": null,
+        "ci": [
+          0.314,
+          0.3225
+        ],
+        "label": "Все группы, сильные по навыку: доказательство весом 1.0",
+        "met": null,
+        "metric": "v10_all_strong_full",
+        "n": 41912,
+        "op": null,
+        "unit": "share",
+        "value": 0.3187
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.275,
+          0.2856
+        ],
+        "label": "Все группы, сильные по навыку: доказательство весом 0.7",
+        "met": null,
+        "metric": "v10_all_strong_partial",
+        "n": 41912,
+        "op": null,
+        "unit": "share",
+        "value": 0.2806
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.5952,
+          0.6045
+        ],
+        "label": "Все группы, сильные по навыку: любое доказательство",
+        "met": null,
+        "metric": "v10_all_strong_any",
+        "n": 41912,
+        "op": null,
+        "unit": "share",
+        "value": 0.5993
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.0586,
+          0.0664
+        ],
+        "label": "Все группы, слабые по навыку: доказательство весом 1.0",
+        "met": null,
+        "metric": "v10_all_weak_full",
+        "n": 16142,
+        "op": null,
+        "unit": "share",
+        "value": 0.0629
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.2046,
+          0.2175
+        ],
+        "label": "Все группы, слабые по навыку: доказательство весом 0.7",
+        "met": null,
+        "metric": "v10_all_weak_partial",
+        "n": 16142,
+        "op": null,
+        "unit": "share",
+        "value": 0.2109
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.2664,
+          0.2805
+        ],
+        "label": "Все группы, слабые по навыку: любое доказательство",
+        "met": null,
+        "metric": "v10_all_weak_any",
+        "n": 16142,
+        "op": null,
+        "unit": "share",
+        "value": 0.2738
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.1572,
+          0.1673
+        ],
+        "label": "Группы с одним слотом, сильные по навыку: доказательство весом 1.0",
+        "met": null,
+        "metric": "v10_one_slot_strong_full",
+        "n": 24047,
+        "op": null,
+        "unit": "share",
+        "value": 0.1628
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.3444,
+          0.3566
+        ],
+        "label": "Группы с одним слотом, сильные по навыку: доказательство весом 0.7",
+        "met": null,
+        "metric": "v10_one_slot_strong_partial",
+        "n": 24047,
+        "op": null,
+        "unit": "share",
+        "value": 0.3514
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.5075,
+          0.5213
+        ],
+        "label": "Группы с одним слотом, сильные по навыку: любое доказательство",
+        "met": null,
+        "metric": "v10_one_slot_strong_any",
+        "n": 24047,
+        "op": null,
+        "unit": "share",
+        "value": 0.5142
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.0431,
+          0.0526
+        ],
+        "label": "Группы с одним слотом, слабые по навыку: доказательство весом 1.0",
+        "met": null,
+        "metric": "v10_one_slot_weak_full",
+        "n": 9095,
+        "op": null,
+        "unit": "share",
+        "value": 0.0482
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.1814,
+          0.1957
+        ],
+        "label": "Группы с одним слотом, слабые по навыку: доказательство весом 0.7",
+        "met": null,
+        "metric": "v10_one_slot_weak_partial",
+        "n": 9095,
+        "op": null,
+        "unit": "share",
+        "value": 0.1887
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.2281,
+          0.2445
+        ],
+        "label": "Группы с одним слотом, слабые по навыку: любое доказательство",
+        "met": null,
+        "metric": "v10_one_slot_weak_any",
+        "n": 9095,
+        "op": null,
+        "unit": "share",
+        "value": 0.2368
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.521,
+          0.5354
+        ],
+        "label": "Группы с двумя и более слотами, сильные по навыку: доказательство весом 1.0",
+        "met": null,
+        "metric": "v10_multi_slot_strong_full",
+        "n": 17865,
+        "op": null,
+        "unit": "share",
+        "value": 0.5286
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.1795,
+          0.1927
+        ],
+        "label": "Группы с двумя и более слотами, сильные по навыку: доказательство весом 0.7",
+        "met": null,
+        "metric": "v10_multi_slot_strong_partial",
+        "n": 17865,
+        "op": null,
+        "unit": "share",
+        "value": 0.1853
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.7067,
+          0.7215
+        ],
+        "label": "Группы с двумя и более слотами, сильные по навыку: любое доказательство",
+        "met": null,
+        "metric": "v10_multi_slot_strong_any",
+        "n": 17865,
+        "op": null,
+        "unit": "share",
+        "value": 0.7139
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.0765,
+          0.0881
+        ],
+        "label": "Группы с двумя и более слотами, слабые по навыку: доказательство весом 1.0",
+        "met": null,
+        "metric": "v10_multi_slot_weak_full",
+        "n": 7047,
+        "op": null,
+        "unit": "share",
+        "value": 0.0819
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.2278,
+          0.2495
+        ],
+        "label": "Группы с двумя и более слотами, слабые по навыку: доказательство весом 0.7",
+        "met": null,
+        "metric": "v10_multi_slot_weak_partial",
+        "n": 7047,
+        "op": null,
+        "unit": "share",
+        "value": 0.2395
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.3089,
+          0.3325
+        ],
+        "label": "Группы с двумя и более слотами, слабые по навыку: любое доказательство",
+        "met": null,
+        "metric": "v10_multi_slot_weak_any",
+        "n": 7047,
+        "op": null,
+        "unit": "share",
+        "value": 0.3214
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.3846,
+          0.3985
+        ],
+        "label": "Вердикт группы «подтверждено» среди сильных по группе",
+        "met": null,
+        "metric": "v10_group_confirmed_strong",
+        "n": 15908,
+        "op": null,
+        "unit": "share",
+        "value": 0.3912
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.0681,
+          0.081
+        ],
+        "label": "Вердикт группы «подтверждено» среди слабых по группе",
+        "met": null,
+        "metric": "v10_group_confirmed_weak",
+        "n": 6108,
+        "op": null,
+        "unit": "share",
+        "value": 0.0745
+      },
+      {
+        "bar": null,
+        "ci": [
+          1.0,
+          1.0
+        ],
+        "label": "«Близнецы»: разный набор навыков с доказательством",
+        "met": null,
+        "metric": "v10_twins_skills_differ",
+        "n": 2103,
+        "op": null,
+        "unit": "share",
+        "value": 1.0
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.9815,
+          0.9919
+        ],
+        "label": "«Близнецы»: разный набор навыков с весом 1.0",
+        "met": null,
+        "metric": "v10_twins_full_differ",
+        "n": 2103,
+        "op": null,
+        "unit": "share",
+        "value": 0.9872
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.5026,
+          0.5473
+        ],
+        "label": "«Близнецы»: разная полоса силы профиля",
+        "met": null,
+        "metric": "v10_twins_band_differ",
+        "n": 2103,
+        "op": null,
+        "unit": "share",
+        "value": 0.5231
+      },
+      {
+        "bar": null,
+        "ci": [
+          null,
+          null
+        ],
+        "label": "«Близнецы»: средняя доля общих навыков (Жаккар)",
+        "met": null,
+        "metric": "v10_twins_overlap",
+        "n": 2103,
+        "op": null,
+        "unit": "share",
+        "value": 0.5398
+      }
+    ],
+    "twins_pairs": 2103
+  },
+  "v2": {
+    "by_distance": [
+      {
+        "agreement": 0.985,
+        "distance": "1.0–∞",
+        "n": 1469
+      },
+      {
+        "agreement": 0.8599,
+        "distance": "0.5–1.0",
+        "n": 1242
+      },
+      {
+        "agreement": 0.6438,
+        "distance": "0.25–0.5",
+        "n": 612
+      },
+      {
+        "agreement": 0.6027,
+        "distance": "0.0–0.25",
+        "n": 677
+      }
+    ],
+    "rows": [
+      {
+        "bar": 0.75,
+        "ci": [
+          0.8157,
+          0.8433
+        ],
+        "label": "Согласие решения «подтверждён или нет»",
+        "met": true,
+        "metric": "v2_agreement",
+        "n": 4000,
+        "op": ">=",
+        "unit": "share",
+        "value": 0.8293
+      },
+      {
+        "bar": 0.09,
+        "ci": [
+          0.0505,
+          0.0638
+        ],
+        "label": "Противоречия «подтверждён ↔ не подтверждён»",
+        "met": true,
+        "metric": "v2_contradictions",
+        "n": 4000,
+        "op": "<=",
+        "unit": "share",
+        "value": 0.0575
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.5557,
+          0.5883
+        ],
+        "label": "Согласие четырёх исходов",
+        "met": null,
+        "metric": "v2_agreement_four",
+        "n": 4000,
+        "op": null,
+        "unit": "share",
+        "value": 0.5715
+      },
+      {
+        "bar": null,
+        "ci": [
+          null,
+          null
+        ],
+        "label": "κ Коэна по четырём исходам",
+        "met": null,
+        "metric": "v2_kappa",
+        "n": 4000,
+        "op": null,
+        "unit": "kappa",
+        "value": 0.4083
+      }
+    ]
+  },
+  "v3": {
+    "confusion": [
+      {
+        "final": "none",
+        "share": 0.0785,
+        "true": "none"
+      },
+      {
+        "final": "junior",
+        "share": 0.0163,
+        "true": "none"
+      },
+      {
+        "final": "middle",
+        "share": 0.0,
+        "true": "none"
+      },
+      {
+        "final": "senior",
+        "share": 0.0,
+        "true": "none"
+      },
+      {
+        "final": "none",
+        "share": 0.0362,
+        "true": "junior"
+      },
+      {
+        "final": "junior",
+        "share": 0.3005,
+        "true": "junior"
+      },
+      {
+        "final": "middle",
+        "share": 0.0208,
+        "true": "junior"
+      },
+      {
+        "final": "senior",
+        "share": 0.0,
+        "true": "junior"
+      },
+      {
+        "final": "none",
+        "share": 0.0035,
+        "true": "middle"
+      },
+      {
+        "final": "junior",
+        "share": 0.1047,
+        "true": "middle"
+      },
+      {
+        "final": "middle",
+        "share": 0.2715,
+        "true": "middle"
+      },
+      {
+        "final": "senior",
+        "share": 0.0115,
+        "true": "middle"
+      },
+      {
+        "final": "none",
+        "share": 0.0,
+        "true": "senior"
+      },
+      {
+        "final": "junior",
+        "share": 0.0003,
+        "true": "senior"
+      },
+      {
+        "final": "middle",
+        "share": 0.0498,
+        "true": "senior"
+      },
+      {
+        "final": "senior",
+        "share": 0.1065,
+        "true": "senior"
+      }
+    ],
+    "max_same_level_per_candidate": 3,
+    "rows": [
+      {
+        "bar": 0.75,
+        "ci": [
+          0.7448,
+          0.7718
+        ],
+        "label": "Итоговая категория совпала с истинным грейдом",
+        "met": false,
+        "metric": "v3_exact",
+        "n": 4000,
+        "op": ">=",
+        "unit": "share",
+        "value": 0.757
+      },
+      {
+        "bar": 0.98,
+        "ci": [
+          0.9945,
+          0.9978
+        ],
+        "label": "В пределах соседнего грейда",
+        "met": true,
+        "metric": "v3_adjacent",
+        "n": 4000,
+        "op": ">=",
+        "unit": "share",
+        "value": 0.9962
+      },
+      {
+        "bar": 0.09,
+        "ci": [
+          0.0418,
+          0.0555
+        ],
+        "label": "Завышение (категория выше истинного грейда)",
+        "met": true,
+        "metric": "v3_overgrade",
+        "n": 4000,
+        "op": "<=",
+        "unit": "share",
+        "value": 0.0485
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.18,
+          0.2072
+        ],
+        "label": "Занижение",
+        "met": null,
+        "metric": "v3_undergrade",
+        "n": 4000,
+        "op": null,
+        "unit": "share",
+        "value": 0.1945
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.0853,
+          0.1022
+        ],
+        "label": "Кандидатов с уровнем ниже Junior в популяции",
+        "met": null,
+        "metric": "v3_below_junior",
+        "n": 4000,
+        "op": null,
+        "unit": "share",
+        "value": 0.0948
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.7942,
+          0.8681
+        ],
+        "label": "Из них остались без категории",
+        "met": null,
+        "metric": "v3_below_junior_no_category",
+        "n": 379,
+        "op": null,
+        "unit": "share",
+        "value": 0.8285
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.1092,
+          0.128
+        ],
+        "label": "Всего остались без категории",
+        "met": null,
+        "metric": "v3_no_category",
+        "n": 4000,
+        "op": null,
+        "unit": "share",
+        "value": 0.1182
+      },
+      {
+        "bar": null,
+        "ci": [
+          null,
+          null
+        ],
+        "label": "Сессий на путь в среднем",
+        "met": null,
+        "metric": "v3_mean_sessions",
+        "n": 4000,
+        "op": null,
+        "unit": "sessions",
+        "value": 1.522
+      }
+    ]
+  },
+  "v4": {
+    "rows": [
+      {
+        "bar": 0.7,
+        "ci": [
+          0.7157,
+          0.7438
+        ],
+        "label": "Согласие итогового грейда двух путей",
+        "met": true,
+        "metric": "v4_agreement",
+        "n": 4000,
+        "op": ">=",
+        "unit": "share",
+        "value": 0.7298
+      },
+      {
+        "bar": 0.55,
+        "ci": [
+          0.5805,
+          0.6182
+        ],
+        "label": "κ Коэна итогового грейда",
+        "met": true,
+        "metric": "v4_kappa",
+        "n": 4000,
+        "op": ">=",
+        "unit": "kappa",
+        "value": 0.6006
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.0025,
+          0.0073
+        ],
+        "label": "Расхождение на два грейда и больше",
+        "met": null,
+        "metric": "v4_two_grades",
+        "n": 4000,
+        "op": null,
+        "unit": "share",
+        "value": 0.005
+      }
+    ]
+  },
+  "v5": {
+    "n_per_point": 400,
+    "rows": [
+      {
+        "bar": null,
+        "ci": [
+          0.175,
+          0.25
+        ],
+        "label": "Подтверждение за три попытки, уровень на 0.3 ниже порога, с накоплением",
+        "met": null,
+        "metric": "v5_three_attempts_03",
+        "n": 400,
+        "op": null,
+        "unit": "share",
+        "value": 0.21
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.31,
+          0.395
+        ],
+        "label": "То же без накопления (считается последняя попытка), на 0.3 ниже",
+        "met": null,
+        "metric": "v5_three_attempts_03_no_pool",
+        "n": 400,
+        "op": null,
+        "unit": "share",
+        "value": 0.3525
+      },
+      {
+        "bar": 0.1,
+        "ci": [
+          0.065,
+          0.115
+        ],
+        "label": "Подтверждение за три попытки, уровень на 0.5 ниже порога, с накоплением",
+        "met": false,
+        "metric": "v5_three_attempts_05",
+        "n": 400,
+        "op": "<=",
+        "unit": "share",
+        "value": 0.09
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.15,
+          0.2225
+        ],
+        "label": "То же без накопления (считается последняя попытка), на 0.5 ниже",
+        "met": null,
+        "metric": "v5_three_attempts_05_no_pool",
+        "n": 400,
+        "op": null,
+        "unit": "share",
+        "value": 0.19
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.0725,
+          0.13
+        ],
+        "label": "С эффектом знакомства +0.3 логита на повторах, на 0.5 ниже (без планки)",
+        "met": null,
+        "metric": "v5_three_attempts_familiar",
+        "n": 400,
+        "op": null,
+        "unit": "share",
+        "value": 0.0975
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.09,
+          0.15
+        ],
+        "label": "Ложное подтверждение за 1 независимых серий (новый аккаунт), на 0.5 ниже",
+        "met": null,
+        "metric": "v5_series_1",
+        "n": 400,
+        "op": null,
+        "unit": "share",
+        "value": 0.12
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.16,
+          0.2325
+        ],
+        "label": "Ложное подтверждение за 2 независимых серий (новый аккаунт), на 0.5 ниже",
+        "met": null,
+        "metric": "v5_series_2",
+        "n": 400,
+        "op": null,
+        "unit": "share",
+        "value": 0.195
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.26,
+          0.3575
+        ],
+        "label": "Ложное подтверждение за 4 независимых серий (новый аккаунт), на 0.5 ниже",
+        "met": null,
+        "metric": "v5_series_4",
+        "n": 400,
+        "op": null,
+        "unit": "share",
+        "value": 0.3125
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.455,
+          0.5525
+        ],
+        "label": "Ложное подтверждение за 8 независимых серий (новый аккаунт), на 0.5 ниже",
+        "met": null,
+        "metric": "v5_series_8",
+        "n": 400,
+        "op": null,
+        "unit": "share",
+        "value": 0.5025
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.005,
+          0.0275
+        ],
+        "label": "Подтверждение за три попытки, уровень на 0.8 ниже порога, с накоплением",
+        "met": null,
+        "metric": "v5_three_attempts_08",
+        "n": 400,
+        "op": null,
+        "unit": "share",
+        "value": 0.015
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.06,
+          0.1175
+        ],
+        "label": "То же без накопления (считается последняя попытка), на 0.8 ниже",
+        "met": null,
+        "metric": "v5_three_attempts_08_no_pool",
+        "n": 400,
+        "op": null,
+        "unit": "share",
+        "value": 0.09
+      }
+    ],
+    "series_curve": [
+      {
+        "ci": [
+          0.09,
+          0.15
+        ],
+        "series": 1,
+        "value": 0.12
+      },
+      {
+        "ci": [
+          0.16,
+          0.2325
+        ],
+        "series": 2,
+        "value": 0.195
+      },
+      {
+        "ci": [
+          0.26,
+          0.3575
+        ],
+        "series": 4,
+        "value": 0.3125
+      },
+      {
+        "ci": [
+          0.455,
+          0.5525
+        ],
+        "series": 8,
+        "value": 0.5025
+      }
+    ]
+  },
+  "v6": {
+    "bottom": [
+      {
+        "broken": true,
+        "correlation": -0.0062,
+        "family_id": "algo.bigo_loops",
+        "n": 1387
+      },
+      {
+        "broken": false,
+        "correlation": 0.0284,
+        "family_id": "db.fd_keys",
+        "n": 1463
+      },
+      {
+        "broken": true,
+        "correlation": 0.0394,
+        "family_id": "code.bug_boundary",
+        "n": 1508
+      },
+      {
+        "broken": true,
+        "correlation": 0.0727,
+        "family_id": "ds.bst_ops",
+        "n": 1427
+      },
+      {
+        "broken": false,
+        "correlation": 0.0936,
+        "family_id": "sql.group_having",
+        "n": 1797
+      },
+      {
+        "broken": false,
+        "correlation": 0.1271,
+        "family_id": "code.trace_recursion",
+        "n": 1535
+      },
+      {
+        "broken": false,
+        "correlation": 0.1356,
+        "family_id": "svc.rate_limiter",
+        "n": 1073
+      },
+      {
+        "broken": false,
+        "correlation": 0.1422,
+        "family_id": "sql.join_rows",
+        "n": 1791
+      }
+    ],
+    "broken": [
+      "code.bug_boundary",
+      "algo.bigo_loops",
+      "ds.bst_ops"
+    ],
+    "rows": [
+      {
+        "bar": 0.85,
+        "ci": [
+          0.8799,
+          0.895
+        ],
+        "label": "Корреляция оценки уровня с истинным уровнем",
+        "met": true,
+        "metric": "v6_correlation",
+        "n": 4000,
+        "op": ">=",
+        "unit": "r",
+        "value": 0.8875
+      },
+      {
+        "bar": 0.85,
+        "ci": [
+          null,
+          null
+        ],
+        "label": "AUC разделения соседних истинных грейдов (среднее)",
+        "met": true,
+        "metric": "v6_auc",
+        "n": 4000,
+        "op": ">=",
+        "unit": "auc",
+        "value": 0.8962
+      },
+      {
+        "bar": null,
+        "ci": [
+          null,
+          null
+        ],
+        "label": "Медиана по семействам: корреляция балла с оценкой по остальным заданиям",
+        "met": null,
+        "metric": "v6_family_median",
+        "n": 31,
+        "op": null,
+        "unit": "r",
+        "value": 0.2031
+      },
+      {
+        "bar": 3.0,
+        "ci": [
+          null,
+          null
+        ],
+        "label": "Испорченных семейств в нижней пятёрке (из трёх)",
+        "met": true,
+        "metric": "v6_broken_in_bottom5",
+        "n": 3,
+        "op": ">=",
+        "unit": "count",
+        "value": 3.0
+      }
+    ],
+    "top": [
+      {
+        "broken": false,
+        "correlation": 0.3599,
+        "family_id": "algo.graph_traversal",
+        "n": 1210
+      },
+      {
+        "broken": false,
+        "correlation": 0.3918,
+        "family_id": "git.merge_rebase",
+        "n": 1274
+      },
+      {
+        "broken": false,
+        "correlation": 0.4775,
+        "family_id": "db.constraints_effect",
+        "n": 1084
+      }
+    ]
+  },
+  "v7": {
+    "pairs": [
+      {
+        "exposure": {
+          "100": {
+            "max": 0.81,
+            "mean": 0.7296,
+            "unused": 0
+          },
+          "1500": {
+            "max": 0.7807,
+            "mean": 0.7117,
+            "unused": 0
+          },
+          "300": {
+            "max": 0.7867,
+            "mean": 0.7074,
+            "unused": 0
+          }
+        },
+        "first_repeat": {
+          "200": 256,
+          "60": 74
+        },
+        "pair": "backend:junior",
+        "pool": 27,
+        "sessions_with_repeat": {
+          "200": 0.8293,
+          "60": 0.95
+        }
+      },
+      {
+        "exposure": {
+          "100": {
+            "max": 0.78,
+            "mean": 0.7229,
+            "unused": 0
+          },
+          "1500": {
+            "max": 0.7407,
+            "mean": 0.6896,
+            "unused": 0
+          },
+          "300": {
+            "max": 0.7533,
+            "mean": 0.6964,
+            "unused": 0
+          }
+        },
+        "first_repeat": {
+          "200": 267,
+          "60": 80
+        },
+        "pair": "backend:middle",
+        "pool": 28,
+        "sessions_with_repeat": {
+          "200": 0.8213,
+          "60": 0.9473
+        }
+      },
+      {
+        "exposure": {
+          "100": {
+            "max": 0.8,
+            "mean": 0.7252,
+            "unused": 0
+          },
+          "1500": {
+            "max": 0.7653,
+            "mean": 0.7212,
+            "unused": 0
+          },
+          "300": {
+            "max": 0.78,
+            "mean": 0.7304,
+            "unused": 0
+          }
+        },
+        "first_repeat": {
+          "200": 254,
+          "60": 77
+        },
+        "pair": "backend:senior",
+        "pool": 27,
+        "sessions_with_repeat": {
+          "200": 0.8307,
+          "60": 0.9493
+        }
+      }
+    ],
+    "rows": [
+      {
+        "bar": 0.6,
+        "ci": [
+          null,
+          null
+        ],
+        "label": "Наибольшая экспозиция семейства при 1500 сессиях на категорию",
+        "met": false,
+        "metric": "v7_max_exposure",
+        "n": 1500,
+        "op": "<=",
+        "unit": "share",
+        "value": 0.7807
+      },
+      {
+        "bar": 0.0,
+        "ci": [
+          null,
+          null
+        ],
+        "label": "Неиспользуемых семейств (сумма по категориям)",
+        "met": true,
+        "metric": "v7_unused_families",
+        "n": null,
+        "op": "<=",
+        "unit": "count",
+        "value": 0.0
+      },
+      {
+        "bar": null,
+        "ci": [
+          null,
+          null
+        ],
+        "label": "Экспозиция по построению: наибольшее «слоты / пул» среди привязанных групп, включая путь без языкового модуля",
+        "met": null,
+        "metric": "v7_exposure_by_plan",
+        "n": null,
+        "op": null,
+        "unit": "share",
+        "value": 0.8
+      },
+      {
+        "bar": null,
+        "ci": [
+          null,
+          null
+        ],
+        "label": "Сессий до первого повтора варианта между кандидатами при 60 вариантах на уровень (худшая категория)",
+        "met": null,
+        "metric": "v7_first_repeat_60",
+        "n": 1500,
+        "op": null,
+        "unit": "sessions",
+        "value": 74.0
+      },
+      {
+        "bar": null,
+        "ci": [
+          null,
+          null
+        ],
+        "label": "Доля сессий хотя бы с одним уже выдававшимся вариантом при 60 вариантах (1500 сессий, худшая категория)",
+        "met": null,
+        "metric": "v7_sessions_with_repeat_60",
+        "n": 1500,
+        "op": null,
+        "unit": "share",
+        "value": 0.95
+      },
+      {
+        "bar": null,
+        "ci": [
+          null,
+          null
+        ],
+        "label": "Сессий до первого повтора варианта между кандидатами при 200 вариантах на уровень (худшая категория)",
+        "met": null,
+        "metric": "v7_first_repeat_200",
+        "n": 1500,
+        "op": null,
+        "unit": "sessions",
+        "value": 254.0
+      },
+      {
+        "bar": null,
+        "ci": [
+          null,
+          null
+        ],
+        "label": "Доля сессий хотя бы с одним уже выдававшимся вариантом при 200 вариантах (1500 сессий, худшая категория)",
+        "met": null,
+        "metric": "v7_sessions_with_repeat_200",
+        "n": 1500,
+        "op": null,
+        "unit": "share",
+        "value": 0.8307
+      }
+    ],
+    "sessions": [
+      100,
+      300,
+      1500
+    ]
+  },
+  "v8": {
+    "curves": [
+      {
+        "design": "pools",
+        "points": [
+          {
+            "ci": [
+              0.04,
+              0.095
+            ],
+            "m": 0,
+            "value": 0.0625
+          },
+          {
+            "ci": [
+              0.1025,
+              0.1625
+            ],
+            "m": 1,
+            "value": 0.135
+          },
+          {
+            "ci": [
+              0.125,
+              0.2
+            ],
+            "m": 2,
+            "value": 0.1625
+          },
+          {
+            "ci": [
+              0.14,
+              0.2175
+            ],
+            "m": 3,
+            "value": 0.1775
+          },
+          {
+            "ci": [
+              0.2,
+              0.2825
+            ],
+            "m": 5,
+            "value": 0.2425
+          },
+          {
+            "ci": [
+              0.2125,
+              0.295
+            ],
+            "m": 10,
+            "value": 0.25
+          },
+          {
+            "ci": [
+              0.1675,
+              0.245
+            ],
+            "m": 30,
+            "value": 0.2025
+          }
+        ],
+        "shift": 0.5
+      },
+      {
+        "design": "single_family",
+        "points": [
+          {
+            "ci": [
+              0.04,
+              0.085
+            ],
+            "m": 0,
+            "value": 0.0625
+          },
+          {
+            "ci": [
+              0.185,
+              0.2775
+            ],
+            "m": 1,
+            "value": 0.2325
+          },
+          {
+            "ci": [
+              0.1825,
+              0.275
+            ],
+            "m": 2,
+            "value": 0.23
+          },
+          {
+            "ci": [
+              0.1975,
+              0.285
+            ],
+            "m": 3,
+            "value": 0.2375
+          },
+          {
+            "ci": [
+              0.165,
+              0.2575
+            ],
+            "m": 5,
+            "value": 0.2125
+          },
+          {
+            "ci": [
+              0.1825,
+              0.2675
+            ],
+            "m": 10,
+            "value": 0.2225
+          },
+          {
+            "ci": [
+              0.255,
+              0.3425
+            ],
+            "m": 30,
+            "value": 0.2975
+          }
+        ],
+        "shift": 0.5
+      },
+      {
+        "design": "pools",
+        "points": [
+          {
+            "ci": [
+              0.0425,
+              0.09
+            ],
+            "m": 0,
+            "value": 0.0625
+          },
+          {
+            "ci": [
+              0.22,
+              0.31
+            ],
+            "m": 1,
+            "value": 0.27
+          },
+          {
+            "ci": [
+              0.3525,
+              0.4425
+            ],
+            "m": 2,
+            "value": 0.4
+          },
+          {
+            "ci": [
+              0.395,
+              0.505
+            ],
+            "m": 3,
+            "value": 0.45
+          },
+          {
+            "ci": [
+              0.475,
+              0.575
+            ],
+            "m": 5,
+            "value": 0.5225
+          },
+          {
+            "ci": [
+              0.4925,
+              0.5875
+            ],
+            "m": 10,
+            "value": 0.5425
+          },
+          {
+            "ci": [
+              0.495,
+              0.5875
+            ],
+            "m": 30,
+            "value": 0.55
+          }
+        ],
+        "shift": 1.0
+      },
+      {
+        "design": "single_family",
+        "points": [
+          {
+            "ci": [
+              0.04,
+              0.0875
+            ],
+            "m": 0,
+            "value": 0.0625
+          },
+          {
+            "ci": [
+              0.525,
+              0.625
+            ],
+            "m": 1,
+            "value": 0.5725
+          },
+          {
+            "ci": [
+              0.545,
+              0.65
+            ],
+            "m": 2,
+            "value": 0.5925
+          },
+          {
+            "ci": [
+              0.5525,
+              0.66
+            ],
+            "m": 3,
+            "value": 0.6025
+          },
+          {
+            "ci": [
+              0.5525,
+              0.64
+            ],
+            "m": 5,
+            "value": 0.6
+          },
+          {
+            "ci": [
+              0.5225,
+              0.6325
+            ],
+            "m": 10,
+            "value": 0.58
+          },
+          {
+            "ci": [
+              0.485,
+              0.5825
+            ],
+            "m": 30,
+            "value": 0.5325
+          }
+        ],
+        "shift": 1.0
+      }
+    ],
+    "n_per_point": 400,
+    "rows": [
+      {
+        "bar": 0.15,
+        "ci": [
+          0.2,
+          0.2825
+        ],
+        "label": "Ложное подтверждение при 5 утёкших сессиях, сдвиг 0.5 (пулы семейств)",
+        "met": false,
+        "metric": "leak_false_confirm_m5",
+        "n": 400,
+        "op": "<=",
+        "unit": "share",
+        "value": 0.2425
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.475,
+          0.575
+        ],
+        "label": "То же при сдвиге 1.0 (без планки)",
+        "met": null,
+        "metric": "leak_false_confirm_m5_pessimistic",
+        "n": 400,
+        "op": null,
+        "unit": "share",
+        "value": 0.5225
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.165,
+          0.2575
+        ],
+        "label": "Одно семейство на слот, 5 утёкших сессий, сдвиг 0.5",
+        "met": null,
+        "metric": "leak_single_family_m5",
+        "n": 400,
+        "op": null,
+        "unit": "share",
+        "value": 0.2125
+      },
+      {
+        "bar": null,
+        "ci": [
+          0.04,
+          0.095
+        ],
+        "label": "Без утечки (m = 0)",
+        "met": null,
+        "metric": "leak_no_leak",
+        "n": 400,
+        "op": null,
+        "unit": "share",
+        "value": 0.0625
+      }
+    ],
+    "static_bank": {
+      "note": "справочная линия: 100 % задано допущением (те же задания у всех), а не получено",
+      "value": 1.0
+    }
+  },
+  "v9": {
+    "bars": {
+      "v2_agreement": [
+        ">=",
+        0.75
+      ],
+      "v2_contradictions": [
+        "<=",
+        0.09
+      ],
+      "v3_exact": [
+        ">=",
+        0.75
+      ],
+      "v3_overgrade": [
+        "<=",
+        0.09
+      ],
+      "v4_agreement": [
+        ">=",
+        0.7
+      ],
+      "v4_kappa": [
+        ">=",
+        0.55
+      ]
+    },
+    "columns": [
+      "v1_accuracy",
+      "v2_agreement",
+      "v2_contradictions",
+      "v3_exact",
+      "v3_overgrade",
+      "v4_agreement",
+      "v4_kappa"
+    ],
+    "table": [
+      {
+        "failed": [],
+        "key": "baseline",
+        "label": "Базовые допущения (полная выборка)",
+        "n": 4000,
+        "v1_accuracy": 0.9208,
+        "v2_agreement": 0.8293,
+        "v2_contradictions": 0.0575,
+        "v3_exact": 0.757,
+        "v3_overgrade": 0.0485,
+        "v4_agreement": 0.7298,
+        "v4_kappa": 0.6006
+      },
+      {
+        "failed": [
+          "v4_agreement",
+          "v4_kappa"
+        ],
+        "key": "slope_low",
+        "label": "Наклон заданий 0.8",
+        "n": 1000,
+        "v1_accuracy": 0.8996,
+        "v2_agreement": 0.783,
+        "v2_contradictions": 0.07,
+        "v3_exact": 0.769,
+        "v3_overgrade": 0.056,
+        "v4_agreement": 0.688,
+        "v4_kappa": 0.5414
+      },
+      {
+        "failed": [],
+        "key": "slope_high",
+        "label": "Наклон заданий 1.4",
+        "n": 1000,
+        "v1_accuracy": 0.9443,
+        "v2_agreement": 0.88,
+        "v2_contradictions": 0.036,
+        "v3_exact": 0.801,
+        "v3_overgrade": 0.044,
+        "v4_agreement": 0.754,
+        "v4_kappa": 0.6519
+      },
+      {
+        "failed": [],
+        "key": "b_error",
+        "label": "Ошибка сложности 0.7",
+        "n": 1000,
+        "v1_accuracy": 0.9391,
+        "v2_agreement": 0.8,
+        "v2_contradictions": 0.056,
+        "v3_exact": 0.765,
+        "v3_overgrade": 0.046,
+        "v4_agreement": 0.73,
+        "v4_kappa": 0.6052
+      },
+      {
+        "failed": [
+          "v3_exact"
+        ],
+        "key": "skill_spread",
+        "label": "Разброс навыков 0.7",
+        "n": 1000,
+        "v1_accuracy": 0.8989,
+        "v2_agreement": 0.827,
+        "v2_contradictions": 0.06,
+        "v3_exact": 0.716,
+        "v3_overgrade": 0.059,
+        "v4_agreement": 0.711,
+        "v4_kappa": 0.5763
+      },
+      {
+        "failed": [],
+        "key": "omniscient",
+        "label": "«Всезнающий» движок (истинные параметры заданий)",
+        "n": 1000,
+        "v1_accuracy": 0.9432,
+        "v2_agreement": 0.849,
+        "v2_contradictions": 0.045,
+        "v3_exact": 0.812,
+        "v3_overgrade": 0.028,
+        "v4_agreement": 0.752,
+        "v4_kappa": 0.6362
+      },
+      {
+        "failed": [
+          "v4_agreement",
+          "v4_kappa"
+        ],
+        "key": "narrow",
+        "label": "Узкая популяция (SD θ = 0.8)",
+        "n": 1000,
+        "v1_accuracy": 0.9539,
+        "v2_agreement": 0.83,
+        "v2_contradictions": 0.049,
+        "v3_exact": 0.777,
+        "v3_overgrade": 0.053,
+        "v4_agreement": 0.687,
+        "v4_kappa": 0.4536
+      },
+      {
+        "failed": [
+          "v4_agreement"
+        ],
+        "key": "near_cuts",
+        "label": "Кандидаты сгущены у порогов (±0.3)",
+        "n": 1000,
+        "v1_accuracy": 0.8942,
+        "v2_agreement": 0.778,
+        "v2_contradictions": 0.086,
+        "v3_exact": 0.761,
+        "v3_overgrade": 0.08,
+        "v4_agreement": 0.686,
+        "v4_kappa": 0.5563
+      },
+      {
+        "failed": [],
+        "key": "drift",
+        "label": "Дрейф варианта SD = 0.5",
+        "n": 1000,
+        "v1_accuracy": 0.9448,
+        "v2_agreement": 0.806,
+        "v2_contradictions": 0.058,
+        "v3_exact": 0.773,
+        "v3_overgrade": 0.053,
+        "v4_agreement": 0.727,
+        "v4_kappa": 0.6037
+      }
+    ]
+  }
+}

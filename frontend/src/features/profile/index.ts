@@ -1,0 +1,10 @@
+/** Публичный экспорт домена `profile` (Арх. 11.1): экраны C1, C11, C12 и компоненты для соседних пакетов. */
+export { AccessLog } from './components/access-log'
+export { MinSalarySelect, type MinSalarySelectProps } from './components/min-salary-select'
+export { PrivacyPreview, type PrivacyPreviewProps } from './components/privacy-preview'
+export { PrivacySettings } from './components/privacy-settings'
+export { ProfileForm, type ProfileFormProps } from './components/profile-form'
+export { ProfileCabinet, ProfileStep } from './components/profile-screens'
+export { ResumeDropzone, type ResumeDropzoneProps } from './components/resume-dropzone'
+export { SettingsTabs } from './components/settings-tabs'
+export { PRIVACY, PROFILE } from './content'

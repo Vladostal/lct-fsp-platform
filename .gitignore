@@ -1,0 +1,83 @@
+# Окружение и секреты
+.env
+.env.*
+!.env.example
+!.env.fsp.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+backend/.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.import_linter_cache/
+.hypothesis/
+.tox/
+.nox/
+*.egg-info/
+backend/build/
+backend/dist/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Node и сборки фронтенда
+node_modules/
+.npm/
+.eslintcache
+frontend/dist/
+frontend/.vite/
+frontend/coverage/
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
+frontend/playwright/.cache/
+frontend/screenshots/
+frontend/tests/.auth/
+frontend/.tanstack/
+*.tsbuildinfo
+
+# Проектные документы и схемы: архитектура, приложения, план работ, заметки
+# пакетов, отчёты в Markdown, диаграммы. Лежат на диске, в репозиторий не идут.
+# Тексты, нужные приложению (data/vacancies, тексты согласий), сюда не попадают.
+docs/**/*.md
+docs/change-requests/
+*.drawio
+*.drawio.png
+*.drawio.svg
+*.drawio.pdf
+
+# Сгенерированные материалы для оценщиков: воссоздаются командой экспорта
+docs/validation/**/expert/*.jsonl
+
+# Снимки каталога, дампы и временные файлы
+/snapshots/
+/backups/
+*.dump
+*.sql.gz
+*.log
+*.tmp
+*.bak
+*.orig
+*~
+
+# Операционные системы и среды разработки
+.DS_Store
+Thumbs.db
+.idea/
+*.iml
+.vscode/
+.fleet/
+*.swp
+*.swo
+
+# Локальные настройки ИИ-инструментов
+.claude/
+CLAUDE.local.md

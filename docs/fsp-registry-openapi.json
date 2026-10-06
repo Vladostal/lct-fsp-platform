@@ -1,0 +1,1797 @@
+{
+  "components": {
+    "schemas": {
+      "AddParticipationRequest": {
+        "description": "Добавить спортсмену результат в существующее завершённое соревнование.",
+        "properties": {
+          "competition_id": {
+            "title": "Competition Id",
+            "type": "string"
+          },
+          "place": {
+            "maximum": 1000.0,
+            "minimum": 1.0,
+            "title": "Place",
+            "type": "integer"
+          },
+          "team_name": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Name"
+          }
+        },
+        "required": [
+          "competition_id",
+          "place"
+        ],
+        "title": "AddParticipationRequest",
+        "type": "object"
+      },
+      "AddParticipationView": {
+        "properties": {
+          "competition_id": {
+            "title": "Competition Id",
+            "type": "string"
+          },
+          "entry_id": {
+            "title": "Entry Id",
+            "type": "string"
+          },
+          "place": {
+            "title": "Place",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "entry_id",
+          "competition_id",
+          "place"
+        ],
+        "title": "AddParticipationView",
+        "type": "object"
+      },
+      "Anonymity": {
+        "description": "Счётчики анонимности: сколько спортсменов реестра имеют зачётный результат с теми же признаками.",
+        "properties": {
+          "k_a": {
+            "description": "та же дисциплина, уровень (огрублённый), период и корзина результата",
+            "title": "K A",
+            "type": "integer"
+          },
+          "k_b": {
+            "description": "та же дисциплина и уровень (огрублённый)",
+            "title": "K B",
+            "type": "integer"
+          },
+          "period": {
+            "enum": [
+              "recent",
+              "mid",
+              "old"
+            ],
+            "title": "Period",
+            "type": "string"
+          }
+        },
+        "required": [
+          "period",
+          "k_a",
+          "k_b"
+        ],
+        "title": "Anonymity",
+        "type": "object"
+      },
+      "AthleteExport": {
+        "description": "Единая выгрузка сведений об одном спортсмене (R3).",
+        "properties": {
+          "athlete": {
+            "$ref": "#/components/schemas/AthleteInfo"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "judge": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "зарезервировано; в версии 1.0 всегда null",
+            "title": "Judge"
+          },
+          "national_team": {
+            "description": "зарезервировано; всегда пусто",
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "National Team",
+            "type": "array"
+          },
+          "participations": {
+            "items": {
+              "$ref": "#/components/schemas/ParticipationRecord"
+            },
+            "title": "Participations",
+            "type": "array"
+          },
+          "ranks": {
+            "items": {
+              "$ref": "#/components/schemas/RankRecord"
+            },
+            "title": "Ranks",
+            "type": "array"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "зарезервировано; в версии 1.0 всегда null",
+            "title": "Rating"
+          },
+          "schema_version": {
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceInfo"
+          }
+        },
+        "required": [
+          "schema_version",
+          "generated_at",
+          "source",
+          "athlete",
+          "participations",
+          "ranks"
+        ],
+        "title": "AthleteExport",
+        "type": "object"
+      },
+      "AthleteInfo": {
+        "description": "Спортсмен: возраст — только признаком `is_adult`.",
+        "properties": {
+          "fsp_id": {
+            "title": "Fsp Id",
+            "type": "string"
+          },
+          "is_adult": {
+            "title": "Is Adult",
+            "type": "boolean"
+          },
+          "region_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region Code"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "fsp_id",
+          "is_adult",
+          "status"
+        ],
+        "title": "AthleteInfo",
+        "type": "object"
+      },
+      "Competition": {
+        "description": "Соревнование ЕКП.",
+        "properties": {
+          "age_group": {
+            "title": "Age Group",
+            "type": "string"
+          },
+          "athletes_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Athletes Count"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "competition_id": {
+            "title": "Competition Id",
+            "type": "string"
+          },
+          "date_end": {
+            "format": "date",
+            "title": "Date End",
+            "type": "string"
+          },
+          "date_start": {
+            "format": "date",
+            "title": "Date Start",
+            "type": "string"
+          },
+          "discipline_code": {
+            "title": "Discipline Code",
+            "type": "string"
+          },
+          "ekp_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ekp Number"
+          },
+          "entries_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Размер поля: число строк итогового протокола",
+            "title": "Entries Count"
+          },
+          "format": {
+            "title": "Format",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "level": {
+            "title": "Level",
+            "type": "string"
+          },
+          "organizer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organizer"
+          },
+          "participation": {
+            "title": "Participation",
+            "type": "string"
+          },
+          "protocol_status": {
+            "title": "Protocol Status",
+            "type": "string"
+          },
+          "protocol_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Protocol Url"
+          },
+          "region_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region Code"
+          },
+          "regions_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Regions Count"
+          },
+          "registration_deadline": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration Deadline"
+          },
+          "registration_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration Url"
+          },
+          "series_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Series Code"
+          },
+          "stage": {
+            "title": "Stage",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "team_size_max": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Size Max"
+          },
+          "team_size_min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Size Min"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "competition_id",
+          "title",
+          "discipline_code",
+          "level",
+          "kind",
+          "stage",
+          "age_group",
+          "participation",
+          "format",
+          "status",
+          "protocol_status",
+          "date_start",
+          "date_end"
+        ],
+        "title": "Competition",
+        "type": "object"
+      },
+      "CompetitionPage": {
+        "description": "Страница календаря.",
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Competition"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "CompetitionPage",
+        "type": "object"
+      },
+      "ControlRequest": {
+        "properties": {
+          "failure_mode": {
+            "enum": [
+              "none",
+              "unavailable",
+              "slow",
+              "malformed"
+            ],
+            "title": "Failure Mode",
+            "type": "string"
+          }
+        },
+        "required": [
+          "failure_mode"
+        ],
+        "title": "ControlRequest",
+        "type": "object"
+      },
+      "ControlView": {
+        "properties": {
+          "failure_mode": {
+            "title": "Failure Mode",
+            "type": "string"
+          }
+        },
+        "required": [
+          "failure_mode"
+        ],
+        "title": "ControlView",
+        "type": "object"
+      },
+      "Dictionaries": {
+        "description": "Словари реестра (R2).",
+        "properties": {
+          "age_groups": {
+            "items": {
+              "$ref": "#/components/schemas/DictionaryItem"
+            },
+            "title": "Age Groups",
+            "type": "array"
+          },
+          "disciplines": {
+            "items": {
+              "$ref": "#/components/schemas/DisciplineItem"
+            },
+            "title": "Disciplines",
+            "type": "array"
+          },
+          "kinds": {
+            "items": {
+              "$ref": "#/components/schemas/DictionaryItem"
+            },
+            "title": "Kinds",
+            "type": "array"
+          },
+          "levels": {
+            "items": {
+              "$ref": "#/components/schemas/DictionaryItem"
+            },
+            "title": "Levels",
+            "type": "array"
+          },
+          "ranks": {
+            "items": {
+              "$ref": "#/components/schemas/RankItem"
+            },
+            "title": "Ranks",
+            "type": "array"
+          },
+          "schema_version": {
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "stages": {
+            "items": {
+              "$ref": "#/components/schemas/DictionaryItem"
+            },
+            "title": "Stages",
+            "type": "array"
+          }
+        },
+        "required": [
+          "schema_version",
+          "disciplines",
+          "levels",
+          "kinds",
+          "stages",
+          "age_groups",
+          "ranks"
+        ],
+        "title": "Dictionaries",
+        "type": "object"
+      },
+      "DictionaryItem": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "title"
+        ],
+        "title": "DictionaryItem",
+        "type": "object"
+      },
+      "DisciplineItem": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "participation": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Participation",
+            "type": "array"
+          },
+          "result_model": {
+            "title": "Result Model",
+            "type": "string"
+          },
+          "team_size_max": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Size Max"
+          },
+          "team_size_min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Size Min"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "title",
+          "participation",
+          "result_model"
+        ],
+        "title": "DisciplineItem",
+        "type": "object"
+      },
+      "EntryInfo": {
+        "description": "Строка протокола без состава: размер команды — числом.",
+        "properties": {
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "region_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region Code"
+          },
+          "team_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Name"
+          },
+          "team_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Size"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "EntryInfo",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "Health": {
+        "properties": {
+          "status": {
+            "const": "ok",
+            "default": "ok",
+            "title": "Status",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version"
+        ],
+        "title": "Health",
+        "type": "object"
+      },
+      "NormInfo": {
+        "description": "Зарезервировано: норматив разряда, посчитанный реестром.",
+        "properties": {
+          "norms_version": {
+            "title": "Norms Version",
+            "type": "string"
+          },
+          "rank_code": {
+            "title": "Rank Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rank_code",
+          "norms_version"
+        ],
+        "title": "NormInfo",
+        "type": "object"
+      },
+      "ParticipationRecord": {
+        "description": "Участие самого спортсмена: роль, строка протокола, соревнование, результат.",
+        "properties": {
+          "anonymity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Anonymity"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "competition": {
+            "$ref": "#/components/schemas/Competition"
+          },
+          "entry": {
+            "$ref": "#/components/schemas/EntryInfo"
+          },
+          "entry_id": {
+            "title": "Entry Id",
+            "type": "string"
+          },
+          "is_captain": {
+            "title": "Is Captain",
+            "type": "boolean"
+          },
+          "member_role": {
+            "title": "Member Role",
+            "type": "string"
+          },
+          "norm": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NormInfo"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "зарезервировано; в версии 1.0 всегда null"
+          },
+          "result": {
+            "$ref": "#/components/schemas/ResultInfo"
+          }
+        },
+        "required": [
+          "entry_id",
+          "member_role",
+          "is_captain",
+          "entry",
+          "competition",
+          "result"
+        ],
+        "title": "ParticipationRecord",
+        "type": "object"
+      },
+      "Problem": {
+        "description": "Ошибка реестра: `application/problem+json` (RFC 9457) с полем `code`.",
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
+          "status": {
+            "title": "Status",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "default": "about:blank",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "status",
+          "code"
+        ],
+        "title": "Problem",
+        "type": "object"
+      },
+      "RankItem": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "validity_years": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "срок действия; null — бессрочно",
+            "title": "Validity Years"
+          }
+        },
+        "required": [
+          "code",
+          "title"
+        ],
+        "title": "RankItem",
+        "type": "object"
+      },
+      "RankRecord": {
+        "description": "Разряд или звание.",
+        "properties": {
+          "assigned_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned By"
+          },
+          "assigned_on": {
+            "format": "date",
+            "title": "Assigned On",
+            "type": "string"
+          },
+          "discipline_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discipline Code"
+          },
+          "order_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Number"
+          },
+          "rank_code": {
+            "title": "Rank Code",
+            "type": "string"
+          },
+          "rank_id": {
+            "title": "Rank Id",
+            "type": "string"
+          },
+          "revoked_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revoked On"
+          },
+          "valid_until": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid Until"
+          }
+        },
+        "required": [
+          "rank_id",
+          "rank_code",
+          "assigned_on"
+        ],
+        "title": "RankRecord",
+        "type": "object"
+      },
+      "ResetView": {
+        "properties": {
+          "athletes": {
+            "title": "Athletes",
+            "type": "integer"
+          },
+          "competitions": {
+            "title": "Competitions",
+            "type": "integer"
+          },
+          "entries": {
+            "title": "Entries",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "athletes",
+          "competitions",
+          "entries"
+        ],
+        "title": "ResetView",
+        "type": "object"
+      },
+      "ResultInfo": {
+        "description": "Результат строки протокола.",
+        "properties": {
+          "penalty": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Penalty"
+          },
+          "place": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Place"
+          },
+          "place_to": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Place To"
+          },
+          "problems_total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Problems Total"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "score_max": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score Max"
+          },
+          "solved": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Solved"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "ResultInfo",
+        "type": "object"
+      },
+      "SourceInfo": {
+        "properties": {
+          "environment": {
+            "default": "mock",
+            "title": "Environment",
+            "type": "string"
+          },
+          "registry": {
+            "default": "fsp",
+            "title": "Registry",
+            "type": "string"
+          }
+        },
+        "title": "SourceInfo",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "Предлагаемый контракт API реестра Федерации спортивного программирования, как его видит платформа подбора специалистов. Данные синтетические. Ошибки — application/problem+json (RFC 9457) с полем `code`. ФИО, дата рождения и пол спортсмена в API не отдаются.",
+    "title": "Реестр ФСП (демонстрационный)",
+    "version": "1.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/admin/athletes/{fsp_id}/grant/revoke": {
+      "post": {
+        "operationId": "admin_revoke_grant_admin_athletes__fsp_id__grant_revoke_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fsp_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Fsp Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "forbidden"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Отозвать разрешение «со стороны спортсмена»",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/athletes/{fsp_id}/participations": {
+      "post": {
+        "operationId": "admin_add_participation_admin_athletes__fsp_id__participations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fsp_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Fsp Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddParticipationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddParticipationView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "forbidden"
+          },
+          "404": {
+            "description": "athlete_not_found, competition_not_found"
+          },
+          "422": {
+            "description": "validation_error"
+          }
+        },
+        "summary": "Добавить спортсмену результат в завершённое соревнование",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/control": {
+      "post": {
+        "operationId": "admin_control_admin_control_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ControlRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ControlView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "forbidden"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Режим отказа реестра",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/reset": {
+      "post": {
+        "operationId": "admin_reset_admin_reset_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResetView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "forbidden"
+          }
+        },
+        "summary": "Вернуть реестр к состоянию сида",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/oidc/authorize": {
+      "get": {
+        "operationId": "authorize_oidc_authorize_get",
+        "parameters": [
+          {
+            "description": "1 — показать скрытых персонажей",
+            "in": "query",
+            "name": "all",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "description": "1 — показать скрытых персонажей",
+              "title": "All",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Страница входа демо-провайдера",
+        "tags": [
+          "oidc"
+        ]
+      }
+    },
+    "/oidc/authorize/decision": {
+      "post": {
+        "operationId": "authorize_decision_oidc_authorize_decision_post",
+        "responses": {
+          "307": {
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Решение пользователя на странице входа",
+        "tags": [
+          "oidc"
+        ]
+      }
+    },
+    "/registry/v1/athletes/{fsp_id}/export": {
+      "get": {
+        "operationId": "athlete_export_registry_v1_athletes__fsp_id__export_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fsp_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Fsp Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "if-none-match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-None-Match"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AthleteExport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "304": {
+            "description": "Не изменилось (ETag совпал)"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "invalid_token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "insufficient_scope, grant_required, grant_revoked"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "athlete_not_found, competition_not_found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "validation_error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "registry_unavailable"
+          }
+        },
+        "summary": "R3. Единая выгрузка сведений о спортсмене",
+        "tags": [
+          "registry"
+        ]
+      }
+    },
+    "/registry/v1/athletes/{fsp_id}/grant": {
+      "delete": {
+        "operationId": "athlete_grant_delete_registry_v1_athletes__fsp_id__grant_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fsp_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Fsp Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "invalid_token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "insufficient_scope, grant_required, grant_revoked"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "validation_error"
+          }
+        },
+        "summary": "R4. Клиент сообщает об отвязке",
+        "tags": [
+          "registry"
+        ]
+      }
+    },
+    "/registry/v1/competitions": {
+      "get": {
+        "operationId": "competitions_registry_v1_competitions_get",
+        "parameters": [
+          {
+            "description": "Статусы через запятую",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Статусы через запятую",
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          },
+          {
+            "in": "query",
+            "name": "discipline",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Discipline"
+            }
+          },
+          {
+            "in": "query",
+            "name": "level",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Level"
+            }
+          },
+          {
+            "in": "query",
+            "name": "age_group",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Age Group"
+            }
+          },
+          {
+            "in": "query",
+            "name": "region",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Region"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompetitionPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "validation_error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "registry_unavailable"
+          }
+        },
+        "summary": "R5. Календарь соревнований",
+        "tags": [
+          "registry"
+        ]
+      }
+    },
+    "/registry/v1/competitions/{competition_id}": {
+      "get": {
+        "operationId": "competition_card_registry_v1_competitions__competition_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "competition_id",
+            "required": true,
+            "schema": {
+              "title": "Competition Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Competition"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "athlete_not_found, competition_not_found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "R6. Карточка соревнования",
+        "tags": [
+          "registry"
+        ]
+      }
+    },
+    "/registry/v1/dictionaries": {
+      "get": {
+        "operationId": "dictionaries_registry_v1_dictionaries_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Dictionaries"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "R2. Словари",
+        "tags": [
+          "registry"
+        ]
+      }
+    },
+    "/registry/v1/health": {
+      "get": {
+        "operationId": "health_registry_v1_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/problem+json": {}
+            },
+            "description": "registry_unavailable"
+          }
+        },
+        "summary": "R1. Доступность",
+        "tags": [
+          "registry"
+        ]
+      }
+    }
+  }
+}

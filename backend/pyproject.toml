@@ -1,0 +1,192 @@
+[project]
+name = "fsp-podbor-backend"
+version = "0.1.0"
+description = "ФСП.Подбор — бэкенд MVP платформы подбора ИТ-специалистов с обратной механикой (ЛЦТ-2026, спецтрек ФСП)"
+license = "MIT"
+requires-python = ">=3.13,<3.14"
+# Версии закреплены точно по Арх. 13.7; полный состав с транзитивными зависимостями — в uv.lock.
+dependencies = [
+    "fastapi[standard]==0.142.2",
+    "pydantic==2.13.5",
+    "pydantic-settings==2.15.0",
+    "sqlalchemy==2.0.54",
+    "alembic==1.20.0",
+    "psycopg[binary]==3.3.6",
+    "pwdlib[argon2]==0.3.1",
+    "pyjwt==2.15.1",          # только адаптер Keycloak (fsp.gateway)
+    "authlib==1.8.0",         # только адаптер Keycloak (fsp.gateway)
+    "httpx==0.28.1",
+    "jinja2==3.1.6",
+    "python-multipart==0.0.32",
+    "pypdf==6.19.0",
+    "pdfplumber==0.11.10",
+    "weasyprint==70.0",       # системные библиотеки Pango — в backend/Dockerfile
+    # Версии трёх пакетов ниже Арх. 13.7 оставляет на момент установки: они закреплены в uv.lock.
+    "pymorphy3",
+    "pymorphy3-dicts-ru",
+    "rapidfuzz",
+    # Справочники catalog читаются из YAML (Арх. 8.1). PyYAML и так приходит с fastapi[standard] (uvicorn[standard]);
+    # явная строка защищает от его исчезновения из транзитивных зависимостей. Версия — из uv.lock.
+    "pyyaml",
+]
+
+[dependency-groups]
+dev = [
+    "pytest==9.1.1",
+    "ruff==0.16.10",
+    "mypy==2.4.0",
+    "schemathesis==4.29.2",
+    "import-linter==2.15",
+]
+
+[tool.uv]
+# Приложение не собирается в пакет: код запускается из каталога backend (python -m app....).
+package = false
+
+# --------------------------------------------------------------------------------------------------------------------
+# pytest
+# --------------------------------------------------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+# importlib: каталоги тестов — без __init__.py, а одинаковые имена файлов в разных пакетах
+# (tests/identity/test_service.py и tests/company/test_service.py) не конфликтуют.
+addopts = "--import-mode=importlib -ra --strict-markers"
+markers = [
+    "real_db: тест фиксирует транзакции по-настоящему (фикстура db_factory); после него таблицы очищаются",
+    "slow: долгий тест (симуляция, сборка банка); исключается через -m 'not slow'",
+]
+filterwarnings = [
+    # httpx закреплён архитектурой (13.7); Starlette советует httpx2 — к нашему коду это не относится.
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated",
+]
+
+# --------------------------------------------------------------------------------------------------------------------
+# ruff
+# --------------------------------------------------------------------------------------------------------------------
+[tool.ruff]
+target-version = "py313"
+line-length = 120
+extend-exclude = ["alembic/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "C4", "PIE", "RUF", "D1"]
+ignore = [
+    "RUF001", "RUF002", "RUF003",   # «неоднозначные символы»: тексты интерфейса и комментарии — на русском
+    "RUF012",                       # изменяемые значения в атрибутах классов моделей и настроек — обычная практика ORM
+    "SIM108",                       # тернарный оператор вместо if/else — на усмотрение автора
+    "D105", "D107",                 # docstring у магических методов и __init__ не требуется
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Арх. 2.4, п. 6: docstring обязателен (D1) у чистых ядер и у правил контакта; в остальном коде — по желанию.
+# Один шаблон с отрицанием: D1 выключается везде, КРОМЕ перечисленных каталогов и файлов.
+"!app/modules/{assessment/engine/**,assessment/families/**,matching/scoring.py,matching/ranking.py,fsp/signal.py,contact/rules.py,contact/settle.py}" = ["D1"]
+"tests/**" = ["B011", "SIM117"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = [
+    "fastapi.Depends", "fastapi.Query", "fastapi.Path", "fastapi.Body", "fastapi.Header", "fastapi.Cookie",
+    "fastapi.File", "fastapi.Form", "fastapi.Security",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "tests"]
+
+# --------------------------------------------------------------------------------------------------------------------
+# mypy
+# --------------------------------------------------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.13"
+plugins = ["pydantic.mypy"]
+mypy_path = "."
+explicit_package_bases = true
+namespace_packages = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_unreachable = true
+show_error_codes = true
+pretty = false
+exclude = ["^alembic/versions/", "^tests/", "^\\.venv/"]
+
+[[tool.mypy.overrides]]
+# Библиотеки без аннотаций типов.
+module = [
+    "yaml", "yaml.*", "pymorphy3", "pymorphy3.*", "pdfplumber", "pdfplumber.*", "weasyprint", "weasyprint.*",
+    "authlib", "authlib.*", "importlinter", "importlinter.*", "grimp", "grimp.*", "schemathesis", "schemathesis.*",
+]
+ignore_missing_imports = true
+
+# --------------------------------------------------------------------------------------------------------------------
+# import-linter — границы модулей (Арх. 2.4, п. 7). Запуск: make lint (lint-imports из каталога backend).
+# --------------------------------------------------------------------------------------------------------------------
+[tool.importlinter]
+root_package = "app"
+include_external_packages = true
+# Свои типы контрактов (app/core/import_contracts.py): в отличие от встроенного forbidden они не падают, пока
+# модуля-адресата ещё нет на диске (пакеты пишутся параллельно), и начинают проверять его, как только он появится.
+contract_types = [
+    "facade_only: app.core.import_contracts.FacadeOnlyContract",
+    "forbidden_when_present: app.core.import_contracts.ForbiddenWhenPresentContract",
+]
+
+[[tool.importlinter.contracts]]
+name = "Слои модулей: импорт только вниз, модули одного слоя независимы (Арх. 2.3)"
+type = "layers"
+layers = [
+    "app.modules.demo",
+    "app.modules.vacancies | app.modules.pulse | app.modules.integrations",
+    "app.modules.contact",
+    "app.modules.matching",
+    "app.modules.profile | app.modules.fsp",
+    "app.modules.assessment",
+    "app.modules.company | app.modules.textparse",
+    "app.modules.identity | app.modules.catalog | app.modules.reports",
+    "app.core : app.shared",
+]
+
+[[tool.importlinter.contracts]]
+name = "Чужой модуль виден только через service.py и dto.py: models, router, schemas и внутренние файлы закрыты (Арх. 2.4, п. 1)"
+type = "facade_only"
+container = "app.modules"
+public = ["service", "dto"]
+# Кому правило адресовано: сами модули, сид и точки сборки. app.eval и app.simulation вызывают чистые ядра напрямую
+# (Арх. 2.4, п. 6), поэтому в источники не входят.
+sources = ["app.modules", "app.seed", "app.core", "app.shared", "app.main", "app.wiring", "app.scripts"]
+# Единственное разрешённое исключение: адаптер шлюза ходит в демо-реестр (его проверяет следующий контракт).
+ignore_imports = []
+
+[[tool.importlinter.contracts]]
+name = "Модули не импортируют валидацию, сид и симуляцию (Арх. 2.4, п. 7)"
+type = "forbidden_when_present"
+source_modules = ["app.modules", "app.core", "app.shared"]
+forbidden_modules = ["app.eval", "app.seed", "app.simulation"]
+
+[[tool.importlinter.contracts]]
+name = "Демо-ФСП не импортирует модули платформы (Арх. 2.3, 2.4, п. 7)"
+type = "forbidden_when_present"
+source_modules = ["app.fsp_mock"]
+forbidden_modules = ["app.modules", "app.seed", "app.eval", "app.simulation"]
+
+[[tool.importlinter.contracts]]
+name = "На демо-ФСП из модулей ссылается только fsp.gateway.mock (Арх. 2.4, п. 7)"
+type = "forbidden_when_present"
+source_modules = ["app.modules", "app.core", "app.shared"]
+forbidden_modules = ["app.fsp_mock"]
+allowed_importers = ["app.modules.fsp.gateway.mock"]
+
+[[tool.importlinter.contracts]]
+name = "Чистые ядра не импортируют SQLAlchemy (Арх. 2.4, п. 6)"
+type = "forbidden_when_present"
+source_modules = [
+    "app.modules.assessment.engine",
+    "app.modules.matching.scoring",
+    "app.modules.matching.ranking",
+    "app.modules.fsp.signal",
+    "app.modules.contact.rules",
+]
+forbidden_modules = ["sqlalchemy"]

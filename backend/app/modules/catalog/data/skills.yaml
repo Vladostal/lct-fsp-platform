@@ -1,0 +1,227 @@
+# Справочник навыков (Арх. 5.4, 6.14; приложение B, §1.3; приложение A, §3).
+#
+# code            — [a-z0-9_]{2,40}, неизменяемый; на него ссылаются тесты, профили и подборки.
+# kind            — language | framework | database | tool | platform | concept | practice | soft.
+# specializations — коды специализаций для голосования за специализацию текста (первая — основная, голос 1.0;
+#                   остальные — 0.5). Общие навыки (git, docker, linux) и софт-навыки голосов не дают.
+# aliases         — в нижнем регистре; русские — в именительном падеже (леммы вычисляет textparse).
+#                   Алиас уникален во всём справочнике.
+# case_aliases    — короткие неоднозначные названия: совпадение по точному регистру и только в перечислении.
+# implies         — навыки, владение которыми следует из этого (граф без циклов, глубина ≤ 3).
+#
+# Обязательно присутствуют: все `direct` и `related` из таблицы Арх. 5.4, все `skill_tags` семейств заданий
+# (приложение A, §3), коды ФСП (Арх. 7.6), около 20 софт-навыков. Это проверяет tests/catalog.
+
+# ---------------------------------------------------------------- языки
+- {code: python, title: Python, kind: language, specializations: [backend, data_ml], aliases: [python, питон, пайтон, python3, python 3, cpython]}
+- {code: javascript, title: JavaScript, kind: language, specializations: [frontend, fullstack], aliases: [javascript, java script, js, ecmascript, es6, джаваскрипт, яваскрипт]}
+- {code: typescript, title: TypeScript, kind: language, specializations: [frontend, fullstack], aliases: [typescript, ts, тайпскрипт], implies: [javascript]}
+- {code: java, title: Java, kind: language, specializations: [backend], aliases: [java, джава, ява]}
+- {code: kotlin, title: Kotlin, kind: language, specializations: [mobile, backend], aliases: [kotlin, котлин]}
+- {code: swift, title: Swift, kind: language, specializations: [mobile], aliases: [swift, свифт]}
+- {code: go, title: Go, kind: language, specializations: [backend, devops], aliases: [golang], case_aliases: [Go]}
+- {code: rust, title: Rust, kind: language, specializations: [backend, embedded], aliases: [rust, раст]}
+- {code: c_lang, title: C, kind: language, specializations: [embedded, backend], aliases: [язык си, язык c], case_aliases: [C]}
+- {code: cpp, title: C++, kind: language, specializations: [embedded, backend], aliases: [c++, cpp, си++, си плюс плюс]}
+- {code: csharp, title: C#, kind: language, specializations: [backend], aliases: [c#, c sharp, си шарп, шарп], implies: [dotnet]}
+- {code: dotnet, title: .NET, kind: framework, specializations: [backend], aliases: [.net, dotnet, asp.net, asp.net core, .net core, дотнет]}
+- {code: php, title: PHP, kind: language, specializations: [backend], aliases: [php, пхп]}
+- {code: ruby, title: Ruby, kind: language, specializations: [backend], aliases: [ruby, ruby on rails, rails, руби]}
+- {code: scala, title: Scala, kind: language, specializations: [backend, data_ml], aliases: [scala, скала]}
+- {code: r_lang, title: R, kind: language, specializations: [data_ml], aliases: [язык r, r studio, rstudio], case_aliases: [R]}
+- {code: dart, title: Dart, kind: language, specializations: [mobile], aliases: [dart, дарт]}
+- {code: bash, title: Bash, kind: language, specializations: [devops], aliases: [bash, shell, шелл, баш, shell scripting]}
+- {code: sql, title: SQL, kind: language, specializations: [backend, data_ml, analyst], aliases: [sql, эскюэль, подзапрос, структурированный язык запросов]}
+- {code: html, title: HTML, kind: language, specializations: [frontend], aliases: [html, html5, хтмл]}
+- {code: css, title: CSS, kind: language, specializations: [frontend], aliases: [css, css3, цсс, каскадные таблицы стилей]}
+- {code: sass, title: Sass, kind: language, specializations: [frontend], aliases: [sass, scss], implies: [css]}
+- {code: tailwind, title: Tailwind CSS, kind: framework, specializations: [frontend], aliases: [tailwind, tailwindcss, tailwind css], implies: [css]}
+
+# ---------------------------------------------------------------- фреймворки и библиотеки
+- {code: fastapi, title: FastAPI, kind: framework, specializations: [backend], aliases: [fastapi, fast api, фастапи], implies: [python]}
+- {code: django, title: Django, kind: framework, specializations: [backend], aliases: [django, джанго, django rest framework, drf], implies: [python]}
+- {code: flask, title: Flask, kind: framework, specializations: [backend], aliases: [flask, фласк], implies: [python]}
+- {code: celery, title: Celery, kind: tool, specializations: [backend], aliases: [celery, селери], implies: [python]}
+- {code: sqlalchemy, title: SQLAlchemy, kind: framework, specializations: [backend], aliases: [sqlalchemy, sql alchemy], implies: [python, orm]}
+- {code: pytest, title: pytest, kind: tool, specializations: [qa, backend], aliases: [pytest, пайтест], implies: [python]}
+- {code: spring, title: Spring, kind: framework, specializations: [backend], aliases: [spring boot, spring framework, spring mvc, spring cloud, спринг], case_aliases: [Spring], implies: [java]}
+- {code: express, title: Express, kind: framework, specializations: [backend, fullstack], aliases: [express.js, expressjs], case_aliases: [Express], implies: [nodejs]}
+- {code: nestjs, title: NestJS, kind: framework, specializations: [backend], aliases: [nestjs, nest.js, nest js], implies: [nodejs, typescript]}
+- {code: nodejs, title: Node.js, kind: platform, specializations: [backend, fullstack], aliases: [node.js, nodejs, node js, node, нода], implies: [javascript]}
+- {code: laravel, title: Laravel, kind: framework, specializations: [backend], aliases: [laravel, ларавель], implies: [php]}
+- {code: react, title: React, kind: framework, specializations: [frontend, fullstack], aliases: [react, react.js, reactjs, react js, реакт], implies: [javascript]}
+- {code: redux, title: Redux, kind: framework, specializations: [frontend], aliases: [redux, redux toolkit, rtk, редакс], implies: [javascript]}
+- {code: vue, title: Vue.js, kind: framework, specializations: [frontend, fullstack], aliases: [vue, vue.js, vuejs, vue 3, vuex, pinia, вью], implies: [javascript]}
+- {code: angular, title: Angular, kind: framework, specializations: [frontend], aliases: [angular, angularjs, ангуляр], implies: [typescript]}
+- {code: nextjs, title: Next.js, kind: framework, specializations: [frontend, fullstack], aliases: [next.js, nextjs, next js, некст], implies: [react]}
+- {code: svelte, title: Svelte, kind: framework, specializations: [frontend], aliases: [svelte, sveltekit], implies: [javascript]}
+- {code: webpack, title: Webpack, kind: tool, specializations: [frontend], aliases: [webpack, вебпак], implies: [javascript]}
+- {code: vite, title: Vite, kind: tool, specializations: [frontend], aliases: [vite, вайт], implies: [javascript]}
+- {code: jest, title: Jest, kind: tool, specializations: [frontend, qa], aliases: [jest, vitest], implies: [javascript]}
+- {code: android, title: Android, kind: platform, specializations: [mobile], aliases: [android, андроид, android sdk, jetpack compose]}
+- {code: ios, title: iOS, kind: platform, specializations: [mobile], aliases: [ios, айос, swiftui, uikit, xcode]}
+- {code: flutter, title: Flutter, kind: framework, specializations: [mobile], aliases: [flutter, флаттер], implies: [dart]}
+- {code: react_native, title: React Native, kind: framework, specializations: [mobile], aliases: [react native, реакт нейтив], implies: [react]}
+- {code: graphql, title: GraphQL, kind: concept, specializations: [backend, frontend], aliases: [graphql, graph ql, граф ql]}
+- {code: openapi, title: OpenAPI, kind: tool, specializations: [backend, analyst], aliases: [openapi, swagger, open api, свагер, свэгер]}
+- {code: grpc, title: gRPC, kind: concept, specializations: [backend], aliases: [grpc, protobuf, protocol buffers]}
+- {code: websocket, title: WebSocket, kind: concept, specializations: [backend, frontend], aliases: [websocket, websockets, web socket, вебсокет]}
+- {code: orm, title: ORM, kind: concept, specializations: [backend], aliases: [orm, hibernate, prisma, sequelize, typeorm, jpa]}
+
+# ---------------------------------------------------------------- базы данных и очереди
+- {code: postgresql, title: PostgreSQL, kind: database, specializations: [backend, data_ml], aliases: [postgresql, postgres, postgre, psql, pg, постгрес, постгре, постгресс], implies: [sql]}
+- {code: mysql, title: MySQL, kind: database, specializations: [backend], aliases: [mysql, мускул, майэскюэль, mariadb], implies: [sql]}
+- {code: sqlite, title: SQLite, kind: database, specializations: [backend, mobile], aliases: [sqlite, sqlite3], implies: [sql]}
+- {code: oracle, title: Oracle, kind: database, specializations: [backend], aliases: [oracle, oracle db, pl/sql, plsql, оракл], implies: [sql]}
+- {code: mssql, title: MS SQL Server, kind: database, specializations: [backend], aliases: [mssql, ms sql, sql server, microsoft sql server, t-sql, tsql], implies: [sql]}
+- {code: clickhouse, title: ClickHouse, kind: database, specializations: [data_ml, backend], aliases: [clickhouse, click house, кликхаус], implies: [sql]}
+- {code: mongodb, title: MongoDB, kind: database, specializations: [backend], aliases: [mongodb, mongo, монго, монгодб]}
+- {code: redis, title: Redis, kind: database, specializations: [backend], aliases: [redis, редис]}
+- {code: elasticsearch, title: Elasticsearch, kind: database, specializations: [backend, data_ml], aliases: [elasticsearch, elastic search, elastic, opensearch, эластик]}
+- {code: cassandra, title: Cassandra, kind: database, specializations: [backend], aliases: [cassandra, кассандра]}
+- {code: kafka, title: Kafka, kind: platform, specializations: [backend, data_ml], aliases: [kafka, apache kafka, кафка]}
+- {code: rabbitmq, title: RabbitMQ, kind: platform, specializations: [backend], aliases: [rabbitmq, rabbit mq, rabbit, раббит]}
+
+# ---------------------------------------------------------------- инструменты и платформы
+- {code: git, title: Git, kind: tool, aliases: [git, гит, система контроля версий, vcs]}
+- {code: github, title: GitHub, kind: tool, aliases: [github, гитхаб, github actions], implies: [git]}
+- {code: gitlab, title: GitLab, kind: tool, aliases: [gitlab, гитлаб, gitlab ci, gitlab-ci], implies: [git]}
+- {code: docker, title: Docker, kind: tool, specializations: [devops], aliases: [docker, докер, docker compose, docker-compose, контейнеризация]}
+- {code: kubernetes, title: Kubernetes, kind: platform, specializations: [devops], aliases: [kubernetes, k8s, кубернетес, кубер, helm], implies: [docker]}
+- {code: linux, title: Linux, kind: platform, specializations: [devops], aliases: [linux, линукс, unix, юникс, ubuntu, debian, centos]}
+- {code: nginx, title: Nginx, kind: tool, specializations: [devops, backend], aliases: [nginx, нжинкс, энджинкс]}
+- {code: ci_cd, title: CI/CD, kind: practice, specializations: [devops], aliases: [ci/cd, ci cd, cicd, ci, continuous integration, непрерывная интеграция, jenkins, дженкинс]}
+- {code: terraform, title: Terraform, kind: tool, specializations: [devops], aliases: [terraform, терраформ, iac, infrastructure as code]}
+- {code: ansible, title: Ansible, kind: tool, specializations: [devops], aliases: [ansible, ансибл]}
+- {code: prometheus, title: Prometheus, kind: tool, specializations: [devops], aliases: [prometheus, grafana, прометеус, графана]}
+- {code: aws, title: AWS, kind: platform, specializations: [devops], aliases: [aws, amazon web services, amazon, s3, ec2]}
+- {code: yandex_cloud, title: Yandex Cloud, kind: platform, specializations: [devops], aliases: [yandex cloud, яндекс облако, yandex.cloud]}
+- {code: airflow, title: Airflow, kind: tool, specializations: [data_ml], aliases: [airflow, apache airflow, эйрфлоу], implies: [etl]}
+- {code: spark, title: Spark, kind: platform, specializations: [data_ml], aliases: [apache spark, pyspark, спарк], case_aliases: [Spark]}
+- {code: hadoop, title: Hadoop, kind: platform, specializations: [data_ml], aliases: [hadoop, hdfs, хадуп]}
+- {code: tableau, title: Tableau, kind: tool, specializations: [data_ml, analyst], aliases: [tableau, таблло]}
+- {code: power_bi, title: Power BI, kind: tool, specializations: [data_ml, analyst], aliases: [power bi, powerbi, пауэр би]}
+- {code: datalens, title: DataLens, kind: tool, specializations: [data_ml, analyst], aliases: [datalens, data lens, дейталенс, яндекс datalens]}
+- {code: excel, title: Excel, kind: tool, specializations: [analyst], aliases: [excel, эксель, ms excel, google sheets, гугл таблицы]}
+- {code: jira, title: Jira, kind: tool, aliases: [jira, джира]}
+- {code: postman, title: Postman, kind: tool, specializations: [qa], aliases: [postman, постман, insomnia]}
+- {code: selenium, title: Selenium, kind: tool, specializations: [qa], aliases: [selenium, селениум, selenide, webdriver]}
+- {code: playwright, title: Playwright, kind: tool, specializations: [qa, frontend], aliases: [playwright, плейрайт]}
+
+# ---------------------------------------------------------------- Python для данных и ML
+- {code: tensorflow, title: TensorFlow, kind: framework, specializations: [data_ml], aliases: [tensorflow, keras, тензорфлоу], implies: [python, deep_learning]}
+- {code: gradient_boosting, title: Градиентный бустинг, kind: concept, specializations: [data_ml], aliases: [градиентный бустинг, gradient boosting, xgboost, lightgbm], implies: [machine_learning]}
+- {code: pandas, title: pandas, kind: framework, specializations: [data_ml], aliases: [pandas, пандас], implies: [python]}
+- {code: numpy, title: NumPy, kind: framework, specializations: [data_ml], aliases: [numpy, нампай, scipy], implies: [python]}
+- {code: sklearn, title: scikit-learn, kind: framework, specializations: [data_ml], aliases: [sklearn, scikit-learn, scikit learn, сайкит лёрн], implies: [python, machine_learning]}
+- {code: catboost, title: CatBoost, kind: framework, specializations: [data_ml], aliases: [catboost, кэтбуст], implies: [machine_learning]}
+- {code: pytorch, title: PyTorch, kind: framework, specializations: [data_ml], aliases: [pytorch, torch, пайторч], implies: [python, deep_learning]}
+- {code: matplotlib, title: Matplotlib, kind: framework, specializations: [data_ml], aliases: [matplotlib, seaborn], implies: [python, data_visualization]}
+- {code: jupyter, title: Jupyter, kind: tool, specializations: [data_ml], aliases: [jupyter, jupyter notebook, юпитер, ноутбуки]}
+
+# ---------------------------------------------------------------- понятия: программирование и архитектура
+- {code: algorithms, title: Алгоритмы, kind: concept, specializations: [backend, frontend, fullstack, data_ml], aliases: [алгоритм, algorithms, алгоритмы и структуры данных, алгоритмические задачи, leetcode, олимпиадное программирование, спортивное программирование]}
+- {code: data_structures, title: Структуры данных, kind: concept, specializations: [backend, frontend, fullstack, data_ml], aliases: [структура данных, data structures]}
+- {code: complexity, title: Сложность алгоритмов, kind: concept, specializations: [backend], aliases: [сложность алгоритма, асимптотика, big o, o-нотация, вычислительная сложность, algorithm complexity]}
+- {code: graphs, title: Графы, kind: concept, aliases: [граф, graphs, алгоритмы на графах, обход графа, graph algorithms]}
+- {code: dynamic_programming, title: Динамическое программирование, kind: concept, aliases: [динамическое программирование, dynamic programming]}
+- {code: hashing, title: Хеширование, kind: concept, aliases: [хеширование, хэширование, hashing, хеш-таблица, хэш-таблица, hash table, hashmap]}
+- {code: trees, title: Деревья, kind: concept, aliases: [дерево поиска, деревья поиска, бинарное дерево, trees, binary tree, bst, b-tree]}
+- {code: code_reading, title: Чтение кода, kind: concept, specializations: [backend], aliases: [чтение кода, code reading, читать чужой код, разбор чужого кода]}
+- {code: debugging, title: Отладка, kind: concept, specializations: [backend], aliases: [отладка, debugging, дебаг, дебаггинг, поиск ошибок, отладка кода]}
+- {code: oop, title: ООП, kind: concept, specializations: [backend, mobile], aliases: [ооп, oop, объектно-ориентированное программирование, объектно ориентированное программирование]}
+- {code: design_patterns, title: Паттерны проектирования, kind: concept, specializations: [backend], aliases: [паттерны проектирования, шаблоны проектирования, design patterns, solid, gof]}
+- {code: clean_architecture, title: Чистая архитектура, kind: concept, specializations: [backend], aliases: [чистая архитектура, clean architecture, ddd, domain-driven design, гексагональная архитектура]}
+- {code: concurrency, title: Конкурентность, kind: concept, specializations: [backend], aliases: [конкурентность, конкурентное программирование, параллельное программирование, concurrency, параллелизм, гонки данных, race condition]}
+- {code: async, title: Асинхронность, kind: concept, specializations: [backend], aliases: [асинхронность, асинхронное программирование, async, async/await, асинхронный код]}
+- {code: asyncio, title: asyncio, kind: framework, specializations: [backend], aliases: [asyncio, aiohttp, anyio], implies: [python, async]}
+- {code: multithreading, title: Многопоточность, kind: concept, specializations: [backend, embedded], aliases: [многопоточность, многопоточное программирование, multithreading, multiprocessing, threading]}
+- {code: system_design, title: Проектирование систем, kind: concept, specializations: [backend], aliases: [проектирование систем, проектирование архитектуры, system design, архитектура систем, проектирование высоконагруженных систем, проектирование api]}
+- {code: microservices, title: Микросервисы, kind: concept, specializations: [backend], aliases: [микросервис, microservices, микросервисная архитектура, soa]}
+- {code: highload, title: Высокие нагрузки, kind: concept, specializations: [backend], aliases: [highload, высокая нагрузка, высоконагруженные системы, высоконагруженный сервис, нагрузочное тестирование, масштабирование]}
+- {code: rest_api, title: REST API, kind: concept, specializations: [backend, fullstack], aliases: [rest, rest api, restful, restful api, rest-api]}
+- {code: http, title: HTTP, kind: concept, specializations: [backend, frontend, fullstack], aliases: [http, https, http/https, протокол http]}
+- {code: web_caching, title: Веб-кеширование, kind: concept, specializations: [backend, frontend], aliases: [кеширование, кэширование, web caching, http-кеширование, cdn, caching]}
+- {code: web_security_basics, title: Основы веб-безопасности, kind: concept, specializations: [backend, frontend, infosec], aliases: [веб-безопасность, web security, cors, csrf, xss, owasp, безопасность веб-приложений, аутентификация, oauth, oauth2, jwt]}
+- {code: networking, title: Сети, kind: concept, specializations: [devops, infosec], aliases: [компьютерные сети, сетевые технологии, tcp/ip, tcp, dns, osi, сетевые протоколы]}
+- {code: testing, title: Тестирование, kind: practice, specializations: [qa], aliases: [тестирование, testing, юнит-тесты, unit-тесты, unit tests, unit testing, модульное тестирование, написание тестов, автотесты]}
+- {code: tdd, title: TDD, kind: practice, specializations: [backend], aliases: [tdd, test-driven development, разработка через тестирование], implies: [testing]}
+- {code: code_review, title: Код-ревью, kind: practice, aliases: [код-ревью, code review, ревью кода, ревью, кодревью, code-review, проверка кода]}
+- {code: agile, title: Agile, kind: practice, aliases: [agile, аджайл, гибкие методологии, scrum, скрам, kanban, канбан]}
+- {code: project_management, title: Управление проектами, kind: practice, aliases: [управление проектами, project management, управление командой разработки, pmp, управление продуктом]}
+- {code: mvp_delivery, title: Выпуск MVP, kind: practice, aliases: [mvp, выпуск mvp, mvp-разработка, быстрый прототип, прототипирование, запуск mvp, product delivery]}
+
+# ---------------------------------------------------------------- базы данных (понятия)
+- {code: databases, title: Базы данных, kind: concept, specializations: [backend, data_ml], aliases: [база данных, databases, субд, реляционные базы данных, реляционная база данных, rdbms, нереляционные базы данных, nosql, бд]}
+- {code: db_indexes, title: Индексы БД, kind: concept, specializations: [backend], aliases: [индекс, индексы бд, db indexes, b-tree индексы, план запроса, explain, составные индексы]}
+- {code: db_transactions, title: Транзакции БД, kind: concept, specializations: [backend], aliases: [транзакция, transactions, acid, уровни изоляции, изоляция транзакций, блокировки, deadlock, взаимные блокировки]}
+- {code: db_design, title: Проектирование БД, kind: concept, specializations: [backend, data_ml], aliases: [проектирование схем, проектирование баз данных, проектирование бд, проектирование схемы бд, нормализация, нормальные формы, db design, схема бд, er-диаграммы, er-модель]}
+- {code: sql_joins, title: "SQL: соединения", kind: concept, specializations: [backend, data_ml], aliases: [join, joins, соединения таблиц, sql joins, джойны], implies: [sql]}
+- {code: sql_aggregation, title: "SQL: агрегация", kind: concept, specializations: [backend, data_ml], aliases: [group by, агрегация данных, агрегатные функции, sql aggregation, агрегации], implies: [sql]}
+- {code: sql_window_functions, title: "SQL: оконные функции", kind: concept, specializations: [data_ml, backend], aliases: [оконные функции, window functions, оконная функция, sql window functions], implies: [sql]}
+- {code: sql_optimization, title: Оптимизация запросов, kind: concept, specializations: [backend, data_ml], aliases: [оптимизация запросов, оптимизация sql, оптимизация sql-запросов, query optimization, оптимизация запросов к бд], implies: [sql]}
+
+# ---------------------------------------------------------------- фронтенд
+- {code: testing_library, title: Testing Library, kind: tool, specializations: [frontend], aliases: [testing library, react testing library, enzyme], implies: [javascript]}
+- {code: dom, title: DOM, kind: concept, specializations: [frontend], aliases: [dom, document object model, работа с dom, браузерное api, browser api]}
+- {code: css_layout, title: Вёрстка, kind: concept, specializations: [frontend], aliases: [вёрстка, верстка, адаптивная вёрстка, адаптивная верстка, css layout, flexbox, css grid, grid layout, кроссбраузерная вёрстка, кроссбраузерная верстка, респонсив], implies: [css, html]}
+- {code: frontend_performance, title: Производительность фронтенда, kind: concept, specializations: [frontend], aliases: [производительность фронтенда, web performance, core web vitals, работа браузера, оптимизация загрузки страниц, оптимизация фронтенда, производительность веб-приложений, lighthouse]}
+- {code: async_js, title: Асинхронный JavaScript, kind: concept, specializations: [frontend, fullstack], aliases: [event loop, promise, promises, асинхронный javascript, асинхронный js, async js, промисы, цикл событий], implies: [javascript]}
+- {code: accessibility, title: Доступность, kind: concept, specializations: [frontend], aliases: [доступность интерфейсов, accessibility, a11y, wcag]}
+- {code: figma, title: Figma, kind: tool, specializations: [frontend], aliases: [figma, фигма]}
+
+# ---------------------------------------------------------------- данные и ML
+- {code: statistics, title: Статистика, kind: concept, specializations: [data_ml], aliases: [статистика, математическая статистика, statistics, статистический анализ, описательная статистика, проверка гипотез]}
+- {code: probability, title: Теория вероятностей, kind: concept, specializations: [data_ml], aliases: [теория вероятностей, вероятность, probability, теорвер, вероятностные модели]}
+- {code: ab_testing, title: A/B-тестирование, kind: concept, specializations: [data_ml, analyst], aliases: [a/b-тестирование, a/b тестирование, a/b тест, a/b-тест, a/b тесты, ab-тестирование, ab тестирование, ab test, a/b test, a/b testing, ab testing, а/б тестирование, а/в тестирование, сплит-тестирование], implies: [statistics]}
+- {code: product_analytics, title: Продуктовая аналитика, kind: concept, specializations: [data_ml, analyst], aliases: [продуктовая аналитика, product analytics, метрики продукта, продуктовые метрики, когортный анализ, unit-экономика]}
+- {code: data_analysis, title: Анализ данных, kind: concept, specializations: [data_ml, analyst], aliases: [анализ данных, data analysis, аналитика данных, исследовательский анализ данных, eda, data analytics]}
+- {code: data_wrangling, title: Обработка данных, kind: concept, specializations: [data_ml], aliases: [обработка данных, data wrangling, подготовка данных, очистка данных, data cleaning, предобработка данных, data preprocessing]}
+- {code: data_visualization, title: Визуализация данных, kind: concept, specializations: [data_ml, analyst], aliases: [визуализация данных, data visualization, дашборды, дашборд, dashboards, bi, bi-системы, визуализация]}
+- {code: etl, title: ETL, kind: concept, specializations: [data_ml], aliases: [etl, elt, etl-процессы, data pipelines, пайплайны данных, обработка потоков данных]}
+- {code: machine_learning, title: Машинное обучение, kind: concept, specializations: [data_ml], aliases: [машинное обучение, machine learning, ml, мл, обучение моделей, классические модели ml]}
+- {code: deep_learning, title: Глубокое обучение, kind: concept, specializations: [data_ml], aliases: [глубокое обучение, deep learning, нейронные сети, нейросети, dl, нейронная сеть], implies: [machine_learning]}
+- {code: ml_metrics, title: Метрики ML, kind: concept, specializations: [data_ml], aliases: [метрики классификации, метрики ml, ml metrics, roc-auc, auc, метрики качества моделей, precision recall, f1-мера]}
+- {code: ml_validation, title: Валидация моделей, kind: concept, specializations: [data_ml], aliases: [валидация моделей, кросс-валидация, cross-validation, переобучение, ml validation, утечки данных, data leakage, подбор гиперпараметров]}
+- {code: nlp, title: NLP, kind: concept, specializations: [data_ml], aliases: [nlp, обработка естественного языка, обработка текстов, llm, большие языковые модели, трансформеры], implies: [machine_learning]}
+- {code: computer_vision, title: Компьютерное зрение, kind: concept, specializations: [data_ml], aliases: [компьютерное зрение, computer vision, opencv, обработка изображений], implies: [machine_learning]}
+
+# ---------------------------------------------------------------- анализ и тестирование (специализации без теста)
+- {code: system_analysis, title: Системный анализ, kind: concept, specializations: [analyst], aliases: [системный анализ, system analysis, системный аналитик, анализ требований, requirements analysis, сбор требований]}
+- {code: business_analysis, title: Бизнес-анализ, kind: concept, specializations: [analyst], aliases: [бизнес-анализ, business analysis, бизнес-аналитика, моделирование бизнес-процессов]}
+- {code: bpmn, title: BPMN, kind: tool, specializations: [analyst], aliases: [bpmn, idef0, bpmn 2.0]}
+- {code: uml, title: UML, kind: tool, specializations: [analyst, backend], aliases: [uml, диаграммы uml, plantuml, c4]}
+- {code: user_stories, title: User stories, kind: practice, specializations: [analyst], aliases: [user stories, пользовательские истории, user story, use case, сценарии использования, usecase]}
+- {code: manual_testing, title: Ручное тестирование, kind: practice, specializations: [qa], aliases: [ручное тестирование, manual testing, тест-кейсы, тест-дизайн, тестовая документация, баг-репорты, чек-листы]}
+- {code: test_automation, title: Автоматизация тестирования, kind: practice, specializations: [qa], aliases: [автоматизация тестирования, test automation, автотестирование, автоматизированное тестирование, e2e-тесты, e2e тесты, api-тесты, api testing], implies: [testing]}
+
+# ---------------------------------------------------------------- безопасность и встраиваемые системы (коды ФСП)
+- {code: infosec, title: Информационная безопасность, kind: concept, specializations: [infosec], aliases: [информационная безопасность, infosec, кибербезопасность, cybersecurity, защита информации, ctf, capture the flag]}
+- {code: vulnerability_analysis, title: Анализ уязвимостей, kind: concept, specializations: [infosec], aliases: [анализ уязвимостей, vulnerability analysis, поиск уязвимостей, пентест, pentest, тестирование на проникновение, penetration testing, bug bounty], implies: [infosec]}
+- {code: cryptography, title: Криптография, kind: concept, specializations: [infosec], aliases: [криптография, cryptography, шифрование, pki, tls]}
+- {code: embedded, title: Встраиваемые системы, kind: concept, specializations: [embedded], aliases: [встраиваемые системы, embedded, embedded-разработка, микроконтроллеры, микроконтроллер, stm32, arduino, ардуино, rtos, firmware, прошивки, esp32]}
+- {code: robotics, title: Робототехника, kind: concept, specializations: [embedded], aliases: [робототехника, robotics, роботы, ros, ros2, робот, управление роботами]}
+- {code: uav_programming, title: Программирование БПЛА, kind: concept, specializations: [embedded], aliases: [программирование бпла, uav programming, бпла, беспилотники, дроны, программирование дронов, программирование беспилотников, беспилотные летательные аппараты, px4, ardupilot, mavlink]}
+
+# ---------------------------------------------------------------- софт-скиллы (Арх. 7.6: достижения ФСП подтверждают teamwork, leadership, mentoring, public_speaking)
+- {code: teamwork, title: Командная работа, kind: soft, aliases: [командная работа, работа в команде, teamwork, умение работать в команде, командный игрок, team player]}
+- {code: leadership, title: Лидерство, kind: soft, aliases: [лидерство, leadership, лидерские качества, управление командой, team leading, руководство командой]}
+- {code: mentoring, title: Наставничество, kind: soft, aliases: [наставничество, mentoring, менторство, менторинг, наставлять, обучение коллег, обучение джунов]}
+- {code: public_speaking, title: Публичные выступления, kind: soft, aliases: [публичные выступления, public speaking, публичное выступление, выступления на конференциях, выступать на конференциях, презентация проектов, питчинг, pitching, ораторское мастерство]}
+- {code: communication, title: Коммуникация, kind: soft, aliases: [коммуникация, коммуникабельность, навыки коммуникации, communication skills, коммуникативные навыки, умение общаться, грамотная речь]}
+- {code: responsibility, title: Ответственность, kind: soft, aliases: [ответственность, ответственный подход, responsibility, надёжность]}
+- {code: time_management, title: Управление временем, kind: soft, aliases: [управление временем, тайм-менеджмент, time management, расстановка приоритетов, умение расставлять приоритеты]}
+- {code: critical_thinking, title: Критическое мышление, kind: soft, aliases: [критическое мышление, critical thinking, аналитическое мышление, analytical thinking, логическое мышление, системное мышление]}
+- {code: problem_solving, title: Решение проблем, kind: soft, aliases: [решение проблем, problem solving, умение решать сложные задачи, решение нестандартных задач, решение сложных задач]}
+- {code: adaptability, title: Адаптивность, kind: soft, aliases: [адаптивность, adaptability, гибкость мышления, быстро адаптироваться, умение адаптироваться]}
+- {code: initiative, title: Инициативность, kind: soft, aliases: [инициативность, initiative, проактивность, proactivity, проактивная позиция, самостоятельность]}
+- {code: negotiation, title: Переговоры, kind: soft, aliases: [переговоры, ведение переговоров, negotiation, навыки переговоров, переговорные навыки]}
+- {code: stress_resistance, title: Стрессоустойчивость, kind: soft, aliases: [стрессоустойчивость, stress resistance, устойчивость к стрессу, работа в условиях неопределённости, работа в условиях неопределенности]}
+- {code: self_organization, title: Самоорганизация, kind: soft, aliases: [самоорганизация, self-management, self-organization, умение самоорганизовываться, самодисциплина, дисциплинированность]}
+- {code: learning_agility, title: Обучаемость, kind: soft, aliases: [обучаемость, быстро обучаться, готовность учиться, желание развиваться, learning agility, самообучение, быстро учиться]}
+- {code: attention_to_detail, title: Внимательность к деталям, kind: soft, aliases: [внимательность, внимание к деталям, внимательность к деталям, attention to detail, педантичность, аккуратность]}
+- {code: creativity, title: Креативность, kind: soft, aliases: [креативность, creativity, творческий подход, креативное мышление]}
+- {code: conflict_resolution, title: Разрешение конфликтов, kind: soft, aliases: [разрешение конфликтов, conflict resolution, управление конфликтами, бесконфликтность]}
+- {code: empathy, title: Эмпатия, kind: soft, aliases: [эмпатия, empathy, эмоциональный интеллект, emotional intelligence]}
+- {code: stakeholder_management, title: Работа с заказчиком, kind: soft, aliases: [работа с заказчиком, работа с заказчиками, stakeholder management, работа со стейкхолдерами, клиентоориентированность, ориентация на клиента]}
+- {code: feedback_culture, title: Обратная связь, kind: soft, aliases: [обратная связь, feedback, умение давать обратную связь, принимать обратную связь, умение принимать критику]}

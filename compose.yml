@@ -1,0 +1,169 @@
+# Стенд ФСП.Подбор (Арх. 2.1, 13.1).
+#
+#   cp .env.example .env && docker compose up --build
+#   стенд: http://localhost:8080 · почта: http://localhost:8080/mail/ · Swagger: http://localhost:8080/api/docs
+#
+# Порядок старта: db (healthcheck) → migrate (один раз, python -m app.scripts.init) → api (healthcheck) → web.
+# Наружу опубликован только web (8080). Лимиты памяти — таблица Арх. 2.1; проверяются измерением (Арх. 13.6).
+# Локальная разработка: docker compose -f compose.yml -f compose.dev.yml up -d db mailpit (порты на 127.0.0.1;
+# это отдельный проект compose со своей сетью, стенд и база разработки друг другу не мешают).
+
+x-backend: &backend
+  build:
+    context: ./backend
+  image: fsp-podbor-api
+  # Все переменные процесса — из .env (Арх. 13.3); отдельного блока environment нет, чтобы источник был один.
+  env_file:
+    - .env
+  volumes:
+    # Раскладка в образе повторяет репозиторий: /srv/backend (код) и рядом /srv/docs, /srv/data.
+    - ./docs/validation:/srv/docs/validation:ro
+    - ./data:/srv/data:ro
+  networks:
+    - stand
+
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: app
+    # Арх. 13.6: стенд на 2 ГБ памяти.
+    command: ["postgres", "-c", "shared_buffers=64MB", "-c", "max_connections=30"]
+    volumes:
+      # Образ postgres:18 хранит данные в /var/lib/postgresql/18/docker, поэтому том монтируется на уровень выше.
+      - db-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+      start_period: 5s
+    mem_limit: 384m
+    restart: unless-stopped
+    networks:
+      - stand
+
+  migrate:
+    <<: *backend
+    # Одноразовый: схема (миграции либо метаданные), банк заданий, демо-реестр, сид. Ход работы — в журнале.
+    command: ["python", "-m", "app.scripts.init"]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    <<: *backend
+    # Один воркер; без --proxy-headers: адрес клиента приложение определяет само (Арх. 10.1).
+    command:
+      - uvicorn
+      - app.main:app
+      - --host=0.0.0.0
+      - --port=8000
+      - --workers=1
+      - --no-proxy-headers
+      - --no-access-log
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=3)"
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+    mem_limit: 768m
+    restart: unless-stopped
+
+  web:
+    # Сборка SPA (node) и раздача nginx: статика, прокси /api → api:8000 и /mail/ → mailpit:8025, один origin.
+    build:
+      context: ./frontend
+    image: fsp-podbor-web
+    environment:
+      # nginx всегда выставляет X-Real-IP сам; за внешним прокси с HTTPS задаётся его адрес (Арх. 10.1, 13.8).
+      NGINX_REAL_IP_FROM: ${NGINX_REAL_IP_FROM:-}
+      MAIL_UI_USER: ${MAIL_UI_USER:-}
+      MAIL_UI_PASSWORD: ${MAIL_UI_PASSWORD:-}
+      APP_NAME: ${APP_NAME:-ФСП.Подбор}
+      MAILPIT_PUBLIC_URL: ${MAILPIT_PUBLIC_URL-/mail/}
+    volumes:
+      # Шаблон конфигурации: образ nginx подставляет переменные окружения при старте.
+      - ./infra/nginx/default.conf:/etc/nginx/templates/default.conf.template:ro
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    mem_limit: 64m
+    restart: unless-stopped
+    networks:
+      - stand
+
+  mailpit:
+    image: axllent/mailpit:v1.31.4
+    environment:
+      # Веб-ящик доступен только через web по адресу /mail/; своего порта наружу нет (Арх. 10.2).
+      MP_WEBROOT: /mail
+      MP_SMTP_AUTH_ACCEPT_ANY: "1"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
+      MP_MAX_MESSAGES: "500"
+    mem_limit: 64m
+    restart: unless-stopped
+    networks:
+      - stand
+
+  keycloak:
+    # P1: настоящий OIDC-провайдер для показа схемы интеграции. docker compose --env-file .env.fsp --profile fsp up
+    image: quay.io/keycloak/keycloak:26.8.0
+    profiles: ["fsp"]
+    command: ["start-dev", "--import-realm", "--http-port=8080"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+    volumes:
+      - ./infra/keycloak/fsp-realm.json:/opt/keycloak/data/import/fsp-realm.json:ro
+    ports:
+      - "${KEYCLOAK_PORT:-8081}:8080"
+    mem_limit: 768m
+    networks:
+      - stand
+
+  e2e:
+    # Сквозные тесты и проверка вёрстки: docker compose --profile test run --rm e2e
+    image: mcr.microsoft.com/playwright:v1.63.0-noble
+    profiles: ["test"]
+    working_dir: /work/frontend
+    volumes:
+      - ./frontend:/work/frontend
+    environment:
+      CI: "1"
+      E2E_BASE_URL: ${E2E_BASE_URL:-http://web}
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-}
+    command: ["npx", "playwright", "test"]
+    depends_on:
+      web:
+        condition: service_started
+    networks:
+      - stand
+
+volumes:
+  db-data:
+
+networks:
+  stand:
+    # Фиксированная подсеть: её значение стоит в TRUSTED_PROXY_CIDRS — только от этих адресов (то есть от nginx
+    # контейнера web) приложение принимает заголовок X-Real-IP (Арх. 10.1). Менять обе переменные вместе.
+    ipam:
+      config:
+        - subnet: ${STAND_SUBNET:-172.28.5.0/24}

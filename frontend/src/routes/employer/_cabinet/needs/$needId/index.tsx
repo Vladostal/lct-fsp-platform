@@ -1,0 +1,22 @@
+import { createFileRoute } from '@tanstack/react-router'
+import { useCallback } from 'react'
+import { NeedScreen, needSearchSchema } from '@/features/matching'
+
+/** E4. Подборка: вкладка, версия, вид, категория, открытая карточка и режим приглашения — в адресе. */
+export const Route = createFileRoute('/employer/_cabinet/needs/$needId/')({
+  validateSearch: (search) => needSearchSchema.parse(search),
+  component: Screen,
+})
+
+function Screen() {
+  const { needId } = Route.useParams()
+  const search = Route.useSearch()
+  const { catalog } = Route.useRouteContext()
+  const navigate = Route.useNavigate()
+  const setSearch = useCallback(
+    (patch: Record<string, unknown>, replace = false) =>
+      navigate({ search: (prev) => ({ ...prev, ...patch }), replace }),
+    [navigate],
+  )
+  return <NeedScreen key={needId} needId={needId} search={search} catalog={catalog} setSearch={setSearch} />
+}

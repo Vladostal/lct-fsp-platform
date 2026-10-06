@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 400" width="720" height="400" role="img" font-family="system-ui, sans-serif" font-size="12">
+<title>Истинный грейд и итоговая категория</title>
+<rect width="720" height="400" fill="#fcfcfb"/>
+<text x="64" y="24" font-size="15" font-weight="600" fill="#0b0b0b">Истинный грейд и итоговая категория</text>
+<text x="64" y="42" fill="#898781">доля кандидатов популяции; диагональ — совпадение</text>
+<rect x="125.0" y="57.0" width="109.5" height="70.0" rx="4" fill="#6da7ec"><title>истинный: ниже Junior, итог: ниже Junior — 7.8%</title></rect>
+<text x="179.8" y="96.0" text-anchor="middle" fill="#0b0b0b">7.8%</text>
+<rect x="236.5" y="57.0" width="109.5" height="70.0" rx="4" fill="#9ec5f4"><title>истинный: ниже Junior, итог: Junior — 1.6%</title></rect>
+<text x="291.2" y="96.0" text-anchor="middle" fill="#0b0b0b">1.6%</text>
+<rect x="348.0" y="57.0" width="109.5" height="70.0" rx="4" fill="#f0efec"><title>истинный: ниже Junior, итог: Middle — 0.0%</title></rect>
+<text x="402.8" y="96.0" text-anchor="middle" fill="#0b0b0b">0.0%</text>
+<rect x="459.5" y="57.0" width="109.5" height="70.0" rx="4" fill="#f0efec"><title>истинный: ниже Junior, итог: Senior — 0.0%</title></rect>
+<text x="514.2" y="96.0" text-anchor="middle" fill="#0b0b0b">0.0%</text>
+<rect x="125.0" y="129.0" width="109.5" height="70.0" rx="4" fill="#9ec5f4"><title>истинный: Junior, итог: ниже Junior — 3.6%</title></rect>
+<text x="179.8" y="168.0" text-anchor="middle" fill="#0b0b0b">3.6%</text>
+<rect x="236.5" y="129.0" width="109.5" height="70.0" rx="4" fill="#104281"><title>истинный: Junior, итог: Junior — 30.0%</title></rect>
+<text x="291.2" y="168.0" text-anchor="middle" fill="#ffffff">30.0%</text>
+<rect x="348.0" y="129.0" width="109.5" height="70.0" rx="4" fill="#9ec5f4"><title>истинный: Junior, итог: Middle — 2.1%</title></rect>
+<text x="402.8" y="168.0" text-anchor="middle" fill="#0b0b0b">2.1%</text>
+<rect x="459.5" y="129.0" width="109.5" height="70.0" rx="4" fill="#f0efec"><title>истинный: Junior, итог: Senior — 0.0%</title></rect>
+<text x="514.2" y="168.0" text-anchor="middle" fill="#0b0b0b">0.0%</text>
+<rect x="125.0" y="201.0" width="109.5" height="70.0" rx="4" fill="#9ec5f4"><title>истинный: Middle, итог: ниже Junior — 0.4%</title></rect>
+<text x="179.8" y="240.0" text-anchor="middle" fill="#0b0b0b">0.4%</text>
+<rect x="236.5" y="201.0" width="109.5" height="70.0" rx="4" fill="#6da7ec"><title>истинный: Middle, итог: Junior — 10.5%</title></rect>
+<text x="291.2" y="240.0" text-anchor="middle" fill="#0b0b0b">10.5%</text>
+<rect x="348.0" y="201.0" width="109.5" height="70.0" rx="4" fill="#104281"><title>истинный: Middle, итог: Middle — 27.2%</title></rect>
+<text x="402.8" y="240.0" text-anchor="middle" fill="#ffffff">27.2%</text>
+<rect x="459.5" y="201.0" width="109.5" height="70.0" rx="4" fill="#9ec5f4"><title>истинный: Middle, итог: Senior — 1.1%</title></rect>
+<text x="514.2" y="240.0" text-anchor="middle" fill="#0b0b0b">1.1%</text>
+<rect x="125.0" y="273.0" width="109.5" height="70.0" rx="4" fill="#f0efec"><title>истинный: Senior, итог: ниже Junior — 0.0%</title></rect>
+<text x="179.8" y="312.0" text-anchor="middle" fill="#0b0b0b">0.0%</text>
+<rect x="236.5" y="273.0" width="109.5" height="70.0" rx="4" fill="#9ec5f4"><title>истинный: Senior, итог: Junior — 0.0%</title></rect>
+<text x="291.2" y="312.0" text-anchor="middle" fill="#0b0b0b">0.0%</text>
+<rect x="348.0" y="273.0" width="109.5" height="70.0" rx="4" fill="#9ec5f4"><title>истинный: Senior, итог: Middle — 5.0%</title></rect>
+<text x="402.8" y="312.0" text-anchor="middle" fill="#0b0b0b">5.0%</text>
+<rect x="459.5" y="273.0" width="109.5" height="70.0" rx="4" fill="#6da7ec"><title>истинный: Senior, итог: Senior — 10.7%</title></rect>
+<text x="514.2" y="312.0" text-anchor="middle" fill="#0b0b0b">10.7%</text>
+<text x="116" y="96.0" text-anchor="end" fill="#898781">ниже Junior</text>
+<text x="179.8" y="362" text-anchor="middle" fill="#898781">ниже Junior</text>
+<text x="116" y="168.0" text-anchor="end" fill="#898781">Junior</text>
+<text x="291.2" y="362" text-anchor="middle" fill="#898781">Junior</text>
+<text x="116" y="240.0" text-anchor="end" fill="#898781">Middle</text>
+<text x="402.8" y="362" text-anchor="middle" fill="#898781">Middle</text>
+<text x="116" y="312.0" text-anchor="end" fill="#898781">Senior</text>
+<text x="514.2" y="362" text-anchor="middle" fill="#898781">Senior</text>
+<text x="347" y="388" text-anchor="middle" fill="#898781">итоговая категория</text>
+<text x="578" y="68" fill="#898781">строки —</text>
+<text x="578" y="84" fill="#898781">истинный грейд</text>
+</svg>
