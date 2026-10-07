@@ -38,7 +38,6 @@ export {
   type SalaryRangeValue,
   validateSalaryRange,
 } from './salary-range-input'
-export { ScreenStub, type ScreenStubProps } from './screen-stub'
 export { StatusBadge, type StatusBadgeProps, type StatusTone } from './status-badge'
 export { Stepper, type StepperProps, type StepperStep } from './stepper'
 export { StickyActionBar, type StickyActionBarProps } from './sticky-action-bar'

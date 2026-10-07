@@ -47,10 +47,6 @@ export const COMMON = {
     title: 'Нет доступа к этому разделу',
     action: 'На первый экран',
   },
-  stub: {
-    eyebrow: 'экран в работе',
-    text: 'Экран появится в одной из ближайших сборок. Каркас, навигация и общие компоненты уже работают.',
-  },
 } as const
 
 export const ROLE_LABELS: Record<Role, string> = {
@@ -58,20 +54,18 @@ export const ROLE_LABELS: Record<Role, string> = {
   employer: 'Работодатель',
 }
 
-/** Навигация кабинетов (E §1.5). `feature` — пункт виден только при включённом флаге каталога. */
+/** Навигация кабинетов (E §1.5). */
 export const NAV = {
   candidate: [
     { to: '/candidate', label: 'Обзор', exact: true },
     { to: '/candidate/invitations', label: 'Приглашения', counter: 'awaiting' },
     { to: '/candidate/category', label: 'Категория и тесты' },
     { to: '/candidate/profile', label: 'Профиль' },
-    { to: '/candidate/vacancies', label: 'Вакансии', feature: 'vacancies' },
   ],
   employer: [
     { to: '/employer/needs', label: 'Потребности' },
     { to: '/employer/search', label: 'Банк кандидатов' },
     { to: '/employer/invitations', label: 'Приглашения' },
-    { to: '/employer/vacancies', label: 'Вакансии', feature: 'vacancies' },
   ],
 } as const
 

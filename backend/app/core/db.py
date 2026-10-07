@@ -61,9 +61,6 @@ MODEL_MODULES: tuple[str, ...] = (
     "app.modules.profile.models",
     "app.modules.matching.models",
     "app.modules.contact.models",
-    "app.modules.vacancies.models",
-    "app.modules.pulse.models",
-    "app.modules.integrations.models",
     "app.fsp_mock.models",
 )
 

@@ -29,14 +29,14 @@ import { SkipLink } from './skip-link'
 
 export type CabinetLayoutProps = {
   me: MeView
-  /** Флаги каталога; null — каталог недоступен (пункты за флагами скрыты). */
+  /** Флаги каталога; null — каталог недоступен (демо-приглашение не запрашивается). */
   features: CatalogFeatures | null
   onLogout: () => void
   loggingOut?: boolean
   children: React.ReactNode
 }
 
-type NavItem = { to: string; label: string; exact?: boolean; counter?: 'awaiting'; feature?: keyof CatalogFeatures }
+type NavItem = { to: string; label: string; exact?: boolean; counter?: 'awaiting' }
 
 const DEMO_INVITATION_MARK = 'demo-invitation-requested'
 
@@ -95,7 +95,7 @@ export function CabinetLayout({ me, features, onLogout, loggingOut = false, chil
   const quota = useQuery({ ...quotaQuery, ...polling, enabled: !isCandidate, retry: false })
   useDemoInvitation(me, features?.demo ?? false, summary.data)
 
-  const items = (NAV[me.role] as readonly NavItem[]).filter((item) => !item.feature || features?.[item.feature])
+  const items: readonly NavItem[] = NAV[me.role]
   const home = isCandidate ? '/candidate' : '/employer/needs'
 
   const indicator = isCandidate ? (

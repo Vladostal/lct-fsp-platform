@@ -40,8 +40,6 @@ export type FspBlockProps = {
   /** Результат возврата из потока привязки (`?result=`); после показа параметр убирается из адреса. */
   result?: string
   reason?: string
-  /** `catalog.features.pulse`: показывать ли «Короткие задания» среди способов усилить профиль. */
-  pulseEnabled?: boolean
 }
 
 function ReturnAlert({ result, reason }: { result: string; reason?: string }) {
@@ -115,7 +113,7 @@ function Calendar({ data }: { data: FspCalendarView }) {
   )
 }
 
-function OtherWays({ pulseEnabled }: { pulseEnabled: boolean }) {
+function OtherWays() {
   const O = FSP.others
   return (
     <Card>
@@ -123,26 +121,24 @@ function OtherWays({ pulseEnabled }: { pulseEnabled: boolean }) {
         <CardTitle>{O.title}</CardTitle>
       </CardHeader>
       <ul className="flex min-w-0 flex-col divide-y divide-line">
-        {O.items
-          .filter((item) => !('flag' in item) || pulseEnabled)
-          .map((item) => (
-            <li key={item.title} className="flex min-w-0 flex-col gap-0.5 py-3 first:pt-0">
-              <span className="type-body font-medium text-ink">{item.title}</span>
-              <span className="type-sm text-ink-muted">{item.text}</span>
-              {item.to ? (
-                <Link to={item.to} className="text-link inline-flex min-h-11 items-center self-start">
-                  {item.link}
-                </Link>
-              ) : null}
-            </li>
-          ))}
+        {O.items.map((item) => (
+          <li key={item.title} className="flex min-w-0 flex-col gap-0.5 py-3 first:pt-0">
+            <span className="type-body font-medium text-ink">{item.title}</span>
+            <span className="type-sm text-ink-muted">{item.text}</span>
+            {item.to ? (
+              <Link to={item.to} className="text-link inline-flex min-h-11 items-center self-start">
+                {item.link}
+              </Link>
+            ) : null}
+          </li>
+        ))}
       </ul>
       <p className="type-caption mt-3 text-ink-muted">{O.footer}</p>
     </Card>
   )
 }
 
-function NotLinked({ data, pulseEnabled }: { data: FspLinkView; pulseEnabled: boolean }) {
+function NotLinked({ data }: { data: FspLinkView }) {
   const T = FSP.notLinked
   const consent = useQuery({ ...fspConsentQuery(), retry: false })
   const start = useStartFspLink()
@@ -239,7 +235,7 @@ function NotLinked({ data, pulseEnabled }: { data: FspLinkView; pulseEnabled: bo
           </div>
         )}
       </Card>
-      <OtherWays pulseEnabled={pulseEnabled} />
+      <OtherWays />
       <CalendarBlock />
     </div>
   )
@@ -309,7 +305,7 @@ function Actions({ data }: { data: FspLinkView }) {
   )
 }
 
-function Linked({ data, pulseEnabled }: { data: FspLinkView; pulseEnabled: boolean }) {
+function Linked({ data }: { data: FspLinkView }) {
   const sync = useFspSync()
   const privacy = useQuery({ ...fspPrivacyQuery(), retry: false })
   const status = data.history_status
@@ -460,7 +456,7 @@ function Linked({ data, pulseEnabled }: { data: FspLinkView; pulseEnabled: boole
 
       {noHistory ? (
         <>
-          <OtherWays pulseEnabled={pulseEnabled} />
+          <OtherWays />
           <CalendarBlock />
         </>
       ) : null}
@@ -469,7 +465,7 @@ function Linked({ data, pulseEnabled }: { data: FspLinkView; pulseEnabled: boole
 }
 
 /** C13. Блок привязки ФСП ID: все состояния `FspLinkView`, возврат из потока, обновление и отвязка. */
-export function FspBlock({ result, reason, pulseEnabled = false }: FspBlockProps) {
+export function FspBlock({ result, reason }: FspBlockProps) {
   const navigate = useNavigate()
   const link = useFspLink()
   const [shown, setShown] = useState<{ result: string; reason?: string } | null>(result ? { result, reason } : null)
@@ -489,9 +485,9 @@ export function FspBlock({ result, reason, pulseEnabled = false }: FspBlockProps
       ) : link.isError ? (
         <ErrorState error={link.error} onRetry={() => link.refetch()} retrying={link.isFetching} />
       ) : link.data.status === 'not_linked' ? (
-        <NotLinked data={link.data} pulseEnabled={pulseEnabled} />
+        <NotLinked data={link.data} />
       ) : (
-        <Linked data={link.data} pulseEnabled={pulseEnabled} />
+        <Linked data={link.data} />
       )}
     </div>
   )

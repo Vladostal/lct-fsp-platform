@@ -190,7 +190,8 @@ class ContactDisclosure(Base):
     employer_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey(_USER_FK, ondelete="CASCADE"), nullable=False)
     candidate_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey(_USER_FK, ondelete="CASCADE"), nullable=False)
     source: Mapped[str] = mapped_column(Text, nullable=False)
-    #: Идентификаторы сущностей модулей `contact` и `vacancies` — без внешнего ключа (Арх. 2.4, п. 3).
+    #: Идентификаторы сущностей других модулей (приглашение `contact`, отклик на вакансию) — без внешнего ключа
+    #: (Арх. 2.4, п. 3).
     invitation_id: Mapped[UUID | None] = mapped_column(Uuid, nullable=True)
     application_id: Mapped[UUID | None] = mapped_column(Uuid, nullable=True)
     fields: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False)

@@ -56,7 +56,7 @@ def invitation_answered(db: Session, inv: Invitation, terms: InvitationTerms, no
         if employer is None or employer.is_demo:
             return
         profile = profile_service.pool_view(db, [inv.candidate_id], now).get(inv.candidate_id)
-    except NotImplementedError:  # нижний модуль ещё заглушка: письмо P1 пропускается
+    except NotImplementedError:  # фасад нижнего модуля не реализован: письмо P1 пропускается
         return
     accepted = inv.status == InvitationStatus.ACCEPTED.value
     reason = DeclineReason(inv.decline_reason) if inv.decline_reason else None

@@ -1,6 +1,6 @@
 """Фасад модуля `company` (Арх. 2.5): профиль компании работодателя.
 
-Чтение (`get_company`, `companies`, `is_complete`) вызывают `contact`, `matching`, `vacancies`; запись
+Чтение (`get_company`, `companies`, `is_complete`) вызывают `contact` и `matching`; запись
 (`save_company`) — роутер модуля, сид и `demo`. Сервис `commit` не вызывает (Арх. 2.4, п. 4).
 """
 

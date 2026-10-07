@@ -43,11 +43,11 @@ def tx_router_with(path: str, name: str) -> APIRouter:
 
 def test_all_lists_are_lazy_strings_for_every_module():
     assert tuple(f"app.modules.{name}:ROUTERS" for name in wiring.MODULES) == wiring.ROUTERS
-    assert len(wiring.MODULES) == 14 and len(set(wiring.MODULES)) == 14
+    assert len(wiring.MODULES) == 11 and len(set(wiring.MODULES)) == 11
     specs = [*wiring.ROUTERS, *wiring.INIT_STEPS, *wiring.DEMO_HOOKS.values(), *wiring.USER_CLEANUP]
     specs += [spec for _, spec in wiring.PERIODIC] + [*wiring.PUBLIC_LIMITS, wiring.FSP_MOCK_APP]
     assert all(isinstance(spec, str) and spec.count(":") == 1 for spec in specs)
-    assert [seconds for seconds, _ in wiring.PERIODIC] == [30, 60, 60, 60, 15, 3600, 600]
+    assert [seconds for seconds, _ in wiring.PERIODIC] == [30, 60, 3600, 600]
     assert set(wiring.REQUIRES) <= set(specs) | set(wiring.STARTUP)
 
 
@@ -209,9 +209,9 @@ def test_demo_routers_exist_only_in_demo_mode(monkeypatch, override_settings):
 
 
 def test_flags_switch_periodic_tasks_and_fsp_mock(override_settings):
-    override_settings(demo_mode=True, feature_vacancies=True, feature_pulse=True, feature_integrations=True)
-    assert len(wiring.periodic_tasks()) == 7
-    override_settings(demo_mode=False, feature_vacancies=False, feature_pulse=False, feature_integrations=False)
+    override_settings(demo_mode=True)
+    assert len(wiring.periodic_tasks()) == 4
+    override_settings(demo_mode=False)
     assert [task.name for task in wiring.periodic_tasks()] == [
         "contact.service:settle_all",
         "assessment.service:close_expired_sessions",
@@ -273,10 +273,10 @@ def test_conflicting_public_limit_is_an_error(monkeypatch, override_settings, ca
 
 
 def test_stand_on_stubs_publishes_salary_limits(app):
-    """Уже на заглушках интерфейс получает из каталога правила вилки и лестницу минимума."""
+    """Интерфейс получает из каталога правила вилки и лестницу минимума."""
     from app.modules.catalog import service as catalog_stub
 
-    if hasattr(catalog_stub, "_limits"):  # пока модуль catalog — заглушка пакета-фундамента
+    if hasattr(catalog_stub, "_limits"):
         assert catalog_stub._limits["salary_min"] == 10_000
         assert catalog_stub._limits["min_salary_high"] == 600_000
 

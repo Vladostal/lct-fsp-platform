@@ -30,7 +30,6 @@ import { Route as PublicDemoIndexRouteImport } from './routes/_public/demo.index
 import { Route as PublicDemoComponentsRouteImport } from './routes/_public/demo.components'
 import { Route as PublicLegalDocRouteImport } from './routes/_public/legal.$doc'
 import { Route as CandidateCabinetIndexRouteImport } from './routes/candidate/_cabinet/index'
-import { Route as CandidateCabinetApplicationsRouteImport } from './routes/candidate/_cabinet/applications'
 import { Route as CandidateCabinetCategoryRouteImport } from './routes/candidate/_cabinet/category'
 import { Route as CandidateCabinetProfileRouteImport } from './routes/candidate/_cabinet/profile'
 import { Route as EmployerCabinetCompanyRouteImport } from './routes/employer/_cabinet/company'
@@ -40,9 +39,6 @@ import { Route as CandidateCabinetInvitationsInvitationIdRouteImport } from './r
 import { Route as CandidateCabinetSettingsAccountRouteImport } from './routes/candidate/_cabinet/settings/account'
 import { Route as CandidateCabinetSettingsFspRouteImport } from './routes/candidate/_cabinet/settings/fsp'
 import { Route as CandidateCabinetSettingsPrivacyRouteImport } from './routes/candidate/_cabinet/settings/privacy'
-import { Route as CandidateCabinetVacanciesIndexRouteImport } from './routes/candidate/_cabinet/vacancies/index'
-import { Route as CandidateCabinetVacanciesVacancyIdRouteImport } from './routes/candidate/_cabinet/vacancies/$vacancyId'
-import { Route as CandidateFocusPulseAssignmentIdRouteImport } from './routes/candidate/_focus/pulse/$assignmentId'
 import { Route as CandidateFocusTestSessionIdRouteImport } from './routes/candidate/_focus/test/$sessionId'
 import { Route as CandidateWizardOnboardingGradeRouteImport } from './routes/candidate/_wizard/onboarding/grade'
 import { Route as CandidateWizardOnboardingProfileRouteImport } from './routes/candidate/_wizard/onboarding/profile'
@@ -54,9 +50,6 @@ import { Route as EmployerCabinetInvitationsInvitationIdRouteImport } from './ro
 import { Route as EmployerCabinetNeedsIndexRouteImport } from './routes/employer/_cabinet/needs/index'
 import { Route as EmployerCabinetNeedsNewRouteImport } from './routes/employer/_cabinet/needs/new'
 import { Route as EmployerCabinetSettingsAccountRouteImport } from './routes/employer/_cabinet/settings/account'
-import { Route as EmployerCabinetVacanciesIndexRouteImport } from './routes/employer/_cabinet/vacancies/index'
-import { Route as EmployerCabinetVacanciesVacancyIdRouteImport } from './routes/employer/_cabinet/vacancies/$vacancyId'
-import { Route as EmployerCabinetVacanciesNewRouteImport } from './routes/employer/_cabinet/vacancies/new'
 import { Route as EmployerWizardOnboardingCompanyRouteImport } from './routes/employer/_wizard/onboarding/company'
 import { Route as CandidateCabinetTestSessionIdResultRouteImport } from './routes/candidate/_cabinet/test/$sessionId.result'
 import { Route as EmployerCabinetNeedsNeedIdIndexRouteImport } from './routes/employer/_cabinet/needs/$needId/index'
@@ -160,12 +153,6 @@ const CandidateCabinetIndexRoute = CandidateCabinetIndexRouteImport.update({
   path: '/',
   getParentRoute: () => CandidateCabinetRoute,
 } as any)
-const CandidateCabinetApplicationsRoute =
-  CandidateCabinetApplicationsRouteImport.update({
-    id: '/applications',
-    path: '/applications',
-    getParentRoute: () => CandidateCabinetRoute,
-  } as any)
 const CandidateCabinetCategoryRoute =
   CandidateCabinetCategoryRouteImport.update({
     id: '/category',
@@ -216,24 +203,6 @@ const CandidateCabinetSettingsPrivacyRoute =
     id: '/settings/privacy',
     path: '/settings/privacy',
     getParentRoute: () => CandidateCabinetRoute,
-  } as any)
-const CandidateCabinetVacanciesIndexRoute =
-  CandidateCabinetVacanciesIndexRouteImport.update({
-    id: '/vacancies/',
-    path: '/vacancies/',
-    getParentRoute: () => CandidateCabinetRoute,
-  } as any)
-const CandidateCabinetVacanciesVacancyIdRoute =
-  CandidateCabinetVacanciesVacancyIdRouteImport.update({
-    id: '/vacancies/$vacancyId',
-    path: '/vacancies/$vacancyId',
-    getParentRoute: () => CandidateCabinetRoute,
-  } as any)
-const CandidateFocusPulseAssignmentIdRoute =
-  CandidateFocusPulseAssignmentIdRouteImport.update({
-    id: '/pulse/$assignmentId',
-    path: '/pulse/$assignmentId',
-    getParentRoute: () => CandidateFocusRoute,
   } as any)
 const CandidateFocusTestSessionIdRoute =
   CandidateFocusTestSessionIdRouteImport.update({
@@ -299,24 +268,6 @@ const EmployerCabinetSettingsAccountRoute =
     path: '/settings/account',
     getParentRoute: () => EmployerCabinetRoute,
   } as any)
-const EmployerCabinetVacanciesIndexRoute =
-  EmployerCabinetVacanciesIndexRouteImport.update({
-    id: '/vacancies/',
-    path: '/vacancies/',
-    getParentRoute: () => EmployerCabinetRoute,
-  } as any)
-const EmployerCabinetVacanciesVacancyIdRoute =
-  EmployerCabinetVacanciesVacancyIdRouteImport.update({
-    id: '/vacancies/$vacancyId',
-    path: '/vacancies/$vacancyId',
-    getParentRoute: () => EmployerCabinetRoute,
-  } as any)
-const EmployerCabinetVacanciesNewRoute =
-  EmployerCabinetVacanciesNewRouteImport.update({
-    id: '/vacancies/new',
-    path: '/vacancies/new',
-    getParentRoute: () => EmployerCabinetRoute,
-  } as any)
 const EmployerWizardOnboardingCompanyRoute =
   EmployerWizardOnboardingCompanyRouteImport.update({
     id: '/onboarding/company',
@@ -354,7 +305,6 @@ export interface FileRoutesByFullPath {
   '/signup/check-email': typeof AuthSignupCheckEmailRoute
   '/demo/components': typeof PublicDemoComponentsRoute
   '/legal/$doc': typeof PublicLegalDocRoute
-  '/candidate/applications': typeof CandidateCabinetApplicationsRoute
   '/candidate/category': typeof CandidateCabinetCategoryRoute
   '/candidate/profile': typeof CandidateCabinetProfileRoute
   '/employer/company': typeof EmployerCabinetCompanyRoute
@@ -366,8 +316,6 @@ export interface FileRoutesByFullPath {
   '/candidate/settings/account': typeof CandidateCabinetSettingsAccountRoute
   '/candidate/settings/fsp': typeof CandidateCabinetSettingsFspRoute
   '/candidate/settings/privacy': typeof CandidateCabinetSettingsPrivacyRoute
-  '/candidate/vacancies/$vacancyId': typeof CandidateCabinetVacanciesVacancyIdRoute
-  '/candidate/pulse/$assignmentId': typeof CandidateFocusPulseAssignmentIdRoute
   '/candidate/test/$sessionId': typeof CandidateFocusTestSessionIdRoute
   '/candidate/onboarding/grade': typeof CandidateWizardOnboardingGradeRoute
   '/candidate/onboarding/profile': typeof CandidateWizardOnboardingProfileRoute
@@ -377,14 +325,10 @@ export interface FileRoutesByFullPath {
   '/employer/invitations/$invitationId': typeof EmployerCabinetInvitationsInvitationIdRoute
   '/employer/needs/new': typeof EmployerCabinetNeedsNewRoute
   '/employer/settings/account': typeof EmployerCabinetSettingsAccountRoute
-  '/employer/vacancies/$vacancyId': typeof EmployerCabinetVacanciesVacancyIdRoute
-  '/employer/vacancies/new': typeof EmployerCabinetVacanciesNewRoute
   '/employer/onboarding/company': typeof EmployerWizardOnboardingCompanyRoute
   '/candidate/invitations/': typeof CandidateCabinetInvitationsIndexRoute
-  '/candidate/vacancies/': typeof CandidateCabinetVacanciesIndexRoute
   '/employer/invitations/': typeof EmployerCabinetInvitationsIndexRoute
   '/employer/needs/': typeof EmployerCabinetNeedsIndexRoute
-  '/employer/vacancies/': typeof EmployerCabinetVacanciesIndexRoute
   '/candidate/test/$sessionId/result': typeof CandidateCabinetTestSessionIdResultRoute
   '/employer/needs/$needId/edit': typeof EmployerCabinetNeedsNeedIdEditRoute
   '/employer/needs/$needId/': typeof EmployerCabinetNeedsNeedIdIndexRoute
@@ -401,7 +345,6 @@ export interface FileRoutesByTo {
   '/signup/check-email': typeof AuthSignupCheckEmailRoute
   '/demo/components': typeof PublicDemoComponentsRoute
   '/legal/$doc': typeof PublicLegalDocRoute
-  '/candidate/applications': typeof CandidateCabinetApplicationsRoute
   '/candidate/category': typeof CandidateCabinetCategoryRoute
   '/candidate/profile': typeof CandidateCabinetProfileRoute
   '/employer/company': typeof EmployerCabinetCompanyRoute
@@ -412,8 +355,6 @@ export interface FileRoutesByTo {
   '/candidate/settings/account': typeof CandidateCabinetSettingsAccountRoute
   '/candidate/settings/fsp': typeof CandidateCabinetSettingsFspRoute
   '/candidate/settings/privacy': typeof CandidateCabinetSettingsPrivacyRoute
-  '/candidate/vacancies/$vacancyId': typeof CandidateCabinetVacanciesVacancyIdRoute
-  '/candidate/pulse/$assignmentId': typeof CandidateFocusPulseAssignmentIdRoute
   '/candidate/test/$sessionId': typeof CandidateFocusTestSessionIdRoute
   '/candidate/onboarding/grade': typeof CandidateWizardOnboardingGradeRoute
   '/candidate/onboarding/profile': typeof CandidateWizardOnboardingProfileRoute
@@ -423,14 +364,10 @@ export interface FileRoutesByTo {
   '/employer/invitations/$invitationId': typeof EmployerCabinetInvitationsInvitationIdRoute
   '/employer/needs/new': typeof EmployerCabinetNeedsNewRoute
   '/employer/settings/account': typeof EmployerCabinetSettingsAccountRoute
-  '/employer/vacancies/$vacancyId': typeof EmployerCabinetVacanciesVacancyIdRoute
-  '/employer/vacancies/new': typeof EmployerCabinetVacanciesNewRoute
   '/employer/onboarding/company': typeof EmployerWizardOnboardingCompanyRoute
   '/candidate/invitations': typeof CandidateCabinetInvitationsIndexRoute
-  '/candidate/vacancies': typeof CandidateCabinetVacanciesIndexRoute
   '/employer/invitations': typeof EmployerCabinetInvitationsIndexRoute
   '/employer/needs': typeof EmployerCabinetNeedsIndexRoute
-  '/employer/vacancies': typeof EmployerCabinetVacanciesIndexRoute
   '/candidate/test/$sessionId/result': typeof CandidateCabinetTestSessionIdResultRoute
   '/employer/needs/$needId/edit': typeof EmployerCabinetNeedsNeedIdEditRoute
   '/employer/needs/$needId': typeof EmployerCabinetNeedsNeedIdIndexRoute
@@ -455,7 +392,6 @@ export interface FileRoutesById {
   '/_auth/signup/check-email': typeof AuthSignupCheckEmailRoute
   '/_public/demo/components': typeof PublicDemoComponentsRoute
   '/_public/legal/$doc': typeof PublicLegalDocRoute
-  '/candidate/_cabinet/applications': typeof CandidateCabinetApplicationsRoute
   '/candidate/_cabinet/category': typeof CandidateCabinetCategoryRoute
   '/candidate/_cabinet/profile': typeof CandidateCabinetProfileRoute
   '/employer/_cabinet/company': typeof EmployerCabinetCompanyRoute
@@ -467,8 +403,6 @@ export interface FileRoutesById {
   '/candidate/_cabinet/settings/account': typeof CandidateCabinetSettingsAccountRoute
   '/candidate/_cabinet/settings/fsp': typeof CandidateCabinetSettingsFspRoute
   '/candidate/_cabinet/settings/privacy': typeof CandidateCabinetSettingsPrivacyRoute
-  '/candidate/_cabinet/vacancies/$vacancyId': typeof CandidateCabinetVacanciesVacancyIdRoute
-  '/candidate/_focus/pulse/$assignmentId': typeof CandidateFocusPulseAssignmentIdRoute
   '/candidate/_focus/test/$sessionId': typeof CandidateFocusTestSessionIdRoute
   '/candidate/_wizard/onboarding/grade': typeof CandidateWizardOnboardingGradeRoute
   '/candidate/_wizard/onboarding/profile': typeof CandidateWizardOnboardingProfileRoute
@@ -478,14 +412,10 @@ export interface FileRoutesById {
   '/employer/_cabinet/invitations/$invitationId': typeof EmployerCabinetInvitationsInvitationIdRoute
   '/employer/_cabinet/needs/new': typeof EmployerCabinetNeedsNewRoute
   '/employer/_cabinet/settings/account': typeof EmployerCabinetSettingsAccountRoute
-  '/employer/_cabinet/vacancies/$vacancyId': typeof EmployerCabinetVacanciesVacancyIdRoute
-  '/employer/_cabinet/vacancies/new': typeof EmployerCabinetVacanciesNewRoute
   '/employer/_wizard/onboarding/company': typeof EmployerWizardOnboardingCompanyRoute
   '/candidate/_cabinet/invitations/': typeof CandidateCabinetInvitationsIndexRoute
-  '/candidate/_cabinet/vacancies/': typeof CandidateCabinetVacanciesIndexRoute
   '/employer/_cabinet/invitations/': typeof EmployerCabinetInvitationsIndexRoute
   '/employer/_cabinet/needs/': typeof EmployerCabinetNeedsIndexRoute
-  '/employer/_cabinet/vacancies/': typeof EmployerCabinetVacanciesIndexRoute
   '/candidate/_cabinet/test/$sessionId/result': typeof CandidateCabinetTestSessionIdResultRoute
   '/employer/_cabinet/needs/$needId/edit': typeof EmployerCabinetNeedsNeedIdEditRoute
   '/employer/_cabinet/needs/$needId/': typeof EmployerCabinetNeedsNeedIdIndexRoute
@@ -504,7 +434,6 @@ export interface FileRouteTypes {
     | '/signup/check-email'
     | '/demo/components'
     | '/legal/$doc'
-    | '/candidate/applications'
     | '/candidate/category'
     | '/candidate/profile'
     | '/employer/company'
@@ -516,8 +445,6 @@ export interface FileRouteTypes {
     | '/candidate/settings/account'
     | '/candidate/settings/fsp'
     | '/candidate/settings/privacy'
-    | '/candidate/vacancies/$vacancyId'
-    | '/candidate/pulse/$assignmentId'
     | '/candidate/test/$sessionId'
     | '/candidate/onboarding/grade'
     | '/candidate/onboarding/profile'
@@ -527,14 +454,10 @@ export interface FileRouteTypes {
     | '/employer/invitations/$invitationId'
     | '/employer/needs/new'
     | '/employer/settings/account'
-    | '/employer/vacancies/$vacancyId'
-    | '/employer/vacancies/new'
     | '/employer/onboarding/company'
     | '/candidate/invitations/'
-    | '/candidate/vacancies/'
     | '/employer/invitations/'
     | '/employer/needs/'
-    | '/employer/vacancies/'
     | '/candidate/test/$sessionId/result'
     | '/employer/needs/$needId/edit'
     | '/employer/needs/$needId/'
@@ -551,7 +474,6 @@ export interface FileRouteTypes {
     | '/signup/check-email'
     | '/demo/components'
     | '/legal/$doc'
-    | '/candidate/applications'
     | '/candidate/category'
     | '/candidate/profile'
     | '/employer/company'
@@ -562,8 +484,6 @@ export interface FileRouteTypes {
     | '/candidate/settings/account'
     | '/candidate/settings/fsp'
     | '/candidate/settings/privacy'
-    | '/candidate/vacancies/$vacancyId'
-    | '/candidate/pulse/$assignmentId'
     | '/candidate/test/$sessionId'
     | '/candidate/onboarding/grade'
     | '/candidate/onboarding/profile'
@@ -573,14 +493,10 @@ export interface FileRouteTypes {
     | '/employer/invitations/$invitationId'
     | '/employer/needs/new'
     | '/employer/settings/account'
-    | '/employer/vacancies/$vacancyId'
-    | '/employer/vacancies/new'
     | '/employer/onboarding/company'
     | '/candidate/invitations'
-    | '/candidate/vacancies'
     | '/employer/invitations'
     | '/employer/needs'
-    | '/employer/vacancies'
     | '/candidate/test/$sessionId/result'
     | '/employer/needs/$needId/edit'
     | '/employer/needs/$needId'
@@ -604,7 +520,6 @@ export interface FileRouteTypes {
     | '/_auth/signup/check-email'
     | '/_public/demo/components'
     | '/_public/legal/$doc'
-    | '/candidate/_cabinet/applications'
     | '/candidate/_cabinet/category'
     | '/candidate/_cabinet/profile'
     | '/employer/_cabinet/company'
@@ -616,8 +531,6 @@ export interface FileRouteTypes {
     | '/candidate/_cabinet/settings/account'
     | '/candidate/_cabinet/settings/fsp'
     | '/candidate/_cabinet/settings/privacy'
-    | '/candidate/_cabinet/vacancies/$vacancyId'
-    | '/candidate/_focus/pulse/$assignmentId'
     | '/candidate/_focus/test/$sessionId'
     | '/candidate/_wizard/onboarding/grade'
     | '/candidate/_wizard/onboarding/profile'
@@ -627,14 +540,10 @@ export interface FileRouteTypes {
     | '/employer/_cabinet/invitations/$invitationId'
     | '/employer/_cabinet/needs/new'
     | '/employer/_cabinet/settings/account'
-    | '/employer/_cabinet/vacancies/$vacancyId'
-    | '/employer/_cabinet/vacancies/new'
     | '/employer/_wizard/onboarding/company'
     | '/candidate/_cabinet/invitations/'
-    | '/candidate/_cabinet/vacancies/'
     | '/employer/_cabinet/invitations/'
     | '/employer/_cabinet/needs/'
-    | '/employer/_cabinet/vacancies/'
     | '/candidate/_cabinet/test/$sessionId/result'
     | '/employer/_cabinet/needs/$needId/edit'
     | '/employer/_cabinet/needs/$needId/'
@@ -796,13 +705,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CandidateCabinetIndexRouteImport
       parentRoute: typeof CandidateCabinetRoute
     }
-    '/candidate/_cabinet/applications': {
-      id: '/candidate/_cabinet/applications'
-      path: '/applications'
-      fullPath: '/candidate/applications'
-      preLoaderRoute: typeof CandidateCabinetApplicationsRouteImport
-      parentRoute: typeof CandidateCabinetRoute
-    }
     '/candidate/_cabinet/category': {
       id: '/candidate/_cabinet/category'
       path: '/category'
@@ -865,27 +767,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/candidate/settings/privacy'
       preLoaderRoute: typeof CandidateCabinetSettingsPrivacyRouteImport
       parentRoute: typeof CandidateCabinetRoute
-    }
-    '/candidate/_cabinet/vacancies/': {
-      id: '/candidate/_cabinet/vacancies/'
-      path: '/vacancies'
-      fullPath: '/candidate/vacancies/'
-      preLoaderRoute: typeof CandidateCabinetVacanciesIndexRouteImport
-      parentRoute: typeof CandidateCabinetRoute
-    }
-    '/candidate/_cabinet/vacancies/$vacancyId': {
-      id: '/candidate/_cabinet/vacancies/$vacancyId'
-      path: '/vacancies/$vacancyId'
-      fullPath: '/candidate/vacancies/$vacancyId'
-      preLoaderRoute: typeof CandidateCabinetVacanciesVacancyIdRouteImport
-      parentRoute: typeof CandidateCabinetRoute
-    }
-    '/candidate/_focus/pulse/$assignmentId': {
-      id: '/candidate/_focus/pulse/$assignmentId'
-      path: '/pulse/$assignmentId'
-      fullPath: '/candidate/pulse/$assignmentId'
-      preLoaderRoute: typeof CandidateFocusPulseAssignmentIdRouteImport
-      parentRoute: typeof CandidateFocusRoute
     }
     '/candidate/_focus/test/$sessionId': {
       id: '/candidate/_focus/test/$sessionId'
@@ -964,27 +845,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EmployerCabinetSettingsAccountRouteImport
       parentRoute: typeof EmployerCabinetRoute
     }
-    '/employer/_cabinet/vacancies/': {
-      id: '/employer/_cabinet/vacancies/'
-      path: '/vacancies'
-      fullPath: '/employer/vacancies/'
-      preLoaderRoute: typeof EmployerCabinetVacanciesIndexRouteImport
-      parentRoute: typeof EmployerCabinetRoute
-    }
-    '/employer/_cabinet/vacancies/$vacancyId': {
-      id: '/employer/_cabinet/vacancies/$vacancyId'
-      path: '/vacancies/$vacancyId'
-      fullPath: '/employer/vacancies/$vacancyId'
-      preLoaderRoute: typeof EmployerCabinetVacanciesVacancyIdRouteImport
-      parentRoute: typeof EmployerCabinetRoute
-    }
-    '/employer/_cabinet/vacancies/new': {
-      id: '/employer/_cabinet/vacancies/new'
-      path: '/vacancies/new'
-      fullPath: '/employer/vacancies/new'
-      preLoaderRoute: typeof EmployerCabinetVacanciesNewRouteImport
-      parentRoute: typeof EmployerCabinetRoute
-    }
     '/employer/_wizard/onboarding/company': {
       id: '/employer/_wizard/onboarding/company'
       path: '/onboarding/company'
@@ -1056,7 +916,6 @@ const PublicRouteWithChildren =
   PublicRoute._addFileChildren(PublicRouteChildren)
 
 interface CandidateCabinetRouteChildren {
-  CandidateCabinetApplicationsRoute: typeof CandidateCabinetApplicationsRoute
   CandidateCabinetCategoryRoute: typeof CandidateCabinetCategoryRoute
   CandidateCabinetProfileRoute: typeof CandidateCabinetProfileRoute
   CandidateCabinetIndexRoute: typeof CandidateCabinetIndexRoute
@@ -1064,14 +923,11 @@ interface CandidateCabinetRouteChildren {
   CandidateCabinetSettingsAccountRoute: typeof CandidateCabinetSettingsAccountRoute
   CandidateCabinetSettingsFspRoute: typeof CandidateCabinetSettingsFspRoute
   CandidateCabinetSettingsPrivacyRoute: typeof CandidateCabinetSettingsPrivacyRoute
-  CandidateCabinetVacanciesVacancyIdRoute: typeof CandidateCabinetVacanciesVacancyIdRoute
   CandidateCabinetInvitationsIndexRoute: typeof CandidateCabinetInvitationsIndexRoute
-  CandidateCabinetVacanciesIndexRoute: typeof CandidateCabinetVacanciesIndexRoute
   CandidateCabinetTestSessionIdResultRoute: typeof CandidateCabinetTestSessionIdResultRoute
 }
 
 const CandidateCabinetRouteChildren: CandidateCabinetRouteChildren = {
-  CandidateCabinetApplicationsRoute: CandidateCabinetApplicationsRoute,
   CandidateCabinetCategoryRoute: CandidateCabinetCategoryRoute,
   CandidateCabinetProfileRoute: CandidateCabinetProfileRoute,
   CandidateCabinetIndexRoute: CandidateCabinetIndexRoute,
@@ -1080,10 +936,7 @@ const CandidateCabinetRouteChildren: CandidateCabinetRouteChildren = {
   CandidateCabinetSettingsAccountRoute: CandidateCabinetSettingsAccountRoute,
   CandidateCabinetSettingsFspRoute: CandidateCabinetSettingsFspRoute,
   CandidateCabinetSettingsPrivacyRoute: CandidateCabinetSettingsPrivacyRoute,
-  CandidateCabinetVacanciesVacancyIdRoute:
-    CandidateCabinetVacanciesVacancyIdRoute,
   CandidateCabinetInvitationsIndexRoute: CandidateCabinetInvitationsIndexRoute,
-  CandidateCabinetVacanciesIndexRoute: CandidateCabinetVacanciesIndexRoute,
   CandidateCabinetTestSessionIdResultRoute:
     CandidateCabinetTestSessionIdResultRoute,
 }
@@ -1092,12 +945,10 @@ const CandidateCabinetRouteWithChildren =
   CandidateCabinetRoute._addFileChildren(CandidateCabinetRouteChildren)
 
 interface CandidateFocusRouteChildren {
-  CandidateFocusPulseAssignmentIdRoute: typeof CandidateFocusPulseAssignmentIdRoute
   CandidateFocusTestSessionIdRoute: typeof CandidateFocusTestSessionIdRoute
 }
 
 const CandidateFocusRouteChildren: CandidateFocusRouteChildren = {
-  CandidateFocusPulseAssignmentIdRoute: CandidateFocusPulseAssignmentIdRoute,
   CandidateFocusTestSessionIdRoute: CandidateFocusTestSessionIdRoute,
 }
 
@@ -1146,11 +997,8 @@ interface EmployerCabinetRouteChildren {
   EmployerCabinetInvitationsInvitationIdRoute: typeof EmployerCabinetInvitationsInvitationIdRoute
   EmployerCabinetNeedsNewRoute: typeof EmployerCabinetNeedsNewRoute
   EmployerCabinetSettingsAccountRoute: typeof EmployerCabinetSettingsAccountRoute
-  EmployerCabinetVacanciesVacancyIdRoute: typeof EmployerCabinetVacanciesVacancyIdRoute
-  EmployerCabinetVacanciesNewRoute: typeof EmployerCabinetVacanciesNewRoute
   EmployerCabinetInvitationsIndexRoute: typeof EmployerCabinetInvitationsIndexRoute
   EmployerCabinetNeedsIndexRoute: typeof EmployerCabinetNeedsIndexRoute
-  EmployerCabinetVacanciesIndexRoute: typeof EmployerCabinetVacanciesIndexRoute
   EmployerCabinetNeedsNeedIdEditRoute: typeof EmployerCabinetNeedsNeedIdEditRoute
   EmployerCabinetNeedsNeedIdIndexRoute: typeof EmployerCabinetNeedsNeedIdIndexRoute
 }
@@ -1164,12 +1012,8 @@ const EmployerCabinetRouteChildren: EmployerCabinetRouteChildren = {
     EmployerCabinetInvitationsInvitationIdRoute,
   EmployerCabinetNeedsNewRoute: EmployerCabinetNeedsNewRoute,
   EmployerCabinetSettingsAccountRoute: EmployerCabinetSettingsAccountRoute,
-  EmployerCabinetVacanciesVacancyIdRoute:
-    EmployerCabinetVacanciesVacancyIdRoute,
-  EmployerCabinetVacanciesNewRoute: EmployerCabinetVacanciesNewRoute,
   EmployerCabinetInvitationsIndexRoute: EmployerCabinetInvitationsIndexRoute,
   EmployerCabinetNeedsIndexRoute: EmployerCabinetNeedsIndexRoute,
-  EmployerCabinetVacanciesIndexRoute: EmployerCabinetVacanciesIndexRoute,
   EmployerCabinetNeedsNeedIdEditRoute: EmployerCabinetNeedsNeedIdEditRoute,
   EmployerCabinetNeedsNeedIdIndexRoute: EmployerCabinetNeedsNeedIdIndexRoute,
 }

@@ -58,9 +58,6 @@ MODULES: tuple[str, ...] = (
     "fsp",
     "matching",
     "contact",
-    "vacancies",
-    "pulse",
-    "integrations",
     "demo",
 )
 
@@ -74,7 +71,6 @@ STARTUP: tuple[str, ...] = tuple(f"app.modules.{name}:on_startup" for name in MO
 INIT_STEPS: tuple[str, ...] = (
     "app.modules.assessment.bank:build_if_empty",
     "app.fsp_mock.generator:seed_if_empty",
-    "app.modules.pulse.service:ensure_platform_tasks",
     "app.seed:seed_if_empty",
 )
 
@@ -89,9 +85,6 @@ DEMO_HOOKS: dict[str, str] = {
 PERIODIC: tuple[tuple[int, str], ...] = (
     (30, "app.modules.contact.service:settle_all"),
     (60, "app.modules.assessment.service:close_expired_sessions"),
-    (60, "app.modules.vacancies.service:settle_applications"),
-    (60, "app.modules.pulse.service:expire_assignments"),
-    (15, "app.modules.integrations.service:deliver_pending"),
     (3600, "app.modules.profile.service:purge_resume_results"),
     (600, "app.modules.demo.service:purge_clones"),
 )
@@ -102,7 +95,7 @@ USER_CLEANUP: tuple[str, ...] = ("app.modules.fsp.service:on_user_delete",)
 #: Числа модулей для `Catalog.limits`.
 PUBLIC_LIMITS: tuple[str, ...] = tuple(
     f"app.modules.{name}.constants:PUBLIC_LIMITS"
-    for name in ("identity", "profile", "assessment", "matching", "contact", "vacancies")
+    for name in ("identity", "profile", "assessment", "matching", "contact")
 )
 
 #: Демо-ФСП: отдельное ASGI-приложение со своей схемой OpenAPI (Арх. 7.3).
@@ -112,16 +105,12 @@ FSP_MOCK_APP = "app.fsp_mock.app:app"
 PUBLISH_LIMITS = "app.modules.catalog.service:publish_limits"
 
 #: Строка действует только при включённом флаге. Ключи — строки списков выше; значения — флаги `Settings.features`
-#: и `fsp_mock`. Роутеры усилений (`vacancies`, `pulse`, `integrations`) подключены всегда и сами отвечают
-#: 404 `feature_disabled` (зависимость `require_feature`); демо-эндпоинты без `DEMO_MODE` не существуют вовсе.
+#: и `fsp_mock`. Демо-эндпоинты без `DEMO_MODE` не существуют вовсе; роутер под другим флагом подключён
+#: всегда и сам отвечает 404 `feature_disabled` (зависимость `require_feature`).
 REQUIRES: dict[str, str] = {
     "app.modules.demo:ROUTERS": "demo",
     "app.modules.demo:on_startup": "demo",
     "app.modules.demo.service:purge_clones": "demo",
-    "app.modules.vacancies.service:settle_applications": "vacancies",
-    "app.modules.pulse.service:expire_assignments": "pulse",
-    "app.modules.pulse.service:ensure_platform_tasks": "pulse",
-    "app.modules.integrations.service:deliver_pending": "integrations",
     "app.seed:seed_if_empty": "demo",
     "app.fsp_mock.generator:seed_if_empty": "fsp_mock",
     FSP_MOCK_APP: "fsp_mock",

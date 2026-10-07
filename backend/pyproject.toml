@@ -139,7 +139,6 @@ name = "Слои модулей: импорт только вниз, модул�
 type = "layers"
 layers = [
     "app.modules.demo",
-    "app.modules.vacancies | app.modules.pulse | app.modules.integrations",
     "app.modules.contact",
     "app.modules.matching",
     "app.modules.profile | app.modules.fsp",

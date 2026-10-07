@@ -1,4 +1,4 @@
-"""Эндпоинты `/assessment/*` (Арх. 9.5). `/pulse/*` — модуль `pulse`."""
+"""Эндпоинты `/assessment/*` (Арх. 9.5)."""
 
 from __future__ import annotations
 

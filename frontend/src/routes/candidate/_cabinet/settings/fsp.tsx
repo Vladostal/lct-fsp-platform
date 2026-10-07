@@ -15,12 +15,11 @@ export const Route = createFileRoute('/candidate/_cabinet/settings/fsp')({
 
 function Screen() {
   const { result, reason } = Route.useSearch()
-  const { catalog } = Route.useRouteContext()
   return (
     <div className="mx-auto flex w-full max-w-[880px] min-w-0 flex-col gap-6">
       <SettingsTabs />
       <PageHeader title={FSP.title} description={FSP.description} />
-      <FspBlock result={result} reason={reason} pulseEnabled={catalog?.features.pulse ?? false} />
+      <FspBlock result={result} reason={reason} />
     </div>
   )
 }

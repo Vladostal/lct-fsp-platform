@@ -73,9 +73,7 @@ def hidden_from_employer(db: Session, employer_id: UUID, candidate_ids: Collecti
 
 
 def min_salary(db: Session, candidate_id: UUID) -> int | None:
-    """Скрытый минимум. Вызывают только `contact` (сверка 4.6, метка кандидату), `vacancies` (для самого
-    кандидата), сид и валидация.
-    """
+    """Скрытый минимум. Вызывают только `contact` (сверка 4.6, метка кандидату), сид и валидация."""
     return profiles.min_salary(db, candidate_id)
 
 

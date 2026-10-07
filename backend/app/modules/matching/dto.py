@@ -1,7 +1,7 @@
 """Типы фасада `matching.service` (Арх. 2.5, 4.9, 6.11, 6.12, 9.11).
 
-Здесь лежит всё, что стоит в сигнатурах фасада и что включают в свои схемы верхние модули (`contact`,
-`vacancies`, `pulse`, `integrations`): `InvitationWhy`, `RelaxationHint`, `ShortlistItemView`, `NeedRefDTO`.
+Здесь лежит всё, что стоит в сигнатурах фасада и что включает в свои схемы верхний модуль `contact`:
+`InvitationWhy`, `RelaxationHint`, `ShortlistItemView`, `NeedRefDTO`.
 Схемы собственных эндпоинтов модуля — в `schemas.py`.
 
 Файл не импортирует SQLAlchemy: `ShortlistQuery` читают чистые ядра `scoring.py` и `ranking.py`.

@@ -41,7 +41,7 @@ def test_pyproject_declares_all_rules_of_the_architecture():
     declared = [name.strip().removeprefix("app.modules.") for line in layers[:-1] for name in line.split("|")]
     assert sorted(declared) == sorted(
         ["identity", "catalog", "reports", "company", "textparse", "assessment", "profile", "fsp", "matching",
-         "contact", "vacancies", "pulse", "integrations", "demo"]
+         "contact", "demo"]
     )  # fmt: skip
     assert layers[0] == "app.modules.demo" and "app.core" in layers[-1] and "app.shared" in layers[-1]
 
