@@ -3,6 +3,10 @@
 Файл не импортирует SQLAlchemy: `rank_need` получает готовый пул `CandidateFeatures` и возвращает порядок —
 одинаково для рабочего сервиса и для валидации (Арх. 2.4, п. 6). Рабочий порядок ключей один
 (`DEFAULT_KEY_ORDER`); параметр `key_order` существует только для абляций отчёта (Арх. 12.3).
+
+Порядок версии 2: закрытые обязательные навыки → подтверждённое покрытие → сила → покрытие с заявленным.
+Он выбран по отчёту валидации (`docs/validation/matching`): прежний порядок «сила первой» проигрывал бейзлайну
+заявленного стека по P@10, новый превосходит его во всех режимах и сохраняет преимущество при накрутке заявленного.
 """
 
 from __future__ import annotations
@@ -47,6 +51,8 @@ class Scored:
 #: Составляющие ключа порядка внутри раздела; меньшее значение — выше в выдаче.
 KEY_PARTS: dict[str, Callable[[Scored], int]] = {
     # Рабочие ключи (Арх. 6.7).
+    # Сколько обязательных навыков потребности осталось без единого доказательства: 0 — закрыты все.
+    "must": lambda s: s.coverage.must_total - s.coverage.must_covered,
     "strength": lambda s: -s.strength.band,
     "confirmed": lambda s: -s.coverage.confirmed_band,
     "coverage": lambda s: -s.coverage.band,
@@ -61,9 +67,11 @@ KEY_PARTS: dict[str, Callable[[Scored], int]] = {
     ),
 }
 
-#: Действующий порядок: сила → подтверждённое покрытие → покрытие с заявленным (Арх. 6.7; 15.1, № 53).
-DEFAULT_KEY_ORDER: tuple[str, ...] = ("strength", "confirmed", "coverage")
-#: Порядок версии 1.1 (Арх. 15.1, № 35) и версии 1.0 — сравниваются с действующим в отчёте валидации.
+#: Действующий порядок (версия 2): закрытые обязательные → подтверждённое покрытие → сила → покрытие с заявленным.
+DEFAULT_KEY_ORDER: tuple[str, ...] = ("must", "confirmed", "strength", "coverage")
+#: Прежние порядки сравниваются с действующим в отчёте валидации: версия 1.2 — «сила первой» (Арх. 15.1, № 53),
+#: версия 1.1 (Арх. 15.1, № 35) и версия 1.0.
+KEY_ORDER_V12: tuple[str, ...] = ("strength", "confirmed", "coverage")
 KEY_ORDER_V11: tuple[str, ...] = ("confirmed", "strength", "coverage")
 KEY_ORDER_V10: tuple[str, ...] = ("coverage", "strength")
 
@@ -103,16 +111,20 @@ def sort_key(scored: Scored, seed: str, key_order: Sequence[str] = DEFAULT_KEY_O
 
     ```
     sort_key = ( section_order,                 # exact = 0, lower_with_margin = 1, higher = 2
-                 −strength_band,                # сила подтверждённого профиля: все ответы теста и ФСП, нижняя граница
+                 must_missing,                  # обязательных навыков без единого доказательства (0 — закрыты все)
                  −confirmed_band,               # соответствие потребности по подтверждённому (0, если требований нет)
-                 −coverage_band,                # заявленное — только среди равных по двум ключам выше
+                 −strength_band,                # сила подтверждённого профиля: все ответы теста и ФСП, нижняя граница
+                 −coverage_band,                # заявленное по желательным — только среди равных по ключам выше
                  exposure_bucket,               # floor(log2(1 + exposure_7d))
                  tie_hash )                     # sha256(f"{seed}:{candidate_id}")
     ```
 
-    Порядок двух первых ключей выбран по надёжности измерения: сила считается по всем ответам теста и берётся
-    по нижней границе интервала, подтверждение отдельного навыка — по одному-двум ответам (Арх. 5.6), и менее
-    надёжный признак не перекрывает более надёжный. `key_order` меняется только в абляциях валидации.
+    Выдача под потребность упорядочена по соответствию потребности: сначала те, у кого есть данные по всем
+    обязательным навыкам, среди них — те, у кого больше подтверждено тестом и ФСП, а сила профиля решает среди
+    равных по соответствию. Заявленный навык закрывает пробел в обязательных, но не входит в `confirmed_band`:
+    кандидат с подтверждённым навыком всегда выше кандидата с тем же навыком «со слов». Карточка при этом
+    показывает источник каждого навыка и риск «заявлено кандидатом, тестом не проверено».
+    `key_order` меняется только в абляциях валидации.
     """
     parts = tuple(KEY_PARTS[name](scored) for name in key_order)
     features = scored.features
@@ -124,11 +136,15 @@ def sort_key(scored: Scored, seed: str, key_order: Sequence[str] = DEFAULT_KEY_O
     )
 
 
-def band_key(relation: Relation, strength_band: int, confirmed_band: int, coverage_band: int) -> tuple[int, ...]:
-    """Полоса кандидата для сравнения версий: `(section_order, −strength_band, −confirmed_band, −coverage_band)`
-    (Арх. 6.11). Перестановки внутри полосы — не изменение оценки.
+def band_key(
+    relation: Relation, must_missing: int, confirmed_band: int, strength_band: int, coverage_band: int
+) -> tuple[int, ...]:
+    """Полоса кандидата для сравнения версий: `(section_order, must_missing, −confirmed_band, −strength_band,
+    −coverage_band)` (Арх. 6.11) — те же ключи и в том же порядке, что в `sort_key`. Перестановки внутри полосы —
+    не изменение оценки. `must_missing` — число обязательных без доказательств, а не число закрытых: так полосы
+    версий с разным списком обязательных сравнимы (перенос навыка в желательные не выглядит ухудшением).
     """
-    return (SECTION_ORDER[relation], -strength_band, -confirmed_band, -coverage_band)
+    return (SECTION_ORDER[relation], must_missing, -confirmed_band, -strength_band, -coverage_band)
 
 
 def score_candidate(
@@ -158,8 +174,8 @@ def rank_need(
 
     Порядок работы: фильтры-условия (`first_failed_filter`, ничем не компенсируются) → раздел категории
     (`exact`, `lower_with_margin`, `higher`; разделы не смешиваются) → внутри раздела ключ `sort_key`:
-    полоса силы → полоса подтверждённого покрытия → полоса покрытия с заявленным → реже показанные → жребий →
-    обрезка раздела по `SECTION_LIMITS` (причина `below_limit`) → сквозная позиция 1..n.
+    закрытые обязательные навыки → полоса подтверждённого покрытия → полоса силы → полоса покрытия с заявленным →
+    реже показанные → жребий → обрезка раздела по `SECTION_LIMITS` (причина `below_limit`) → сквозная позиция 1..n.
 
     Фильтра по покрытию обязательных навыков нет: кандидат без данных остаётся в подборке с риском. `pool` —
     только видимые кандидаты; вилка запроса на результат не влияет. Функция детерминирована: одинаковые запрос,
@@ -301,8 +317,8 @@ def diff_snapshots(base: Sequence[DiffInput], new: Sequence[DiffInput]) -> Snaps
     только в базе:   выпавший (причину — `first_failed_filter` — подставляет вызывающий)
     ```
 
-    Метка «выше» / «ниже» ставится по смене полосы `(section_order, −strength_band, −confirmed_band,
-    −coverage_band)`, а не позиции. Функция симметрична: `added` одной стороны равно числу выпавших другой.
+    Метка «выше» / «ниже» ставится по смене полосы `band_key`, а не позиции. Функция симметрична: `added`
+    одной стороны равно числу выпавших другой.
     """
     base_by_id = {row.candidate_id: row for row in base}
     new_ids = {row.candidate_id for row in new}
@@ -422,6 +438,7 @@ __all__ = [
     "DEFAULT_KEY_ORDER",
     "KEY_ORDER_V10",
     "KEY_ORDER_V11",
+    "KEY_ORDER_V12",
     "KEY_PARTS",
     "BankRanked",
     "Counterfactual",

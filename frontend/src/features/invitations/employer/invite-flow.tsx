@@ -32,7 +32,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { WORK_FORMAT_LABELS } from '@/content/common'
 import { errorMessage, errorText, isApiError } from '@/lib/api'
-import { formatDate, formatDateTime, formatMoney } from '@/lib/format'
+import { formatDate, formatDateTime, formatMoney, formatSalaryRange } from '@/lib/format'
 import { CONTACT_KIND_LABELS, formatSlotRelease, InvitationPreview, tidy, useCatalogLimits } from '../shared'
 import { BlockerPanel } from './blocker-panel'
 import { useRefreshEmployerInvitations } from './hooks'
@@ -338,7 +338,7 @@ function Wizard({
               <AlertDescription>
                 Кандидат отклонил и назвал условие:{' '}
                 {condition.kind === 'salary_from'
-                  ? `от ${formatMoney(Number(condition.value))} ₽`
+                  ? `от ${formatMoney(Number(condition.value))}`
                   : `формат: ${WORK_FORMAT_LABELS[condition.value as WorkFormat]}`}
                 . Пересмотреть можно один раз.
               </AlertDescription>
@@ -408,7 +408,7 @@ function Wizard({
             {precheck.salary_hint ? (
               <p className="type-sm text-ink-muted">
                 Справка, не рекомендация: медиана вилок принятых приглашений категории —{' '}
-                {formatMoney(precheck.salary_hint.from)} – {formatMoney(precheck.salary_hint.to)} ₽
+                {formatSalaryRange(precheck.salary_hint.from, precheck.salary_hint.to)}
               </p>
             ) : null}
           </div>
@@ -614,6 +614,10 @@ export function InviteFlow(props: InviteFlowProps) {
     ...contactGetEmployerInvitationOptions({ path: { invitation_id: revisesId ?? '' } }),
     enabled: !!revisesId,
   })
+  // Предпроверка, с которой форма открылась. После отправки запрос предпроверки обновляется (у пары появилось
+  // приглашение, `can_invite` становится false), и без этой отметки экран результата тут же сменялся бы
+  // блокировкой «уже приглашён» — работодатель не видел бы, доставлено приглашение или нет.
+  const opened = useRef<InvitationPrecheckView | null>(null)
 
   const queries = [precheck, company, ...(needId ? [need] : []), ...(revisesId ? [revision] : [])]
   const failed = queries.find((q) => q.isError)
@@ -634,7 +638,7 @@ export function InviteFlow(props: InviteFlowProps) {
       </div>
     )
 
-  const pre = precheck.data
+  const pre = opened.current ?? precheck.data
   if (!pre.can_invite) {
     const first = pre.blockers[0]
     const params: Record<string, string | number> = {
@@ -658,6 +662,8 @@ export function InviteFlow(props: InviteFlowProps) {
       </div>
     )
   }
+
+  opened.current = pre
 
   const contact = company.data?.contact_method
   const blank: Form = {

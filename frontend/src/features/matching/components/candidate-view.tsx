@@ -27,6 +27,14 @@ const STATUS_LABELS: Record<string, string> = {
   bounced: 'Условия не совпали',
 }
 
+export type InviteRenderProps = {
+  candidateId: string
+  candidateCode: string
+  categoryTitle: string
+  needId?: string
+  onBack: () => void
+}
+
 export type CandidateViewProps = {
   candidateId: string
   needId?: string
@@ -35,8 +43,12 @@ export type CandidateViewProps = {
   onInvite: () => void
   onBackFromInvite: () => void
   onClose?: () => void
-  /** Что показать вместо карточки при `invite`: подключается пакетом приглашений (InviteFlow). */
-  renderInvite?: (props: { candidateId: string; needId?: string; onBack: () => void }) => React.ReactNode
+  /**
+   * Что показать вместо карточки при `invite`: форма отправки приглашения (`InviteFlow` домена `invitations`).
+   * Её передаёт маршрут: домен `matching` не импортирует домен `invitations`. У формы своя кнопка «К карточке»
+   * и своя мини-шапка с кодом и категорией — для них сюда передаются `candidateCode` и `categoryTitle`.
+   */
+  renderInvite?: (props: InviteRenderProps) => React.ReactNode
   layout: 'sheet' | 'page'
 }
 
@@ -155,7 +167,17 @@ export function CandidateView({
   const inv = pair?.invitation
   const block = pair?.pair_block
 
+  if (invite && renderInvite) {
+    return renderInvite({
+      candidateId,
+      candidateCode: card.public_code,
+      categoryTitle: card.category.title,
+      needId,
+      onBack: onBackFromInvite,
+    })
+  }
   if (invite) {
+    // Запасной вид: маршрут не передал форму приглашения.
     return (
       <div className="flex min-w-0 flex-col gap-4">
         <Button type="button" variant="ghost" size="sm" className="self-start" onClick={onBackFromInvite}>
@@ -166,13 +188,9 @@ export function CandidateView({
           <span className="type-body num font-medium">{card.public_code}</span>
           <CategoryChip title={card.category.title} />
         </div>
-        {renderInvite ? (
-          renderInvite({ candidateId, needId, onBack: onBackFromInvite })
-        ) : (
-          <Alert variant="info">
-            <AlertDescription>{T.inviteSoon}</AlertDescription>
-          </Alert>
-        )}
+        <Alert variant="info">
+          <AlertDescription>{T.inviteSoon}</AlertDescription>
+        </Alert>
       </div>
     )
   }

@@ -20,6 +20,7 @@ export {
   useSignup,
   useVerifyEmail,
 } from './hooks'
+export { pendingEmail } from './pending-email'
 export {
   checkEmailSearchSchema,
   loginSearchSchema,

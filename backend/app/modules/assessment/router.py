@@ -103,7 +103,8 @@ def post_answer(
     now: Now,
     idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key", max_length=200)] = None,
 ) -> AnswerResult:
-    """Ответ на текущее задание. 409: `item_already_answered`, `session_finished`; 410 `session_expired`.
+    """Ответ на текущее задание. 409: `item_already_answered`, `session_finished`; 410 `session_expired`;
+    422 `answer_malformed` — в теле нет поля ответа для задания этого вида (задание остаётся текущим).
 
     Повтор запроса с тем же `Idempotency-Key` возвращает текущее состояние. Верность ответа не сообщается.
     """

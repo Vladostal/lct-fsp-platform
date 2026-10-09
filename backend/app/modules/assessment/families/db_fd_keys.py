@@ -18,7 +18,7 @@ from app.modules.assessment.families.registry import family_meta
 
 META = family_meta(
     "db.fd_keys",
-    version=1,
+    version=2,
     feature_bounds={
         1: {"options_count": (5, 5), "concepts": (3, 5), "trap": (1, 1)},
         2: {"options_count": (5, 5), "concepts": (3, 6), "trap": (1, 1)},
@@ -186,7 +186,10 @@ def generate(level: int, seed: int) -> Variant:
     if len(superkeys) < 2:
         raise Reject("few_superkeys")
     nonkeys: list[frozenset[str]] = []
-    for lhs in lhs_wrong + [frozenset({x}) for x in key if len(key) > 1] + [frozenset({a}) for a in order[::-1]]:
+    # Ключ обходится в отсортированном виде: порядок обхода множества зависит от PYTHONHASHSEED, и один seed
+    # давал бы разные варианты в разных процессах.
+    key_parts = [frozenset({x}) for x in sorted(key) if len(key) > 1]
+    for lhs in lhs_wrong + key_parts + [frozenset({a}) for a in order[::-1]]:
         if lhs not in nonkeys and _closure_sets(lhs, fds) != universe and lhs not in keys:
             nonkeys.append(lhs)
     if len(nonkeys) < 2:
@@ -204,7 +207,9 @@ def generate(level: int, seed: int) -> Variant:
         f"Отношение R({', '.join(sorted(letters))}), зависимости: {_fmt_fds(fds)}. "
         "Какой из наборов атрибутов является потенциальным ключом R (минимальным набором, определяющим все атрибуты)?"
     )
-    return _build(level, seed, prompt, texts, ids, by_set[key], wrong, len(fds), f"Потенциальные ключи: {keys}")
+    # Ключи печатаются через `_fmt_set`: `repr` множества зависел бы от PYTHONHASHSEED.
+    listed = ", ".join(_fmt_set(item) for item in keys)
+    return _build(level, seed, prompt, texts, ids, by_set[key], wrong, len(fds), f"Потенциальные ключи: {listed}")
 
 
 def _build(

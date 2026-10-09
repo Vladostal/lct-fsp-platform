@@ -52,7 +52,7 @@ def _search(cells: list[int | None], k: int, *, stop_at_tomb: bool = False) -> i
     return m
 
 
-def _level1(rng: Random) -> dict[str, object]:
+def _level1(rng: Random) -> tuple[int, list[int]]:
     m = rng.randint(4, 6)
     target = rng.randint(2, 6)
     hot = rng.randrange(m)
@@ -70,7 +70,7 @@ def _level1(rng: Random) -> dict[str, object]:
                 used.add(k)
                 out.append(k)
                 break
-    return {"m": m, "keys": out}
+    return m, out
 
 
 def generate(level: int, seed: int) -> Variant:
@@ -86,9 +86,10 @@ def generate(level: int, seed: int) -> Variant:
     if level not in (1, 2, 3):
         raise ValueError(f"нет уровня {level}")
     rng = Random(seed)
+    keys: list[int]
+    cells: list[int | None]
     if level == 1:
-        p = _level1(rng)
-        m, keys = p["m"], p["keys"]
+        m, keys = _level1(rng)
         answer = _longest_chain(m, keys)
         text = (
             f"Хеш-таблица из {m} ячеек, h(k) = k mod {m}, коллизии разрешаются цепочками (новый ключ — в конец "
@@ -101,8 +102,8 @@ def generate(level: int, seed: int) -> Variant:
     elif level == 2:
         m = rng.randint(7, 10)
         count = rng.randint(5, 8)
-        cells: list[int | None] = [None] * m
-        keys: list[int] = []
+        cells = [None] * m
+        keys = []
         used: set[int] = set()
         while len(keys) < count:
             k = rng.randint(10, 99)

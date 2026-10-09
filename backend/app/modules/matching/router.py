@@ -59,28 +59,33 @@ def parse_need(body: NeedParseRequest, user: Employer, db: Db) -> NeedDraft:
 
 @router.get("/employer/needs", response_model=list[NeedView], responses=error_responses(401, 403))
 def list_needs(user: Employer, db: Db) -> list[NeedView]:
+    """Потребности работодателя: активные и архивные."""
     return needs.list_views(db, user.id)
 
 
 @router.post("/employer/needs", response_model=NeedView, status_code=201, responses=error_responses(401, 403, 409, 422))
 def create_need(body: NeedCreate, user: Employer, db: Db, now: Now) -> NeedView:
+    """Создать потребность: специализация, грейд, навыки, форматы и обязательная вилка в рублях."""
     need = needs.create(db, user.id, NeedData.model_validate(body.model_dump()), now)
     return needs.views(db, [need])[0]
 
 
 @router.get("/employer/needs/{need_id}", response_model=NeedView, responses=error_responses(401, 403, 404))
 def get_need(need_id: UUID, user: Employer, db: Db) -> NeedView:
+    """Потребность по идентификатору."""
     return needs.views(db, [needs.get_owned(db, user.id, need_id)])[0]
 
 
 @router.put("/employer/needs/{need_id}", response_model=NeedView, responses=error_responses(401, 403, 404, 409, 422))
 def update_need(need_id: UUID, body: NeedUpdate, user: Employer, db: Db, now: Now) -> NeedView:
+    """Изменить потребность; прежние версии подборки сохраняются."""
     need = needs.update(db, user.id, need_id, NeedData.model_validate(body.model_dump()), now)
     return needs.views(db, [need])[0]
 
 
 @router.post("/employer/needs/{need_id}/archive", response_model=NeedView, responses=error_responses(401, 403, 404))
 def archive_need(need_id: UUID, user: Employer, db: Db, now: Now) -> NeedView:
+    """Перенести потребность в архив."""
     return needs.views(db, [needs.archive(db, user.id, need_id, now)])[0]
 
 
@@ -93,6 +98,7 @@ def archive_need(need_id: UUID, user: Employer, db: Db, now: Now) -> NeedView:
     responses=error_responses(401, 403, 404),
 )
 def list_shortlists(need_id: UUID, user: Employer, db: Db) -> list[ShortlistVersionBrief]:
+    """Версии подборки потребности — для переключателя версий."""
     return snapshots.versions(db, user.id, need_id)
 
 
@@ -124,6 +130,7 @@ def create_shortlist(
     responses=error_responses(401, 403, 404),
 )
 def get_shortlist(snapshot_id: UUID, user: Employer, db: Db, now: Now) -> ShortlistSnapshotView:
+    """Версия подборки: строки с объяснением, воронка и подсказки; прежние версии доступны всегда."""
     return snapshots.view(db, user.id, snapshot_id, now)
 
 
@@ -135,6 +142,7 @@ def get_shortlist(snapshot_id: UUID, user: Employer, db: Db, now: Now) -> Shortl
 def diff_shortlists(
     snapshot_id: UUID, base: Annotated[UUID, Query()], user: Employer, db: Db, now: Now
 ) -> SnapshotDiffView:
+    """Различия двух версий подборки одной потребности."""
     return snapshots.diff_view(db, user.id, snapshot_id, base, now)
 
 
@@ -145,6 +153,7 @@ def diff_shortlists(
     responses=error_responses(401, 403, 404, 409),
 )
 def pin_candidate(need_id: UUID, candidate_id: UUID, user: Employer, db: Db, now: Now) -> Response:
+    """Закрепить кандидата за потребностью; закрепление переживает уточнения запроса."""
     snapshots.pin(db, user.id, need_id, candidate_id, now)
     return Response(status_code=204)
 
@@ -156,6 +165,7 @@ def pin_candidate(need_id: UUID, candidate_id: UUID, user: Employer, db: Db, now
     responses=error_responses(401, 403, 404),
 )
 def unpin_candidate(need_id: UUID, candidate_id: UUID, user: Employer, db: Db) -> Response:
+    """Снять закрепление кандидата."""
     snapshots.unpin(db, user.id, need_id, candidate_id)
     return Response(status_code=204)
 
@@ -235,6 +245,7 @@ def preview_profile(
 
 @router.get("/candidate/evidence", response_model=CandidateEvidenceView, responses=error_responses(401, 403))
 def get_own_evidence(user: Candidate, db: Db, now: Now) -> CandidateEvidenceView:
+    """Подтверждённые и заявленные навыки кандидата с источником каждого."""
     return cards.own_evidence(db, user.id, now)
 
 
@@ -244,4 +255,5 @@ def get_own_evidence(user: Candidate, db: Db, now: Now) -> CandidateEvidenceView
     responses={**_PDF_RESPONSES, **error_responses(401, 403, 409, 429)},
 )
 def get_own_pdf(user: Candidate, db: Db, now: Now) -> Response:
+    """Стандартизированный PDF-профиль кандидата."""
     return _pdf(*cards.own_pdf(db, user.id, now))

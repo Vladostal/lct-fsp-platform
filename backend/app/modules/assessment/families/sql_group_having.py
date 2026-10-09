@@ -17,7 +17,7 @@ from app.modules.assessment.families.registry import family_meta
 
 META = family_meta(
     "sql.group_having",
-    version=1,
+    version=2,
     feature_bounds={
         1: {"tables": (1, 1), "table_rows": (8, 8), "subqueries": (1, 1), "concepts": (2, 2), "trap": (0, 0),
             "answer_abs": (0, 1000)},
@@ -108,7 +108,11 @@ def generate(level: int, seed: int) -> Variant:
         family_version=META.version,
         level=level,
         seed=seed,
-        prompt="Какое число вернёт запрос к таблице orders (NULL — отсутствующее значение)? Ответ — целое число.",
+        prompt=(
+            "Какое число вернёт запрос к таблице orders (NULL — отсутствующее значение)? "
+            + ("Деление целых чисел целочисленное (как в SQLite и PostgreSQL). " if " / " in query else "")
+            + "Ответ — целое число."
+        ),
         code=CodeBlock(language="sql", text=query),
         tables=(sqlbox.to_table(tables[0]),),
         input=InputHint(placeholder="целое число", max_length=8),

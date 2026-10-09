@@ -14,6 +14,7 @@ import { applyFieldErrors, hasCode } from '@/lib/api'
 import { legalDocQuery } from '@/lib/query'
 import { AUTH } from '../content'
 import { useSignup } from '../hooks'
+import { rememberPendingEmail } from '../pending-email'
 import { type SignupValues, signupSchema } from '../schemas'
 import { AuthCard } from './auth-card'
 import { FormAlert } from './form-alert'
@@ -61,7 +62,10 @@ export function SignupForm({ initialRole }: { initialRole?: Role }) {
         is_adult: true,
       },
       {
-        onSuccess: () => navigate({ to: '/signup/check-email', search: { email: values.email } }),
+        onSuccess: () => {
+          rememberPendingEmail(values.email)
+          return navigate({ to: '/signup/check-email' })
+        },
         onError: (error) => applyFieldErrors(error, form.setError, FIELDS),
       },
     )

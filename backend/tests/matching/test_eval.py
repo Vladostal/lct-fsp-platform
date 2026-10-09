@@ -67,7 +67,8 @@ def test_quick_run_report(tmp_path: Path, capsys: pytest.CaptureFixture[str]) ->
     assert main(["run", "--out", str(tmp_path), "--quick"]) == 0
     assert time.monotonic() - started < 30
     printed = capsys.readouterr().out
-    for marker in ("Критерии успеха", "только сила профиля", "порядок версии 1.0", "порядок версии 1.1", "Близнецы"):
+    orders = ("порядок версии 1.0", "порядок версии 1.1", "порядок версии 1.2")
+    for marker in ("Критерии успеха", "только сила профиля", *orders, "Близнецы"):
         assert marker in printed
     assert "Накрутка заявленным" in printed and "summary:" in printed
 
@@ -79,10 +80,16 @@ def test_quick_run_report(tmp_path: Path, capsys: pytest.CaptureFixture[str]) ->
         report["twins"]
     )
     assert "median_position_shift_v11" in report["twins"]
-    assert {"order_v10", "order_v11", "strength3"} <= set(report["ablations"])
-    # Накрутка заявленным: наш порядок не вытесняет никого с большей силой или подтверждённым покрытием.
-    assert report["stuffing"]["ours"]["displaced"] == 0
-    assert report["stuffing"]["declared"]["entered"] > report["stuffing"]["ours"]["entered"]
+    assert {"order_v10", "order_v11", "order_v12", "strength3"} <= set(report["ablations"])
+    # Накрутка заявленным: прежний порядок «сила первой» к ней глух, но по релевантности в топ-10 уступает
+    # действующему даже после накрутки; бейзлайн заявленного стека страдает от неё сильнее нашего порядка.
+    stuffing = report["stuffing"]
+    assert stuffing["order_v12"]["displaced"] == 0
+    assert stuffing["ours"]["p10_stuffed"] > stuffing["order_v12"]["p10"]
+    assert stuffing["ours"]["p10_stuffed"] >= stuffing["declared"]["p10_stuffed"]
+    assert stuffing["declared"]["entered"] > stuffing["ours"]["entered"]
+    # Главный критерий: порядок по соответствию потребности превосходит бейзлайн заявленного стека.
+    assert report["criteria"][0]["ok"] is True and summary.p10_diff_ci_low > 0
     assert report["fairness"]["feasible_format_at_10"] == 1.0
     assert report["manual"]["status"] == "не проводился"
     assert any("только сила" in row["name"] for row in report["criteria"])

@@ -13,7 +13,7 @@ from app.modules.assessment.families.registry import family_meta
 
 META = family_meta(
     "code.trace_recursion",
-    version=1,
+    version=2,
     feature_bounds={
         1: {"code_lines": (5, 5), "trace_steps": (6, 40), "nesting_depth": (1, 1), "concepts": (1, 1),
             "answer_abs": (2, 400), "trap": (1, 1)},

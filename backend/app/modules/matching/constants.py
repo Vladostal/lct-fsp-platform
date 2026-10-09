@@ -18,7 +18,7 @@ class MatchingConstants(BaseSettings):
 
     model_config = module_env("MATCHING_")
 
-    scorer_version: str = "match-1"
+    scorer_version: str = "match-2"
     # Вес доказательства `e` (Арх. 6.2). Заявленное в подтверждённое покрытие не входит.
     e_test: float = 1.0
     e_test_single: float = 0.7

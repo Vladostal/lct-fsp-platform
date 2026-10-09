@@ -135,7 +135,7 @@ def post_sync(user: Candidate, db: Db) -> FspLinkView:
     try:
         sync.run_sync(db, user.id, "manual")
     except sync.NotLinked:
-        raise ApiException(404, "fsp_not_linked") from None
+        raise ApiException(404, "fsp_not_linked", c.ERROR_MESSAGES["fsp_not_linked"]) from None
     view, _ = _link_view(db, user.id)
     return view
 

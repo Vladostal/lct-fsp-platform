@@ -1334,6 +1334,62 @@ export type DeclineRequest = {
 };
 
 /**
+ * DemoAccount
+ *
+ * Строка таблицы демо-аккаунтов на `/demo`: ключ входа, название, роль и описание состояния.
+ */
+export type DemoAccount = {
+    /**
+     * Key
+     */
+    key: string;
+    role: Role;
+    /**
+     * State Label
+     */
+    state_label: string;
+    /**
+     * Title
+     */
+    title: string;
+};
+
+/**
+ * DemoLoginRequest
+ */
+export type DemoLoginRequest = {
+    /**
+     * Account Key
+     */
+    account_key: string;
+};
+
+/**
+ * DemoMe
+ *
+ * Вошедший демо-пользователь (те же поля, что у `MeView` модуля `identity`).
+ */
+export type DemoMe = {
+    /**
+     * Email
+     */
+    email: string;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Is Demo
+     */
+    is_demo: boolean;
+    role: Role;
+    /**
+     * Server Now
+     */
+    server_now: string;
+};
+
+/**
  * DiffCounts
  *
  * Счётчики различий с базовой версией: числа без идентификаторов (Арх. 6.11).
@@ -1570,6 +1626,14 @@ export type FamilyHealth = {
      * Exposure Max
      */
     exposure_max: number;
+    /**
+     * Fast Correct Share
+     */
+    fast_correct_share?: number | null;
+    /**
+     * Fast High
+     */
+    fast_high?: boolean;
     /**
      * Group Code
      */
@@ -4269,6 +4333,16 @@ export type RelaxationHint = {
 };
 
 /**
+ * RestartResult
+ */
+export type RestartResult = {
+    /**
+     * Restarted At
+     */
+    restarted_at: string;
+};
+
+/**
  * ResultPending
  */
 export type ResultPending = {
@@ -4437,7 +4511,8 @@ export type SessionStatus = 'in_progress' | 'finished' | 'expired';
 /**
  * ShortlistCreate
  *
- * Тело создания версии подборки: без полей — запрос из потребности; с `refinement` — уточнение родителя.
+ * Тело создания версии подборки: без полей — запрос из потребности; с `refinement` — уточнение версии
+ * `parent_id` (обязателен вместе с `refinement`: иначе 422 `parent_required`).
  */
 export type ShortlistCreate = {
     /**
@@ -7303,6 +7378,99 @@ export type ContactSalaryHintResponses = {
 };
 
 export type ContactSalaryHintResponse = ContactSalaryHintResponses[keyof ContactSalaryHintResponses];
+
+export type DemoListAccountsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/demo/accounts';
+};
+
+export type DemoListAccountsErrors = {
+    /**
+     * Объекта нет или он чужой
+     */
+    404: ApiError;
+};
+
+export type DemoListAccountsError = DemoListAccountsErrors[keyof DemoListAccountsErrors];
+
+export type DemoListAccountsResponses = {
+    /**
+     * Response Demo-List Accounts
+     *
+     * Successful Response
+     */
+    200: Array<DemoAccount>;
+};
+
+export type DemoListAccountsResponse = DemoListAccountsResponses[keyof DemoListAccountsResponses];
+
+export type DemoDemoLoginData = {
+    body: DemoLoginRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/demo/login';
+};
+
+export type DemoDemoLoginErrors = {
+    /**
+     * Объекта нет или он чужой
+     */
+    404: ApiError;
+    /**
+     * Ошибки полей или правил
+     */
+    422: ApiError;
+};
+
+export type DemoDemoLoginError = DemoDemoLoginErrors[keyof DemoDemoLoginErrors];
+
+export type DemoDemoLoginResponses = {
+    /**
+     * Successful Response
+     */
+    200: DemoMe;
+};
+
+export type DemoDemoLoginResponse = DemoDemoLoginResponses[keyof DemoDemoLoginResponses];
+
+export type DemoRestartData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/demo/scenario/restart';
+};
+
+export type DemoRestartErrors = {
+    /**
+     * Нет действующей сессии
+     */
+    401: ApiError;
+    /**
+     * Чужая роль или действие запрещено
+     */
+    403: ApiError;
+    /**
+     * Объекта нет или он чужой
+     */
+    404: ApiError;
+    /**
+     * Превышен лимит; params.retry_after — секунды
+     */
+    429: ApiError;
+};
+
+export type DemoRestartError = DemoRestartErrors[keyof DemoRestartErrors];
+
+export type DemoRestartResponses = {
+    /**
+     * Successful Response
+     */
+    200: RestartResult;
+};
+
+export type DemoRestartResponse = DemoRestartResponses[keyof DemoRestartResponses];
 
 export type MatchingListCandidatesData = {
     body?: never;

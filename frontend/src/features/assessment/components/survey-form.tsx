@@ -224,31 +224,40 @@ function SurveyFormBody({
               ) : null}
             </div>
             {question.kind === 'single' ? (
-              <RadioGroup
-                aria-labelledby={titleId}
-                value={typeof value === 'string' ? value : ''}
-                onValueChange={(code) => setAnswer(question, code)}
-                className={GRID}
-              >
-                {options.map((option) => (
-                  <Label
-                    key={option.code}
-                    className={cn(
-                      'surface-row flex min-h-14 min-w-0 cursor-pointer items-center gap-3 rounded-md border border-line p-3 font-normal',
-                      value === option.code && 'border-brand-600 bg-brand-50',
-                      !option.available && 'cursor-not-allowed opacity-60',
+              <>
+                <RadioGroup
+                  aria-labelledby={titleId}
+                  value={typeof value === 'string' ? value : ''}
+                  onValueChange={(code) => setAnswer(question, code)}
+                  className={GRID}
+                >
+                  {options.map((option) => (
+                    <Label
+                      key={option.code}
+                      className={cn(
+                        'surface-row flex min-h-14 min-w-0 cursor-pointer items-center gap-3 rounded-md border border-line p-3 font-normal',
+                        value === option.code && 'border-brand-600 bg-brand-50',
+                        !option.available && 'cursor-not-allowed opacity-60',
+                      )}
+                    >
+                      <RadioGroupItem value={option.code} disabled={!option.available} />
+                      <span className="min-w-0 break-words">
+                        {option.title}
+                        {!option.available ? (
+                          <span className="type-caption block text-ink-muted">{ASSESSMENT.survey.notReady}</span>
+                        ) : null}
+                      </span>
+                    </Label>
+                  ))}
+                </RadioGroup>
+                {options.length > 0 && options.every((option) => !option.available) ? (
+                  <Alert variant="info">
+                    {ASSESSMENT.survey.allNotReady(
+                      question.options.filter((option) => option.available).map((option) => option.title),
                     )}
-                  >
-                    <RadioGroupItem value={option.code} disabled={!option.available} />
-                    <span className="min-w-0 break-words">
-                      {option.title}
-                      {!option.available ? (
-                        <span className="type-caption block text-ink-muted">{ASSESSMENT.survey.notReady}</span>
-                      ) : null}
-                    </span>
-                  </Label>
-                ))}
-              </RadioGroup>
+                  </Alert>
+                ) : null}
+              </>
             ) : (
               <div role="group" aria-labelledby={titleId} className={GRID}>
                 {options.map((option) => {

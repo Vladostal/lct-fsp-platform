@@ -284,7 +284,7 @@ function ResultAlert({ inv }: { inv: InvitationCandidateView }) {
     if (c)
       text +=
         c.kind === 'salary_from'
-          ? ` Названное условие: от ${formatMoney(Number(c.value))} ₽.`
+          ? ` Названное условие: от ${formatMoney(Number(c.value))}.`
           : ` Названное условие: формат — ${WORK_FORMAT_LABELS[c.value as WorkFormat]}.`
   } else if (inv.status === 'expired') {
     variant = 'warning'

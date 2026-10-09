@@ -136,8 +136,20 @@ def _items(db: Session, snapshot_id: UUID) -> list[ShortlistItem]:
     )
 
 
+def _must_missing(item: ShortlistItem) -> int:
+    """Обязательных навыков без доказательств в сохранённой строке: счётчики лежат в `explanation.coverage`."""
+    cov = item.explanation.get("coverage") or {}
+    return max(0, int(cov.get("must_total", 0)) - int(cov.get("must_covered", 0)))
+
+
 def _diff_input(item: ShortlistItem) -> DiffInput:
-    band = band_key(Relation(item.relation), item.strength_band, item.confirmed_band or 0, item.coverage_band or 0)
+    band = band_key(
+        Relation(item.relation),
+        _must_missing(item),
+        item.confirmed_band or 0,
+        item.strength_band,
+        item.coverage_band or 0,
+    )
     return DiffInput(candidate_id=item.candidate_id, position=item.position, band=band)
 
 
@@ -206,7 +218,8 @@ def create(
             raise support.api_error(409, "parent_mismatch")
     if refinement is not None:
         if parent is None:
-            raise support.api_error(409, "parent_mismatch")
+            # Уточняется конкретная версия: без `parent_id` непонятно, какую из них меняет работодатель.
+            raise support.api_error(422, "parent_required")
         query = needs.refine(ShortlistQuery.model_validate(parent.query), refinement, need)
     else:
         query = needs.query_from_need(need)
@@ -267,8 +280,9 @@ def create(
                     row.position,
                     band_key(
                         row.scored.relation,
-                        row.scored.strength.band,
+                        row.scored.coverage.must_total - row.scored.coverage.must_covered,
                         row.scored.coverage.confirmed_band,
+                        row.scored.strength.band,
                         row.scored.coverage.band,
                     ),
                 )

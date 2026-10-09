@@ -221,3 +221,32 @@ def test_unverified_stub_is_purged_after_ttl(client, signup, mailbox, db: Sessio
     freeze_now.tick(days=31)
     signup("other@example.com")  # чистка срабатывает при регистрации
     assert find_user(db, "stale@example.com") is None
+
+
+# --- слабые пароли --------------------------------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("password", ["12345678", "0000000000", "aaaaaaaa", "password", "Qwerty123", "ПАРОЛЬ123"])
+def test_trivial_password_is_rejected_with_a_field_error(client, signup, mailbox, password: str):
+    response = signup("weak@example.com", password)
+    assert response.status_code == 422, response.text
+    fields = {item["name"]: item for item in response.json()["fields"]}
+    assert fields["password"]["code"] == "password_too_simple" and "простой" in fields["password"]["message"]
+    assert mailbox == []
+
+
+@pytest.mark.parametrize("password", ["Demo-2026", "korova 42 plyashet", "12345678a", "длинный пароль фразой"])
+def test_ordinary_password_is_accepted(client, signup, password: str):
+    assert signup("fine@example.com", password).status_code == 202
+
+
+def test_trivial_new_password_is_rejected_on_change(client, make_user, login_as):
+    user = make_user()
+    login_as(user)
+    response = client.post(f"{URL}/password", json={"current_password": user.password, "new_password": "11111111"})
+    assert response.status_code == 422
+    assert response.json()["fields"][0] == {
+        "name": "new_password",
+        "code": "password_too_simple",
+        "message": response.json()["fields"][0]["message"],
+    }

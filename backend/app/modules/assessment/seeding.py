@@ -253,7 +253,7 @@ def seed_session_in_progress(db: Session, candidate_id: UUID, grade_code: str, a
     У кандидата без опроса создаётся опрос `backend` с заявленным грейдом `grade_code` (демо-аккаунты сида).
     """
     if grade_code not in GRADES:
-        raise ApiException(422, "grade_not_allowed")
+        raise ApiException(422, "grade_not_allowed", "Такого грейда нет")
     profile = _ensure_profile(db, candidate_id, "backend", grade_code, now)
     sessions.close_expired_for(db, candidate_id, now)
     decision = rules.can_start(sessions.start_context(db, candidate_id), grade_code, now)

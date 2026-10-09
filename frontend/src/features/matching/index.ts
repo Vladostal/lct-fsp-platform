@@ -4,7 +4,7 @@
  */
 export { BankScreen } from './components/bank-screen'
 export { CandidateSheet } from './components/candidate-sheet'
-export { CandidateView, type CandidateViewProps } from './components/candidate-view'
+export { CandidateView, type CandidateViewProps, type InviteRenderProps } from './components/candidate-view'
 export { MatchCardCompact, type MatchCardCompactProps } from './components/match-card-compact'
 export { MatchCardDetailed, type MatchCardDetailedProps } from './components/match-card-detailed'
 export { CoverageTable } from './components/need-blueprint'

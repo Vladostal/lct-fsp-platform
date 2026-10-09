@@ -140,7 +140,7 @@ def _level3(rng: Random, total: str, i: str, j: str) -> tuple[str, Model, int, i
         f"        {nums}[{i}], {nums}[{i} + 1] = {nums}[{i} + 1], {nums}[{i}]\nprint({nums}[{pos}] * 10 + {nums}[-1])"
     )
 
-    def model(flag: str | None) -> int:
+    def model(flag: str | None) -> int:  # type: ignore[no-redef]
         a = list(data)
         stop = len(a) - 2 if flag == "off_by_one" else len(a) - 1
         for x in range(stop):

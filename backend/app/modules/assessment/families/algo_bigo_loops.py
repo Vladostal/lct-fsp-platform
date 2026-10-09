@@ -15,7 +15,7 @@ from app.modules.assessment.families.registry import family_meta
 
 META = family_meta(
     "algo.bigo_loops",
-    version=1,
+    version=2,
     feature_bounds={
         1: {"code_lines": (4, 11), "nesting_depth": (0, 3), "concepts": (1, 5), "options_count": (8, 8),
             "trap": (1, 1)},
@@ -108,10 +108,10 @@ def growth(node: Node, mode: str = "correct") -> Growth | str:
             for part in parts:
                 total = _add(total, part)  # type: ignore[arg-type]
             return total
-        return max(parts)  # type: ignore[type-var]
+        return max(parts)
     own, body = _factor(node.kind, mode), growth(node.body, mode)
     if mode == "add_nested":
-        return max(own, body)  # type: ignore[type-var]
+        return max(own, body)
     return _add(own, body)  # type: ignore[arg-type]
 
 
@@ -176,10 +176,12 @@ def _build_loops(level: int, target: str, rng: Random) -> Node:
         kind = rng.choice(["log", "halve"])
         if level == 1:
             return _loop(kind, const if rng.random() < 0.4 else None)
-        return rng.choice([_loop(kind), Seq((_loop(kind), const)), Seq((const, _loop(kind)))])
+        log_shapes: list[Node] = [_loop(kind), Seq((_loop(kind), const)), Seq((const, _loop(kind)))]
+        return rng.choice(log_shapes)
     if target == "sqrt":
         if level == 3:
-            return rng.choice([_loop("sqrt"), _loop("sqrt", const), Seq((_loop("sqrt"), _loop("log")))])
+            sqrt_shapes: list[Node] = [_loop("sqrt"), _loop("sqrt", const), Seq((_loop("sqrt"), _loop("log")))]
+            return rng.choice(sqrt_shapes)
         if level == 2:
             return Seq((_loop("sqrt"), _loop("log"))) if rng.random() < 0.5 else Seq((_loop("log"), _loop("sqrt")))
         return _loop("sqrt", const if rng.random() < 0.5 else None)
@@ -193,8 +195,9 @@ def _build_loops(level: int, target: str, rng: Random) -> Node:
     if target == "n2":
         if level == 1:
             return _loop("n", _loop("n", const if rng.random() < 0.5 else None))
-        return rng.choice([_loop("n", _loop("tri")), Seq((_loop("n", _loop("tri")), _loop("n"))),
-                           _loop("n", _loop("n", const))])  # fmt: skip
+        square_shapes: list[Node] = [_loop("n", _loop("tri")), Seq((_loop("n", _loop("tri")), _loop("n"))),
+                                     _loop("n", _loop("n", const))]  # fmt: skip
+        return rng.choice(square_shapes)
     if level == 1:
         return _loop("n", _loop("n", _loop("n")))
     return rng.choice([_loop("n", _loop("tri", _loop("tri"))), _loop("n", _loop("n", _loop("n")))])

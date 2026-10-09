@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useCallback } from 'react'
-import { BankScreen, bankSearchSchema } from '@/features/matching'
+import { InviteFlow } from '@/features/invitations'
+import { BankScreen, bankSearchSchema, type InviteRenderProps } from '@/features/matching'
 
 /** E8. Банк кандидатов: фильтры и открытая карточка — в адресе. */
 export const Route = createFileRoute('/employer/_cabinet/search')({
@@ -17,5 +18,7 @@ function Screen() {
       navigate({ search: (prev) => ({ ...prev, ...patch }), replace }),
     [navigate],
   )
-  return <BankScreen search={search} catalog={catalog} setSearch={setSearch} />
+  // Приглашение из банка — без привязки к потребности: её можно выбрать в самой форме (E6).
+  const renderInvite = useCallback((invite: InviteRenderProps) => <InviteFlow {...invite} />, [])
+  return <BankScreen search={search} catalog={catalog} setSearch={setSearch} renderInvite={renderInvite} />
 }

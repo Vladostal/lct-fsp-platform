@@ -49,9 +49,9 @@ RESUME_QUEUE_WAIT_S = 10.0
 RESUME_PAGE_CHAR_LIMIT = 20_000
 #: Результат разбора неиспользованной загрузки обнуляется через столько часов (Арх. 6.14).
 RESUME_RESULT_TTL_HOURS = 24
-RESUME_PARSER_VERSION = "resume-rules-1"
+RESUME_PARSER_VERSION = "resume-rules-2"
 #: Пригодный текст: не меньше стольких букв и такая их доля среди непробельных знаков.
-RESUME_MIN_LETTERS = 200
+RESUME_MIN_LETTERS = 100
 RESUME_MIN_LETTER_SHARE = 0.5
 #: Число полей, по которым считается «распознано N из 9» (приложение B, §1.5).
 RESUME_FIELDS_TOTAL = 9

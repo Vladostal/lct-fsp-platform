@@ -13,7 +13,26 @@ from typing import Any
 from app.modules.assessment.dto import GradeResult
 from app.modules.assessment.families._lib.contract import AnswerSpec, ItemKind
 
-__all__ = ["grade", "normalize_number", "normalize_text"]
+__all__ = ["ANSWER_KEYS", "answer_key", "grade", "normalize_number", "normalize_text"]
+
+#: Поле тела ответа по виду задания (то же, что строит `contract.raw_answer_for`).
+ANSWER_KEYS: dict[ItemKind, str] = {
+    ItemKind.NUMERIC_INPUT: "value",
+    ItemKind.TEXT_INPUT: "value",
+    ItemKind.SINGLE_CHOICE: "option_id",
+    ItemKind.MULTI_CHOICE: "option_ids",
+    ItemKind.PICK_LINE: "line",
+    ItemKind.ORDER_BLOCKS: "order",
+}
+
+
+def answer_key(kind: ItemKind | str) -> str:
+    """Имя поля, в котором приходит ответ на задание этого вида (приложение A, §2.4).
+
+    Тело без этого поля — ошибка клиента, а не ответ кандидата: сессия отвечает 422 `answer_malformed` и задание
+    не тратит. Поле с неразборчивым значением («abc» вместо числа) — уже ответ: балл 0, `parse_ok = False`.
+    """
+    return ANSWER_KEYS[ItemKind(kind)]
 
 _NUMBER = re.compile(r"^[+-]?(\d+(\.\d*)?|\.\d+)$")
 _SPACES = re.compile(r"[\s   ]+")

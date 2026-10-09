@@ -2,7 +2,7 @@
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { AssessmentCreateSessionData, AssessmentCreateSessionErrors, AssessmentCreateSessionResponses, AssessmentGetBankHealthData, AssessmentGetBankHealthErrors, AssessmentGetBankHealthResponses, AssessmentGetBlueprintsData, AssessmentGetBlueprintsErrors, AssessmentGetBlueprintsResponses, AssessmentGetHistoryData, AssessmentGetHistoryErrors, AssessmentGetHistoryResponses, AssessmentGetMethodologyData, AssessmentGetMethodologyResponses, AssessmentGetResultData, AssessmentGetResultErrors, AssessmentGetResultResponses, AssessmentGetSessionData, AssessmentGetSessionErrors, AssessmentGetSessionResponses, AssessmentGetStateData, AssessmentGetStateErrors, AssessmentGetStateResponses, AssessmentGetSurveyData, AssessmentGetSurveyErrors, AssessmentGetSurveyResponses, AssessmentPostAnswerData, AssessmentPostAnswerErrors, AssessmentPostAnswerResponses, AssessmentPostBlueprintPreviewData, AssessmentPostBlueprintPreviewErrors, AssessmentPostBlueprintPreviewResponses, AssessmentPostFamilyStatusData, AssessmentPostFamilyStatusErrors, AssessmentPostFamilyStatusResponses, AssessmentPostLeakLookupData, AssessmentPostLeakLookupErrors, AssessmentPostLeakLookupResponses, AssessmentPutClaimData, AssessmentPutClaimErrors, AssessmentPutClaimResponses, AssessmentPutSurveyData, AssessmentPutSurveyErrors, AssessmentPutSurveyResponses, CatalogReadCatalogData, CatalogReadCatalogResponses, CompanyGetCompanyData, CompanyGetCompanyErrors, CompanyGetCompanyResponses, CompanyPutCompanyData, CompanyPutCompanyErrors, CompanyPutCompanyResponses, ContactAcceptCandidateInvitationData, ContactAcceptCandidateInvitationErrors, ContactAcceptCandidateInvitationResponses, ContactCandidateFunnelData, ContactCandidateFunnelErrors, ContactCandidateFunnelResponses, ContactCandidateInvitationComplaintData, ContactCandidateInvitationComplaintErrors, ContactCandidateInvitationComplaintResponses, ContactCandidateInvitationOutcomeData, ContactCandidateInvitationOutcomeErrors, ContactCandidateInvitationOutcomeResponses, ContactCandidateInvitationsSummaryData, ContactCandidateInvitationsSummaryErrors, ContactCandidateInvitationsSummaryResponses, ContactContactMetricsData, ContactContactMetricsResponses, ContactCreateInvitationData, ContactCreateInvitationErrors, ContactCreateInvitationResponses, ContactDeclineCandidateInvitationData, ContactDeclineCandidateInvitationErrors, ContactDeclineCandidateInvitationResponses, ContactEmployerInvitationOutcomeData, ContactEmployerInvitationOutcomeErrors, ContactEmployerInvitationOutcomeResponses, ContactGetCandidateInvitationData, ContactGetCandidateInvitationErrors, ContactGetCandidateInvitationResponses, ContactGetEmployerInvitationData, ContactGetEmployerInvitationErrors, ContactGetEmployerInvitationResponses, ContactInvitationsPairStatesData, ContactInvitationsPairStatesErrors, ContactInvitationsPairStatesResponses, ContactInvitationsQuotaData, ContactInvitationsQuotaErrors, ContactInvitationsQuotaResponses, ContactInvitationsStatsData, ContactInvitationsStatsErrors, ContactInvitationsStatsResponses, ContactListCandidateInvitationsData, ContactListCandidateInvitationsErrors, ContactListCandidateInvitationsResponses, ContactListComplaintsData, ContactListComplaintsErrors, ContactListComplaintsResponses, ContactListEmployerInvitationsData, ContactListEmployerInvitationsErrors, ContactListEmployerInvitationsResponses, ContactNeedInsightsData, ContactNeedInsightsErrors, ContactNeedInsightsResponses, ContactPrecheckInvitationData, ContactPrecheckInvitationErrors, ContactPrecheckInvitationResponses, ContactResolveComplaintData, ContactResolveComplaintErrors, ContactResolveComplaintResponses, ContactResumeInvitationsData, ContactResumeInvitationsErrors, ContactResumeInvitationsResponses, ContactSalaryHintData, ContactSalaryHintErrors, ContactSalaryHintResponses, ContactViewCandidateInvitationData, ContactViewCandidateInvitationErrors, ContactViewCandidateInvitationResponses, ContactWithdrawEmployerInvitationData, ContactWithdrawEmployerInvitationErrors, ContactWithdrawEmployerInvitationResponses, CoreHealthData, CoreHealthErrors, CoreHealthResponses, FspDeleteLinkData, FspDeleteLinkErrors, FspDeleteLinkResponses, FspGetCalendarData, FspGetCalendarErrors, FspGetCalendarResponses, FspGetConsentData, FspGetConsentErrors, FspGetConsentResponses, FspGetLinkData, FspGetLinkErrors, FspGetLinkResponses, FspLinkCallbackData, FspLinkCallbackErrors, FspPostSyncData, FspPostSyncErrors, FspPostSyncResponses, FspStartLinkData, FspStartLinkErrors, FspStartLinkResponses, IdentityChangePasswordData, IdentityChangePasswordErrors, IdentityChangePasswordResponses, IdentityDeleteAccountData, IdentityDeleteAccountErrors, IdentityDeleteAccountResponses, IdentityForgotPasswordData, IdentityForgotPasswordErrors, IdentityForgotPasswordResponses, IdentityLegalDocData, IdentityLegalDocErrors, IdentityLegalDocResponses, IdentityLoginData, IdentityLoginErrors, IdentityLoginResponses, IdentityLogoutData, IdentityLogoutErrors, IdentityLogoutResponses, IdentityMeData, IdentityMeErrors, IdentityMeResponses, IdentityResendVerificationData, IdentityResendVerificationErrors, IdentityResendVerificationResponses, IdentityResetPasswordData, IdentityResetPasswordErrors, IdentityResetPasswordResponses, IdentitySignupData, IdentitySignupErrors, IdentitySignupResponses, IdentityVerifyEmailData, IdentityVerifyEmailErrors, IdentityVerifyEmailResponses, MatchingArchiveNeedData, MatchingArchiveNeedErrors, MatchingArchiveNeedResponses, MatchingCreateNeedData, MatchingCreateNeedErrors, MatchingCreateNeedResponses, MatchingCreateShortlistData, MatchingCreateShortlistErrors, MatchingCreateShortlistResponses, MatchingDiffShortlistsData, MatchingDiffShortlistsErrors, MatchingDiffShortlistsResponses, MatchingGetCandidateCardData, MatchingGetCandidateCardErrors, MatchingGetCandidateCardResponses, MatchingGetCandidatePdfData, MatchingGetCandidatePdfErrors, MatchingGetCandidatePdfResponses, MatchingGetNeedData, MatchingGetNeedErrors, MatchingGetNeedResponses, MatchingGetOwnEvidenceData, MatchingGetOwnEvidenceErrors, MatchingGetOwnEvidenceResponses, MatchingGetOwnPdfData, MatchingGetOwnPdfErrors, MatchingGetOwnPdfResponses, MatchingGetShortlistData, MatchingGetShortlistErrors, MatchingGetShortlistResponses, MatchingListCandidatesData, MatchingListCandidatesErrors, MatchingListCandidatesResponses, MatchingListNeedsData, MatchingListNeedsErrors, MatchingListNeedsResponses, MatchingListShortlistsData, MatchingListShortlistsErrors, MatchingListShortlistsResponses, MatchingParseNeedData, MatchingParseNeedErrors, MatchingParseNeedResponses, MatchingPinCandidateData, MatchingPinCandidateErrors, MatchingPinCandidateResponses, MatchingPreviewProfileData, MatchingPreviewProfileErrors, MatchingPreviewProfileResponses, MatchingUnpinCandidateData, MatchingUnpinCandidateErrors, MatchingUnpinCandidateResponses, MatchingUpdateNeedData, MatchingUpdateNeedErrors, MatchingUpdateNeedResponses, ProfileGetAccessLogData, ProfileGetAccessLogErrors, ProfileGetAccessLogResponses, ProfileGetConditionsData, ProfileGetConditionsErrors, ProfileGetConditionsResponses, ProfileGetConsentsData, ProfileGetConsentsErrors, ProfileGetConsentsResponses, ProfileGetContactsData, ProfileGetContactsErrors, ProfileGetContactsResponses, ProfileGetPrivacyData, ProfileGetPrivacyErrors, ProfileGetPrivacyResponses, ProfileGetProfileData, ProfileGetProfileErrors, ProfileGetProfileResponses, ProfilePostPublicationData, ProfilePostPublicationErrors, ProfilePostPublicationResponses, ProfilePostResumeData, ProfilePostResumeErrors, ProfilePostResumeResponses, ProfilePostVisibilityData, ProfilePostVisibilityErrors, ProfilePostVisibilityResponses, ProfilePutConditionsData, ProfilePutConditionsErrors, ProfilePutConditionsResponses, ProfilePutPrivacyData, ProfilePutPrivacyErrors, ProfilePutPrivacyResponses, ProfilePutProfileData, ProfilePutProfileErrors, ProfilePutProfileResponses, ReportsValidationSummaryData, ReportsValidationSummaryResponses } from './types.gen';
+import type { AssessmentCreateSessionData, AssessmentCreateSessionErrors, AssessmentCreateSessionResponses, AssessmentGetBankHealthData, AssessmentGetBankHealthErrors, AssessmentGetBankHealthResponses, AssessmentGetBlueprintsData, AssessmentGetBlueprintsErrors, AssessmentGetBlueprintsResponses, AssessmentGetHistoryData, AssessmentGetHistoryErrors, AssessmentGetHistoryResponses, AssessmentGetMethodologyData, AssessmentGetMethodologyResponses, AssessmentGetResultData, AssessmentGetResultErrors, AssessmentGetResultResponses, AssessmentGetSessionData, AssessmentGetSessionErrors, AssessmentGetSessionResponses, AssessmentGetStateData, AssessmentGetStateErrors, AssessmentGetStateResponses, AssessmentGetSurveyData, AssessmentGetSurveyErrors, AssessmentGetSurveyResponses, AssessmentPostAnswerData, AssessmentPostAnswerErrors, AssessmentPostAnswerResponses, AssessmentPostBlueprintPreviewData, AssessmentPostBlueprintPreviewErrors, AssessmentPostBlueprintPreviewResponses, AssessmentPostFamilyStatusData, AssessmentPostFamilyStatusErrors, AssessmentPostFamilyStatusResponses, AssessmentPostLeakLookupData, AssessmentPostLeakLookupErrors, AssessmentPostLeakLookupResponses, AssessmentPutClaimData, AssessmentPutClaimErrors, AssessmentPutClaimResponses, AssessmentPutSurveyData, AssessmentPutSurveyErrors, AssessmentPutSurveyResponses, CatalogReadCatalogData, CatalogReadCatalogResponses, CompanyGetCompanyData, CompanyGetCompanyErrors, CompanyGetCompanyResponses, CompanyPutCompanyData, CompanyPutCompanyErrors, CompanyPutCompanyResponses, ContactAcceptCandidateInvitationData, ContactAcceptCandidateInvitationErrors, ContactAcceptCandidateInvitationResponses, ContactCandidateFunnelData, ContactCandidateFunnelErrors, ContactCandidateFunnelResponses, ContactCandidateInvitationComplaintData, ContactCandidateInvitationComplaintErrors, ContactCandidateInvitationComplaintResponses, ContactCandidateInvitationOutcomeData, ContactCandidateInvitationOutcomeErrors, ContactCandidateInvitationOutcomeResponses, ContactCandidateInvitationsSummaryData, ContactCandidateInvitationsSummaryErrors, ContactCandidateInvitationsSummaryResponses, ContactContactMetricsData, ContactContactMetricsResponses, ContactCreateInvitationData, ContactCreateInvitationErrors, ContactCreateInvitationResponses, ContactDeclineCandidateInvitationData, ContactDeclineCandidateInvitationErrors, ContactDeclineCandidateInvitationResponses, ContactEmployerInvitationOutcomeData, ContactEmployerInvitationOutcomeErrors, ContactEmployerInvitationOutcomeResponses, ContactGetCandidateInvitationData, ContactGetCandidateInvitationErrors, ContactGetCandidateInvitationResponses, ContactGetEmployerInvitationData, ContactGetEmployerInvitationErrors, ContactGetEmployerInvitationResponses, ContactInvitationsPairStatesData, ContactInvitationsPairStatesErrors, ContactInvitationsPairStatesResponses, ContactInvitationsQuotaData, ContactInvitationsQuotaErrors, ContactInvitationsQuotaResponses, ContactInvitationsStatsData, ContactInvitationsStatsErrors, ContactInvitationsStatsResponses, ContactListCandidateInvitationsData, ContactListCandidateInvitationsErrors, ContactListCandidateInvitationsResponses, ContactListComplaintsData, ContactListComplaintsErrors, ContactListComplaintsResponses, ContactListEmployerInvitationsData, ContactListEmployerInvitationsErrors, ContactListEmployerInvitationsResponses, ContactNeedInsightsData, ContactNeedInsightsErrors, ContactNeedInsightsResponses, ContactPrecheckInvitationData, ContactPrecheckInvitationErrors, ContactPrecheckInvitationResponses, ContactResolveComplaintData, ContactResolveComplaintErrors, ContactResolveComplaintResponses, ContactResumeInvitationsData, ContactResumeInvitationsErrors, ContactResumeInvitationsResponses, ContactSalaryHintData, ContactSalaryHintErrors, ContactSalaryHintResponses, ContactViewCandidateInvitationData, ContactViewCandidateInvitationErrors, ContactViewCandidateInvitationResponses, ContactWithdrawEmployerInvitationData, ContactWithdrawEmployerInvitationErrors, ContactWithdrawEmployerInvitationResponses, CoreHealthData, CoreHealthErrors, CoreHealthResponses, DemoDemoLoginData, DemoDemoLoginErrors, DemoDemoLoginResponses, DemoListAccountsData, DemoListAccountsErrors, DemoListAccountsResponses, DemoRestartData, DemoRestartErrors, DemoRestartResponses, FspDeleteLinkData, FspDeleteLinkErrors, FspDeleteLinkResponses, FspGetCalendarData, FspGetCalendarErrors, FspGetCalendarResponses, FspGetConsentData, FspGetConsentErrors, FspGetConsentResponses, FspGetLinkData, FspGetLinkErrors, FspGetLinkResponses, FspLinkCallbackData, FspLinkCallbackErrors, FspPostSyncData, FspPostSyncErrors, FspPostSyncResponses, FspStartLinkData, FspStartLinkErrors, FspStartLinkResponses, IdentityChangePasswordData, IdentityChangePasswordErrors, IdentityChangePasswordResponses, IdentityDeleteAccountData, IdentityDeleteAccountErrors, IdentityDeleteAccountResponses, IdentityForgotPasswordData, IdentityForgotPasswordErrors, IdentityForgotPasswordResponses, IdentityLegalDocData, IdentityLegalDocErrors, IdentityLegalDocResponses, IdentityLoginData, IdentityLoginErrors, IdentityLoginResponses, IdentityLogoutData, IdentityLogoutErrors, IdentityLogoutResponses, IdentityMeData, IdentityMeErrors, IdentityMeResponses, IdentityResendVerificationData, IdentityResendVerificationErrors, IdentityResendVerificationResponses, IdentityResetPasswordData, IdentityResetPasswordErrors, IdentityResetPasswordResponses, IdentitySignupData, IdentitySignupErrors, IdentitySignupResponses, IdentityVerifyEmailData, IdentityVerifyEmailErrors, IdentityVerifyEmailResponses, MatchingArchiveNeedData, MatchingArchiveNeedErrors, MatchingArchiveNeedResponses, MatchingCreateNeedData, MatchingCreateNeedErrors, MatchingCreateNeedResponses, MatchingCreateShortlistData, MatchingCreateShortlistErrors, MatchingCreateShortlistResponses, MatchingDiffShortlistsData, MatchingDiffShortlistsErrors, MatchingDiffShortlistsResponses, MatchingGetCandidateCardData, MatchingGetCandidateCardErrors, MatchingGetCandidateCardResponses, MatchingGetCandidatePdfData, MatchingGetCandidatePdfErrors, MatchingGetCandidatePdfResponses, MatchingGetNeedData, MatchingGetNeedErrors, MatchingGetNeedResponses, MatchingGetOwnEvidenceData, MatchingGetOwnEvidenceErrors, MatchingGetOwnEvidenceResponses, MatchingGetOwnPdfData, MatchingGetOwnPdfErrors, MatchingGetOwnPdfResponses, MatchingGetShortlistData, MatchingGetShortlistErrors, MatchingGetShortlistResponses, MatchingListCandidatesData, MatchingListCandidatesErrors, MatchingListCandidatesResponses, MatchingListNeedsData, MatchingListNeedsErrors, MatchingListNeedsResponses, MatchingListShortlistsData, MatchingListShortlistsErrors, MatchingListShortlistsResponses, MatchingParseNeedData, MatchingParseNeedErrors, MatchingParseNeedResponses, MatchingPinCandidateData, MatchingPinCandidateErrors, MatchingPinCandidateResponses, MatchingPreviewProfileData, MatchingPreviewProfileErrors, MatchingPreviewProfileResponses, MatchingUnpinCandidateData, MatchingUnpinCandidateErrors, MatchingUnpinCandidateResponses, MatchingUpdateNeedData, MatchingUpdateNeedErrors, MatchingUpdateNeedResponses, ProfileGetAccessLogData, ProfileGetAccessLogErrors, ProfileGetAccessLogResponses, ProfileGetConditionsData, ProfileGetConditionsErrors, ProfileGetConditionsResponses, ProfileGetConsentsData, ProfileGetConsentsErrors, ProfileGetConsentsResponses, ProfileGetContactsData, ProfileGetContactsErrors, ProfileGetContactsResponses, ProfileGetPrivacyData, ProfileGetPrivacyErrors, ProfileGetPrivacyResponses, ProfileGetProfileData, ProfileGetProfileErrors, ProfileGetProfileResponses, ProfilePostPublicationData, ProfilePostPublicationErrors, ProfilePostPublicationResponses, ProfilePostResumeData, ProfilePostResumeErrors, ProfilePostResumeResponses, ProfilePostVisibilityData, ProfilePostVisibilityErrors, ProfilePostVisibilityResponses, ProfilePutConditionsData, ProfilePutConditionsErrors, ProfilePutConditionsResponses, ProfilePutPrivacyData, ProfilePutPrivacyErrors, ProfilePutPrivacyResponses, ProfilePutProfileData, ProfilePutProfileErrors, ProfilePutProfileResponses, ReportsValidationSummaryData, ReportsValidationSummaryResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -19,14 +19,14 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 };
 
 /**
- * Get Bank Health
+ * Состояние семейств: статус, экспозиция (подсветка выше 0.60), ответы, запас вариантов
  *
  * Состояние семейств: статус, экспозиция (подсветка выше 0.60), ответы, запас вариантов.
  */
 export const assessmentGetBankHealth = <ThrowOnError extends boolean = false>(options?: Options<AssessmentGetBankHealthData, ThrowOnError>): RequestResult<AssessmentGetBankHealthResponses, AssessmentGetBankHealthErrors, ThrowOnError> => (options?.client ?? client).get<AssessmentGetBankHealthResponses, AssessmentGetBankHealthErrors, ThrowOnError>({ url: '/api/v1/admin/assessment/bank/health', ...options });
 
 /**
- * Post Family Status
+ * Карантин, возврат, вывод из банка
  *
  * Карантин, возврат, вывод из банка. 422 `invalid_transition`.
  */
@@ -40,7 +40,7 @@ export const assessmentPostFamilyStatus = <ThrowOnError extends boolean = false>
 });
 
 /**
- * Post Leak Lookup
+ * По тексту найти вариант, семейство и сессии, которым он выдавался
  *
  * По тексту найти вариант, семейство и сессии, которым он выдавался.
  */
@@ -71,14 +71,14 @@ export const contactResolveComplaint = <ThrowOnError extends boolean = false>(op
 });
 
 /**
- * Get Blueprints
+ * Планы теста по грейдам своей специализации
  *
  * Планы теста по грейдам своей специализации. 409 `survey_required`.
  */
 export const assessmentGetBlueprints = <ThrowOnError extends boolean = false>(options?: Options<AssessmentGetBlueprintsData, ThrowOnError>): RequestResult<AssessmentGetBlueprintsResponses, AssessmentGetBlueprintsErrors, ThrowOnError> => (options?.client ?? client).get<AssessmentGetBlueprintsResponses, AssessmentGetBlueprintsErrors, ThrowOnError>({ url: '/api/v1/assessment/blueprints', ...options });
 
 /**
- * Post Blueprint Preview
+ * План теста из описания вакансии
  *
  * План теста из описания вакансии. Работодатель; при `features.demo` — без входа.
  *
@@ -95,7 +95,7 @@ export const assessmentPostBlueprintPreview = <ThrowOnError extends boolean = fa
 });
 
 /**
- * Put Claim
+ * Заявить грейд
  *
  * Заявить грейд. 409: `survey_required`, `claim_locked`; 422: `grade_unavailable`.
  */
@@ -109,21 +109,21 @@ export const assessmentPutClaim = <ThrowOnError extends boolean = false>(options
 });
 
 /**
- * Get History
+ * Опросы и тесты; без верности заданий
  *
  * Опросы и тесты; без верности заданий.
  */
 export const assessmentGetHistory = <ThrowOnError extends boolean = false>(options?: Options<AssessmentGetHistoryData, ThrowOnError>): RequestResult<AssessmentGetHistoryResponses, AssessmentGetHistoryErrors, ThrowOnError> => (options?.client ?? client).get<AssessmentGetHistoryResponses, AssessmentGetHistoryErrors, ThrowOnError>({ url: '/api/v1/assessment/history', ...options });
 
 /**
- * Get Methodology
+ * Константы механики и состав банка — без входа
  *
  * Константы механики и состав банка — без входа.
  */
 export const assessmentGetMethodology = <ThrowOnError extends boolean = false>(options?: Options<AssessmentGetMethodologyData, ThrowOnError>): RequestResult<AssessmentGetMethodologyResponses, unknown, ThrowOnError> => (options?.client ?? client).get<AssessmentGetMethodologyResponses, unknown, ThrowOnError>({ url: '/api/v1/assessment/methodology', ...options });
 
 /**
- * Create Session
+ * Начать тест
  *
  * Начать тест. 409: `session_active`, `cooldown_active`, `survey_required`, `claim_required`;
  * 422: `grade_not_allowed`, `grade_unavailable`; 503 `bank_unavailable`.
@@ -138,16 +138,17 @@ export const assessmentCreateSession = <ThrowOnError extends boolean = false>(op
 });
 
 /**
- * Get Session
+ * Сессия с текущим заданием; закрывает сессию, если время вышло
  *
  * Сессия с текущим заданием; закрывает сессию, если время вышло.
  */
 export const assessmentGetSession = <ThrowOnError extends boolean = false>(options: Options<AssessmentGetSessionData, ThrowOnError>): RequestResult<AssessmentGetSessionResponses, AssessmentGetSessionErrors, ThrowOnError> => (options.client ?? client).get<AssessmentGetSessionResponses, AssessmentGetSessionErrors, ThrowOnError>({ url: '/api/v1/assessment/sessions/{session_id}', ...options });
 
 /**
- * Post Answer
+ * Ответ на текущее задание
  *
- * Ответ на текущее задание. 409: `item_already_answered`, `session_finished`; 410 `session_expired`.
+ * Ответ на текущее задание. 409: `item_already_answered`, `session_finished`; 410 `session_expired`;
+ * 422 `answer_malformed` — в теле нет поля ответа для задания этого вида (задание остаётся текущим).
  *
  * Повтор запроса с тем же `Idempotency-Key` возвращает текущее состояние. Верность ответа не сообщается.
  */
@@ -161,28 +162,28 @@ export const assessmentPostAnswer = <ThrowOnError extends boolean = false>(optio
 });
 
 /**
- * Get Result
+ * Результат закрытой сессии; 202 `{status: "in_progress"}`, пока сессия идёт
  *
  * Результат закрытой сессии; 202 `{status: "in_progress"}`, пока сессия идёт.
  */
 export const assessmentGetResult = <ThrowOnError extends boolean = false>(options: Options<AssessmentGetResultData, ThrowOnError>): RequestResult<AssessmentGetResultResponses, AssessmentGetResultErrors, ThrowOnError> => (options.client ?? client).get<AssessmentGetResultResponses, AssessmentGetResultErrors, ThrowOnError>({ url: '/api/v1/assessment/sessions/{session_id}/result', ...options });
 
 /**
- * Get State
+ * Опрос, заявленный грейд, категория, уровень, активная сессия и доступные действия
  *
  * Опрос, заявленный грейд, категория, уровень, активная сессия и доступные действия.
  */
 export const assessmentGetState = <ThrowOnError extends boolean = false>(options?: Options<AssessmentGetStateData, ThrowOnError>): RequestResult<AssessmentGetStateResponses, AssessmentGetStateErrors, ThrowOnError> => (options?.client ?? client).get<AssessmentGetStateResponses, AssessmentGetStateErrors, ThrowOnError>({ url: '/api/v1/assessment/state', ...options });
 
 /**
- * Get Survey
+ * Схема опроса и сохранённые ответы
  *
  * Схема опроса и сохранённые ответы.
  */
 export const assessmentGetSurvey = <ThrowOnError extends boolean = false>(options?: Options<AssessmentGetSurveyData, ThrowOnError>): RequestResult<AssessmentGetSurveyResponses, AssessmentGetSurveyErrors, ThrowOnError> => (options?.client ?? client).get<AssessmentGetSurveyResponses, AssessmentGetSurveyErrors, ThrowOnError>({ url: '/api/v1/assessment/survey', ...options });
 
 /**
- * Put Survey
+ * Сохранить ответы опроса
  *
  * Сохранить ответы опроса. 409: `survey_version_mismatch`, `session_active`,
  * `specialization_change_requires_confirm`, `cooldown_active`; 422: `specialization_unavailable`.
@@ -316,17 +317,23 @@ export const identityVerifyEmail = <ThrowOnError extends boolean = false>(option
 });
 
 /**
- * Get Access Log
+ * Журнал доступа: кто и когда получил или открыл данные кандидата
+ *
+ * Журнал доступа: кто и когда получил или открыл данные кандидата.
  */
 export const profileGetAccessLog = <ThrowOnError extends boolean = false>(options?: Options<ProfileGetAccessLogData, ThrowOnError>): RequestResult<ProfileGetAccessLogResponses, ProfileGetAccessLogErrors, ThrowOnError> => (options?.client ?? client).get<ProfileGetAccessLogResponses, ProfileGetAccessLogErrors, ThrowOnError>({ url: '/api/v1/candidate/access-log', ...options });
 
 /**
- * Get Conditions
+ * Условия кандидата: скрытый минимум зарплаты, форматы работы, готовность к переезду
+ *
+ * Условия кандидата: скрытый минимум зарплаты, форматы работы, готовность к переезду.
  */
 export const profileGetConditions = <ThrowOnError extends boolean = false>(options?: Options<ProfileGetConditionsData, ThrowOnError>): RequestResult<ProfileGetConditionsResponses, ProfileGetConditionsErrors, ThrowOnError> => (options?.client ?? client).get<ProfileGetConditionsResponses, ProfileGetConditionsErrors, ThrowOnError>({ url: '/api/v1/candidate/conditions', ...options });
 
 /**
- * Put Conditions
+ * Сохранить условия; минимум зарплаты работодателям не показывается
+ *
+ * Сохранить условия; минимум зарплаты работодателям не показывается.
  */
 export const profilePutConditions = <ThrowOnError extends boolean = false>(options: Options<ProfilePutConditionsData, ThrowOnError>): RequestResult<ProfilePutConditionsResponses, ProfilePutConditionsErrors, ThrowOnError> => (options.client ?? client).put<ProfilePutConditionsResponses, ProfilePutConditionsErrors, ThrowOnError>({
     url: '/api/v1/candidate/conditions',
@@ -338,12 +345,16 @@ export const profilePutConditions = <ThrowOnError extends boolean = false>(optio
 });
 
 /**
- * Get Consents
+ * Согласия кандидата и состояние показа профиля
+ *
+ * Согласия кандидата и состояние показа профиля.
  */
 export const profileGetConsents = <ThrowOnError extends boolean = false>(options?: Options<ProfileGetConsentsData, ThrowOnError>): RequestResult<ProfileGetConsentsResponses, ProfileGetConsentsErrors, ThrowOnError> => (options?.client ?? client).get<ProfileGetConsentsResponses, ProfileGetConsentsErrors, ThrowOnError>({ url: '/api/v1/candidate/consents', ...options });
 
 /**
- * Post Publication
+ * Дать или отозвать согласие на публикацию профиля
+ *
+ * Дать или отозвать согласие на публикацию профиля.
  */
 export const profilePostPublication = <ThrowOnError extends boolean = false>(options: Options<ProfilePostPublicationData, ThrowOnError>): RequestResult<ProfilePostPublicationResponses, ProfilePostPublicationErrors, ThrowOnError> => (options.client ?? client).post<ProfilePostPublicationResponses, ProfilePostPublicationErrors, ThrowOnError>({
     url: '/api/v1/candidate/consents/publication',
@@ -355,7 +366,9 @@ export const profilePostPublication = <ThrowOnError extends boolean = false>(opt
 });
 
 /**
- * Get Own Evidence
+ * Подтверждённые и заявленные навыки кандидата с источником каждого
+ *
+ * Подтверждённые и заявленные навыки кандидата с источником каждого.
  */
 export const matchingGetOwnEvidence = <ThrowOnError extends boolean = false>(options?: Options<MatchingGetOwnEvidenceData, ThrowOnError>): RequestResult<MatchingGetOwnEvidenceResponses, MatchingGetOwnEvidenceErrors, ThrowOnError> => (options?.client ?? client).get<MatchingGetOwnEvidenceResponses, MatchingGetOwnEvidenceErrors, ThrowOnError>({ url: '/api/v1/candidate/evidence', ...options });
 
@@ -438,12 +451,16 @@ export const contactCandidateInvitationOutcome = <ThrowOnError extends boolean =
 export const contactViewCandidateInvitation = <ThrowOnError extends boolean = false>(options: Options<ContactViewCandidateInvitationData, ThrowOnError>): RequestResult<ContactViewCandidateInvitationResponses, ContactViewCandidateInvitationErrors, ThrowOnError> => (options.client ?? client).post<ContactViewCandidateInvitationResponses, ContactViewCandidateInvitationErrors, ThrowOnError>({ url: '/api/v1/candidate/invitations/{invitation_id}/view', ...options });
 
 /**
- * Get Profile
+ * Профиль кандидата: поля, заявленные навыки, подсказки из резюме и заполненность
+ *
+ * Профиль кандидата: поля, заявленные навыки, подсказки из резюме и заполненность.
  */
 export const profileGetProfile = <ThrowOnError extends boolean = false>(options?: Options<ProfileGetProfileData, ThrowOnError>): RequestResult<ProfileGetProfileResponses, ProfileGetProfileErrors, ThrowOnError> => (options?.client ?? client).get<ProfileGetProfileResponses, ProfileGetProfileErrors, ThrowOnError>({ url: '/api/v1/candidate/profile', ...options });
 
 /**
- * Put Profile
+ * Сохранить профиль; принятые поля резюме берутся из загрузки `resume_upload_id`
+ *
+ * Сохранить профиль; принятые поля резюме берутся из загрузки `resume_upload_id`.
  */
 export const profilePutProfile = <ThrowOnError extends boolean = false>(options: Options<ProfilePutProfileData, ThrowOnError>): RequestResult<ProfilePutProfileResponses, ProfilePutProfileErrors, ThrowOnError> => (options.client ?? client).put<ProfilePutProfileResponses, ProfilePutProfileErrors, ThrowOnError>({
     url: '/api/v1/candidate/profile',
@@ -455,19 +472,23 @@ export const profilePutProfile = <ThrowOnError extends boolean = false>(options:
 });
 
 /**
- * Get Own Pdf
+ * Стандартизированный PDF-профиль кандидата
+ *
+ * Стандартизированный PDF-профиль кандидата.
  */
 export const matchingGetOwnPdf = <ThrowOnError extends boolean = false>(options?: Options<MatchingGetOwnPdfData, ThrowOnError>): RequestResult<MatchingGetOwnPdfResponses, MatchingGetOwnPdfErrors, ThrowOnError> => (options?.client ?? client).get<MatchingGetOwnPdfResponses, MatchingGetOwnPdfErrors, ThrowOnError>({ url: '/api/v1/candidate/profile/pdf', ...options });
 
 /**
- * Preview Profile
+ * Карточка глазами работодателя: до и после раскрытия контактов
  *
  * Карточка глазами работодателя: до и после раскрытия контактов.
  */
 export const matchingPreviewProfile = <ThrowOnError extends boolean = false>(options?: Options<MatchingPreviewProfileData, ThrowOnError>): RequestResult<MatchingPreviewProfileResponses, MatchingPreviewProfileErrors, ThrowOnError> => (options?.client ?? client).get<MatchingPreviewProfileResponses, MatchingPreviewProfileErrors, ThrowOnError>({ url: '/api/v1/candidate/profile/preview', ...options });
 
 /**
- * Post Resume
+ * Загрузить резюме в PDF и получить распознанные поля; файл и его текст не сохраняются
+ *
+ * Загрузить резюме в PDF и получить распознанные поля; файл и его текст не сохраняются.
  */
 export const profilePostResume = <ThrowOnError extends boolean = false>(options: Options<ProfilePostResumeData, ThrowOnError>): RequestResult<ProfilePostResumeResponses, ProfilePostResumeErrors, ThrowOnError> => (options.client ?? client).post<ProfilePostResumeResponses, ProfilePostResumeErrors, ThrowOnError>({
     ...formDataBodySerializer,
@@ -480,12 +501,16 @@ export const profilePostResume = <ThrowOnError extends boolean = false>(options:
 });
 
 /**
- * Get Privacy
+ * Настройки приватности: что видно до согласия и что раскрывается после
+ *
+ * Настройки приватности: что видно до согласия и что раскрывается после.
  */
 export const profileGetPrivacy = <ThrowOnError extends boolean = false>(options?: Options<ProfileGetPrivacyData, ThrowOnError>): RequestResult<ProfileGetPrivacyResponses, ProfileGetPrivacyErrors, ThrowOnError> => (options?.client ?? client).get<ProfileGetPrivacyResponses, ProfileGetPrivacyErrors, ThrowOnError>({ url: '/api/v1/candidate/settings/privacy', ...options });
 
 /**
- * Put Privacy
+ * Сохранить настройки приватности
+ *
+ * Сохранить настройки приватности.
  */
 export const profilePutPrivacy = <ThrowOnError extends boolean = false>(options: Options<ProfilePutPrivacyData, ThrowOnError>): RequestResult<ProfilePutPrivacyResponses, ProfilePutPrivacyErrors, ThrowOnError> => (options.client ?? client).put<ProfilePutPrivacyResponses, ProfilePutPrivacyErrors, ThrowOnError>({
     url: '/api/v1/candidate/settings/privacy',
@@ -497,7 +522,9 @@ export const profilePutPrivacy = <ThrowOnError extends boolean = false>(options:
 });
 
 /**
- * Post Visibility
+ * Показать профиль работодателям или поставить показ на паузу
+ *
+ * Показать профиль работодателям или поставить показ на паузу.
  */
 export const profilePostVisibility = <ThrowOnError extends boolean = false>(options: Options<ProfilePostVisibilityData, ThrowOnError>): RequestResult<ProfilePostVisibilityResponses, ProfilePostVisibilityErrors, ThrowOnError> => (options.client ?? client).post<ProfilePostVisibilityResponses, ProfilePostVisibilityErrors, ThrowOnError>({
     url: '/api/v1/candidate/visibility',
@@ -526,28 +553,57 @@ export const contactContactMetrics = <ThrowOnError extends boolean = false>(opti
 export const contactSalaryHint = <ThrowOnError extends boolean = false>(options?: Options<ContactSalaryHintData, ThrowOnError>): RequestResult<ContactSalaryHintResponses, ContactSalaryHintErrors, ThrowOnError> => (options?.client ?? client).get<ContactSalaryHintResponses, ContactSalaryHintErrors, ThrowOnError>({ url: '/api/v1/contact/salary-hint', ...options });
 
 /**
- * List Candidates
+ * Именованные демо-аккаунты сценария
+ */
+export const demoListAccounts = <ThrowOnError extends boolean = false>(options?: Options<DemoListAccountsData, ThrowOnError>): RequestResult<DemoListAccountsResponses, DemoListAccountsErrors, ThrowOnError> => (options?.client ?? client).get<DemoListAccountsResponses, DemoListAccountsErrors, ThrowOnError>({ url: '/api/v1/demo/accounts', ...options });
+
+/**
+ * Вход «как…» в именованный демо-аккаунт
+ *
+ * Открывает сессию и ставит cookie; 404 — нет такого аккаунта (в том числе `nina`: клонов в сборке нет).
+ */
+export const demoDemoLogin = <ThrowOnError extends boolean = false>(options: Options<DemoDemoLoginData, ThrowOnError>): RequestResult<DemoDemoLoginResponses, DemoDemoLoginErrors, ThrowOnError> => (options.client ?? client).post<DemoDemoLoginResponses, DemoDemoLoginErrors, ThrowOnError>({
+    url: '/api/v1/demo/login',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Начать сценарий заново
+ *
+ * Сессия именованного демо-аккаунта либо `X-Admin-Token` (без лимитов).
+ *
+ * 401 — нет сессии; 403 — живой пользователь, не аккаунт сценария либо `DEMO_PUBLIC_RESTART=false`;
+ * 429 — раз в 10 минут с одного IP и раз в 2 минуты на стенд (`params.retry_after`).
+ */
+export const demoRestart = <ThrowOnError extends boolean = false>(options?: Options<DemoRestartData, ThrowOnError>): RequestResult<DemoRestartResponses, DemoRestartErrors, ThrowOnError> => (options?.client ?? client).post<DemoRestartResponses, DemoRestartErrors, ThrowOnError>({ url: '/api/v1/demo/scenario/restart', ...options });
+
+/**
+ * Банк кандидатов: все видимые кандидаты; потребность не нужна, версия не создаётся
  *
  * Банк кандидатов: все видимые кандидаты; потребность не нужна, версия не создаётся.
  */
 export const matchingListCandidates = <ThrowOnError extends boolean = false>(options?: Options<MatchingListCandidatesData, ThrowOnError>): RequestResult<MatchingListCandidatesResponses, MatchingListCandidatesErrors, ThrowOnError> => (options?.client ?? client).get<MatchingListCandidatesResponses, MatchingListCandidatesErrors, ThrowOnError>({ url: '/api/v1/employer/candidates', ...options });
 
 /**
- * Get Candidate Card
+ * Карточка кандидата; скрытый кандидат нераскрытой пары — 404
  *
  * Карточка кандидата; скрытый кандидат нераскрытой пары — 404.
  */
 export const matchingGetCandidateCard = <ThrowOnError extends boolean = false>(options: Options<MatchingGetCandidateCardData, ThrowOnError>): RequestResult<MatchingGetCandidateCardResponses, MatchingGetCandidateCardErrors, ThrowOnError> => (options.client ?? client).get<MatchingGetCandidateCardResponses, MatchingGetCandidateCardErrors, ThrowOnError>({ url: '/api/v1/employer/candidates/{candidate_id}', ...options });
 
 /**
- * Get Contacts
+ * Каналы связи раскрытой пары — только те, что выбрал кандидат
  *
  * Каналы связи раскрытой пары — только те, что выбрал кандидат; запись `contacts_viewed` — раз в сутки на пару.
  */
 export const profileGetContacts = <ThrowOnError extends boolean = false>(options: Options<ProfileGetContactsData, ThrowOnError>): RequestResult<ProfileGetContactsResponses, ProfileGetContactsErrors, ThrowOnError> => (options.client ?? client).get<ProfileGetContactsResponses, ProfileGetContactsErrors, ThrowOnError>({ url: '/api/v1/employer/candidates/{candidate_id}/contacts', ...options });
 
 /**
- * Get Candidate Pdf
+ * PDF-профиль раскрытой пары; пишет `pdf_downloaded` в журнал доступа кандидата
  *
  * PDF-профиль раскрытой пары; пишет `pdf_downloaded` в журнал доступа кандидата.
  */
@@ -633,12 +689,16 @@ export const contactEmployerInvitationOutcome = <ThrowOnError extends boolean = 
 export const contactWithdrawEmployerInvitation = <ThrowOnError extends boolean = false>(options: Options<ContactWithdrawEmployerInvitationData, ThrowOnError>): RequestResult<ContactWithdrawEmployerInvitationResponses, ContactWithdrawEmployerInvitationErrors, ThrowOnError> => (options.client ?? client).post<ContactWithdrawEmployerInvitationResponses, ContactWithdrawEmployerInvitationErrors, ThrowOnError>({ url: '/api/v1/employer/invitations/{invitation_id}/withdraw', ...options });
 
 /**
- * List Needs
+ * Потребности работодателя: активные и архивные
+ *
+ * Потребности работодателя: активные и архивные.
  */
 export const matchingListNeeds = <ThrowOnError extends boolean = false>(options?: Options<MatchingListNeedsData, ThrowOnError>): RequestResult<MatchingListNeedsResponses, MatchingListNeedsErrors, ThrowOnError> => (options?.client ?? client).get<MatchingListNeedsResponses, MatchingListNeedsErrors, ThrowOnError>({ url: '/api/v1/employer/needs', ...options });
 
 /**
- * Create Need
+ * Создать потребность: специализация, грейд, навыки, форматы и обязательная вилка в рублях
+ *
+ * Создать потребность: специализация, грейд, навыки, форматы и обязательная вилка в рублях.
  */
 export const matchingCreateNeed = <ThrowOnError extends boolean = false>(options: Options<MatchingCreateNeedData, ThrowOnError>): RequestResult<MatchingCreateNeedResponses, MatchingCreateNeedErrors, ThrowOnError> => (options.client ?? client).post<MatchingCreateNeedResponses, MatchingCreateNeedErrors, ThrowOnError>({
     url: '/api/v1/employer/needs',
@@ -650,7 +710,7 @@ export const matchingCreateNeed = <ThrowOnError extends boolean = false>(options
 });
 
 /**
- * Parse Need
+ * Разобрать текст вакансии в черновик потребности; в базу потребностей ничего не пишет
  *
  * Разобрать текст вакансии в черновик потребности; в базу потребностей ничего не пишет.
  */
@@ -664,12 +724,16 @@ export const matchingParseNeed = <ThrowOnError extends boolean = false>(options:
 });
 
 /**
- * Get Need
+ * Потребность по идентификатору
+ *
+ * Потребность по идентификатору.
  */
 export const matchingGetNeed = <ThrowOnError extends boolean = false>(options: Options<MatchingGetNeedData, ThrowOnError>): RequestResult<MatchingGetNeedResponses, MatchingGetNeedErrors, ThrowOnError> => (options.client ?? client).get<MatchingGetNeedResponses, MatchingGetNeedErrors, ThrowOnError>({ url: '/api/v1/employer/needs/{need_id}', ...options });
 
 /**
- * Update Need
+ * Изменить потребность; прежние версии подборки сохраняются
+ *
+ * Изменить потребность; прежние версии подборки сохраняются.
  */
 export const matchingUpdateNeed = <ThrowOnError extends boolean = false>(options: Options<MatchingUpdateNeedData, ThrowOnError>): RequestResult<MatchingUpdateNeedResponses, MatchingUpdateNeedErrors, ThrowOnError> => (options.client ?? client).put<MatchingUpdateNeedResponses, MatchingUpdateNeedErrors, ThrowOnError>({
     url: '/api/v1/employer/needs/{need_id}',
@@ -681,7 +745,9 @@ export const matchingUpdateNeed = <ThrowOnError extends boolean = false>(options
 });
 
 /**
- * Archive Need
+ * Перенести потребность в архив
+ *
+ * Перенести потребность в архив.
  */
 export const matchingArchiveNeed = <ThrowOnError extends boolean = false>(options: Options<MatchingArchiveNeedData, ThrowOnError>): RequestResult<MatchingArchiveNeedResponses, MatchingArchiveNeedErrors, ThrowOnError> => (options.client ?? client).post<MatchingArchiveNeedResponses, MatchingArchiveNeedErrors, ThrowOnError>({ url: '/api/v1/employer/needs/{need_id}/archive', ...options });
 
@@ -691,22 +757,28 @@ export const matchingArchiveNeed = <ThrowOnError extends boolean = false>(option
 export const contactNeedInsights = <ThrowOnError extends boolean = false>(options: Options<ContactNeedInsightsData, ThrowOnError>): RequestResult<ContactNeedInsightsResponses, ContactNeedInsightsErrors, ThrowOnError> => (options.client ?? client).get<ContactNeedInsightsResponses, ContactNeedInsightsErrors, ThrowOnError>({ url: '/api/v1/employer/needs/{need_id}/insights', ...options });
 
 /**
- * Unpin Candidate
+ * Снять закрепление кандидата
+ *
+ * Снять закрепление кандидата.
  */
 export const matchingUnpinCandidate = <ThrowOnError extends boolean = false>(options: Options<MatchingUnpinCandidateData, ThrowOnError>): RequestResult<MatchingUnpinCandidateResponses, MatchingUnpinCandidateErrors, ThrowOnError> => (options.client ?? client).delete<MatchingUnpinCandidateResponses, MatchingUnpinCandidateErrors, ThrowOnError>({ url: '/api/v1/employer/needs/{need_id}/pins/{candidate_id}', ...options });
 
 /**
- * Pin Candidate
+ * Закрепить кандидата за потребностью; закрепление переживает уточнения запроса
+ *
+ * Закрепить кандидата за потребностью; закрепление переживает уточнения запроса.
  */
 export const matchingPinCandidate = <ThrowOnError extends boolean = false>(options: Options<MatchingPinCandidateData, ThrowOnError>): RequestResult<MatchingPinCandidateResponses, MatchingPinCandidateErrors, ThrowOnError> => (options.client ?? client).put<MatchingPinCandidateResponses, MatchingPinCandidateErrors, ThrowOnError>({ url: '/api/v1/employer/needs/{need_id}/pins/{candidate_id}', ...options });
 
 /**
- * List Shortlists
+ * Версии подборки потребности — для переключателя версий
+ *
+ * Версии подборки потребности — для переключателя версий.
  */
 export const matchingListShortlists = <ThrowOnError extends boolean = false>(options: Options<MatchingListShortlistsData, ThrowOnError>): RequestResult<MatchingListShortlistsResponses, MatchingListShortlistsErrors, ThrowOnError> => (options.client ?? client).get<MatchingListShortlistsResponses, MatchingListShortlistsErrors, ThrowOnError>({ url: '/api/v1/employer/needs/{need_id}/shortlists', ...options });
 
 /**
- * Create Shortlist
+ * Создать версию подборки
  *
  * Создать версию подборки; повтор того же запроса в пределах 10 минут возвращает прежнюю с кодом 200.
  */
@@ -720,12 +792,16 @@ export const matchingCreateShortlist = <ThrowOnError extends boolean = false>(op
 });
 
 /**
- * Get Shortlist
+ * Версия подборки: строки с объяснением, воронка и подсказки; прежние версии доступны всегда
+ *
+ * Версия подборки: строки с объяснением, воронка и подсказки; прежние версии доступны всегда.
  */
 export const matchingGetShortlist = <ThrowOnError extends boolean = false>(options: Options<MatchingGetShortlistData, ThrowOnError>): RequestResult<MatchingGetShortlistResponses, MatchingGetShortlistErrors, ThrowOnError> => (options.client ?? client).get<MatchingGetShortlistResponses, MatchingGetShortlistErrors, ThrowOnError>({ url: '/api/v1/employer/shortlists/{snapshot_id}', ...options });
 
 /**
- * Diff Shortlists
+ * Различия двух версий подборки одной потребности
+ *
+ * Различия двух версий подборки одной потребности.
  */
 export const matchingDiffShortlists = <ThrowOnError extends boolean = false>(options: Options<MatchingDiffShortlistsData, ThrowOnError>): RequestResult<MatchingDiffShortlistsResponses, MatchingDiffShortlistsErrors, ThrowOnError> => (options.client ?? client).get<MatchingDiffShortlistsResponses, MatchingDiffShortlistsErrors, ThrowOnError>({ url: '/api/v1/employer/shortlists/{snapshot_id}/diff', ...options });
 

@@ -26,8 +26,11 @@ NUM_VARS: tuple[str, ...] = ("total", "count", "acc", "res", "cur", "best", "lef
 LIST_VARS: tuple[str, ...] = ("items", "data", "nums", "values", "queue", "stack", "seen", "buf", "rows", "parts")
 #: Переменные-словари.
 DICT_VARS: tuple[str, ...] = ("counts", "index", "cache", "groups", "by_key", "table", "memo", "stats")
-#: Имена функций.
-FUNC_NAMES: tuple[str, ...] = ("calc", "solve", "process", "walk", "fold", "scan", "merge", "split", "build", "check")
+#: Имена функций — без смысловой нагрузки: имя не должно подсказывать или искажать, что делает код
+#: (`merge` и `split` заменены на `handle` и `compute` на тех же местах, версии семейств увеличены).
+FUNC_NAMES: tuple[str, ...] = (
+    "calc", "solve", "process", "walk", "fold", "scan", "handle", "compute", "build", "check",
+)  # fmt: skip
 #: Имена классов.
 CLASS_NAMES: tuple[str, ...] = ("Base", "Node", "Item", "Task", "Shape", "Event", "Account", "Buffer", "Worker")
 #: Короткие слова латиницей: значения строк, ключи словарей, метки.

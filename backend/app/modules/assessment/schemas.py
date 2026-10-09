@@ -302,6 +302,10 @@ class FamilyHealth(BaseModel):
     exposure_high: bool
     answers: int
     correct_share: float | None = None
+    #: Доля верных ответов семейства, данных быстрее `FAST_FACTOR` расчётного времени: готовый ответ вводят
+    #: быстрее, чем читают условие, поэтому высокая доля — признак утечки вариантов.
+    fast_correct_share: float | None = None
+    fast_high: bool = False
 
 
 class BankHealthView(BaseModel):

@@ -83,7 +83,9 @@ function StatusCard() {
     text = 'Категория не присвоена. Профиль не виден работодателям'
     action = next ? (
       <Button asChild variant="primary">
-        <Link to="/candidate/test/new">Пройти тест на {next.grade.title}</Link>
+        <Link to="/candidate/test/new" search={{ grade: next.grade.code }}>
+          Пройти тест на {next.grade.title}
+        </Link>
       </Button>
     ) : waiting?.available_at ? (
       <p className="type-sm text-ink-muted">Следующая попытка — с {formatDate(waiting.available_at)}</p>

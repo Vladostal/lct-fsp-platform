@@ -231,13 +231,18 @@ def generate(level: int, seed: int) -> Variant:
     rng = Random(seed)
     init = {"x": rng.randrange(20, 90, 5), "y": rng.randrange(20, 90, 5)}
     letters = iter("abcdef")
-    begin = [("T1", "BEGIN", None, None, None), ("T2", "BEGIN", None, None, None)]
+    begin: list[Step] = [("T1", "BEGIN", None, None, None), ("T2", "BEGIN", None, None, None)]
+    reads: list[Step]
+    writes: list[Step]
+    t1: list[Step]
+    t2: list[Step]
+    body: list[Step]
     if level == 1:
         mode_name, mode = "READ COMMITTED", RC
         key = rng.choice("xy")
         reads = [("T1", "READ", key, next(letters), None) for _ in range(rng.randint(2, 3))]
         writes = [("T2", "WRITE", key, None, str(rng.randrange(10, 100, 5))) for _ in range(rng.randint(1, 2))]
-        end = ("T2", rng.choice(["COMMIT", "COMMIT", "ROLLBACK"]), None, None, None)
+        end: Step = ("T2", rng.choice(["COMMIT", "COMMIT", "ROLLBACK"]), None, None, None)
         # Чтение до первой записи, чтение сразу после неё (пока T2 не завершена), остальное — вперемешку.
         body = [reads[0], writes[0], reads[1], *_merge(rng, reads[2:], [*writes[1:], end])]
         body.append(("T1", "COMMIT", None, None, None))

@@ -75,7 +75,7 @@ def _run(level: int, values: list[int], ops: list[str], pops: int) -> list[int]:
         for _ in range(pops):
             _pop(heap)
         return heap
-    heap: list[int] = []
+    heap = []
     for op in ops:
         if op == "-":
             _pop(heap)

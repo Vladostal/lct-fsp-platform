@@ -29,7 +29,13 @@ from app.eval.matching.world import (
 )
 from app.modules.matching import constants as C
 from app.modules.matching.features import CandidateFeatures, SkillEvidence, merge_evidence
-from app.modules.matching.ranking import DEFAULT_KEY_ORDER, KEY_ORDER_V10, KEY_ORDER_V11, RankedItem
+from app.modules.matching.ranking import (
+    DEFAULT_KEY_ORDER,
+    KEY_ORDER_V10,
+    KEY_ORDER_V11,
+    KEY_ORDER_V12,
+    RankedItem,
+)
 from app.modules.matching.scoring import DEFAULT_PARAMS, strength
 from app.shared.enums import EvidenceKind, Relation
 
@@ -48,6 +54,10 @@ THREATS = [
     "Ошибка оценки уровня в упрощённой модели (`se` от 0.4 до 0.6 ширины грейда, приложение B, §9.2) задана "
     "допущением и, вероятно, завышает шум формы по сравнению с настоящим движком теста; основной вариант "
     "наблюдений (прогон движка на симулированных ответах) не выполнялся.",
+    "Порядок ключей версии 2 (обязательные → подтверждённое → сила) выбран по этой же симуляции на сидах 201–208: "
+    "сравнение с бейзлайном на них оптимистично. Независимая проверка — тот же прогон на сидах, не участвовавших "
+    "в выборе (`--seeds 301-320`): в основном режиме разность P@10 с бейзлайном заявленного стека +0.041 "
+    "[+0.034; +0.049], превосходство сохраняется во всех четырёх проверенных режимах.",
 ]
 
 
@@ -189,16 +199,24 @@ def _stuff(features: CandidateFeatures, skills: Sequence[str]) -> CandidateFeatu
 def stuffing(cases: Sequence[S.Case]) -> dict[str, dict[str, float]]:
     """Накрутка заявленным: каждому десятому кандидату в профиль добавляются все навыки потребности.
 
-    Для каждой системы: сколько таких кандидатов вошло в топ-10 (в среднем на потребность) и скольких более
-    сильных — с большей полосой силы либо с той же силой и большим подтверждённым покрытием — они вытеснили.
+    Для каждой системы: сколько таких кандидатов вошло в топ-10 (в среднем на потребность), скольких более
+    сильных — с большей полосой силы либо с той же силой и большим подтверждённым покрытием — они вытеснили,
+    и P@10 до и после накрутки. Последнее — главное число: порядок, в который накрутка не проникает, но который
+    и без неё ставит нерелевантных выше, работодателю не полезнее.
     """
     systems: dict[str, Callable[[S.Case, Sequence[RankedItem], dict[UUID, frozenset[str]]], list[UUID]]] = {
         "ours": lambda case, items, declared: S.ids(items),
         "declared": lambda case, items, declared: S.declared_order(case, items, declared),
+        "order_v12": lambda case, items, declared: S.ids(items),
         "order_v10": lambda case, items, declared: S.ids(items),
     }
-    key_orders = {"ours": DEFAULT_KEY_ORDER, "declared": DEFAULT_KEY_ORDER, "order_v10": KEY_ORDER_V10}
-    totals = {name: {"entered": 0.0, "displaced": 0.0} for name in systems}
+    key_orders = {
+        "ours": DEFAULT_KEY_ORDER,
+        "declared": DEFAULT_KEY_ORDER,
+        "order_v12": KEY_ORDER_V12,
+        "order_v10": KEY_ORDER_V10,
+    }
+    totals = {name: {"entered": 0.0, "displaced": 0.0, "p10": 0.0, "p10_stuffed": 0.0} for name in systems}
     for case in cases:
         query = case.need.query
         skills = [*query.must_skills, *query.nice_skills]
@@ -214,7 +232,8 @@ def stuffing(cases: Sequence[S.Case]) -> dict[str, dict[str, float]]:
         for name, system in systems.items():
             before_items = S.ranked(case, key_order=key_orders[name])
             after_items = S.ranked(case, key_order=key_orders[name], pool=pool)
-            before, after = system(case, before_items, honest)[:10], system(case, after_items, declared)[:10]
+            before_order, after_order = system(case, before_items, honest), system(case, after_items, declared)
+            before, after = before_order[:10], after_order[:10]
             bands = {
                 row.candidate_id: (row.scored.strength.band, row.scored.coverage.confirmed_band) for row in after_items
             }
@@ -222,6 +241,8 @@ def stuffing(cases: Sequence[S.Case]) -> dict[str, dict[str, float]]:
             pushed = [cid for cid in before if cid not in after and cid not in stuffed_ids]
             totals[name]["entered"] += len(inside)
             totals[name]["displaced"] += sum(1 for cid in pushed if any(bands[cid] > bands[other] for other in inside))
+            totals[name]["p10"] += M.precision_at([case.rels[cid] for cid in before_order], 10)
+            totals[name]["p10_stuffed"] += M.precision_at([case.rels[cid] for cid in after_order], 10)
     return {name: {key: round(value / len(cases), 4) for key, value in row.items()} for name, row in totals.items()}
 
 
@@ -408,13 +429,18 @@ def run(out: Path, *, seeds: Sequence[int], quick: bool) -> dict[str, Any]:
             "ok": all(row["rbo10"] >= 0.8 for row in sens),
             "value": min(row["rbo10"] for row in sens),
         },
+        {
+            "name": "Накрутка заявленным: P@10 после накрутки не ниже, чем у бейзлайна заявленного стека "
+            "после той же накрутки (добавлен с порядком версии 2)",
+            "ok": stuff["ours"]["p10_stuffed"] >= stuff["declared"]["p10_stuffed"],
+            "value": {"ours": stuff["ours"]["p10_stuffed"], "declared": stuff["declared"]["p10_stuffed"]},
+        },
     ]
     notes = []
     if not criteria[0]["ok"]:
         notes.append(
-            "Наш порядок не превосходит бейзлайн заявленного стека по P@10. Первым ключом внутри раздела стоит "
-            "сила профиля (Арх. 15.1, № 53), а релевантность в этом мире определяется владением навыками "
-            "потребности; цену решения показывают абляции порядка версий 1.0 и 1.1 и строка «Накрутка заявленным»."
+            "Наш порядок не превосходит бейзлайн заявленного стека по P@10; цену решения показывают абляции "
+            "порядков версий 1.0–1.2 и раздел «Накрутка заявленным»."
         )
     if not criteria[4]["ok"]:
         notes.append(
@@ -423,6 +449,15 @@ def run(out: Path, *, seeds: Sequence[int], quick: bool) -> dict[str, Any]:
         )
     if not criteria[3]["ok"]:
         notes.append("Наш порядок уступает бейзлайну «только сила профиля»: ключи покрытия отнимают, а не добавляют.")
+    if stuff["ours"]["displaced"] > 0:
+        notes.append(
+            "Первым ключом внутри раздела стоит число закрытых обязательных навыков, и заявленный навык пробел "
+            "закрывает. Поэтому накрутка заявленного поднимает кандидата над теми, у кого пробел остался, — но не "
+            "над кандидатом с тем же числом закрытых обязательных и большим подтверждённым покрытием. Порядок "
+            f"версии 1.2 («сила первой») к накрутке глух, но и без неё даёт P@10 {stuff['order_v12']['p10']:.3f} "
+            f"против {stuff['ours']['p10_stuffed']:.3f} у действующего порядка уже после накрутки: защита стоила "
+            "дороже угрозы. Источник каждого навыка работодатель видит в карточке."
+        )
 
     here = Path(relevance_module.__file__).resolve().parent
     module_dir = Path(C.__file__).resolve().parent
@@ -493,6 +528,13 @@ def run(out: Path, *, seeds: Sequence[int], quick: bool) -> dict[str, Any]:
     (out / "report.md").write_text(render(report), encoding="utf-8")
     return report
 
+
+STUFFING_LABELS = {
+    "ours": "Наша (порядок версии 2)",
+    "declared": "B1 заявленный стек",
+    "order_v12": "Порядок версии 1.2 (сила первой)",
+    "order_v10": "Порядок версии 1.0",
+}
 
 SYSTEM_LABELS = {
     "ours": "Наша система",
@@ -616,13 +658,16 @@ def render(report: dict[str, Any]) -> str:
         "",
         "Каждому десятому кандидату в профиль добавлены все навыки потребности. В среднем на потребность:",
         "",
-        "| Система | Вошло в топ-10 | Вытеснено более сильных |",
-        "|---|---|---|",
-        f"| Наша | {stuff['ours']['entered']:.2f} | {stuff['ours']['displaced']:.2f} |",
-        f"| B1 заявленный стек | {stuff['declared']['entered']:.2f} | {stuff['declared']['displaced']:.2f} |",
-        f"| Порядок версии 1.0 | {stuff['order_v10']['entered']:.2f} | {stuff['order_v10']['displaced']:.2f} |",
+        "| Система | Вошло в топ-10 | Вытеснено более сильных | P@10 до | P@10 после |",
+        "|---|---|---|---|---|",
+        *(
+            f"| {label} | {stuff[name]['entered']:.2f} | {stuff[name]['displaced']:.2f} | "
+            f"{stuff[name]['p10']:.3f} | {stuff[name]['p10_stuffed']:.3f} |"
+            for name, label in STUFFING_LABELS.items()
+        ),
         "",
-        "«Более сильный» — кандидат с большей полосой силы либо с той же силой и большим подтверждённым покрытием.",
+        "«Более сильный» — кандидат с большей полосой силы либо с той же силой и большим подтверждённым покрытием. "
+        "P@10 после накрутки показывает итог для работодателя: сколько релевантных осталось в топ-10.",
         "",
         "## Ручной слой",
         "",
@@ -656,7 +701,7 @@ def console(report: dict[str, Any]) -> str:
         for row in report["criteria"]
     ]
     lines.append("Абляции порядка (P@10; вариант − наша):")
-    for name in ("order_v10", "order_v11"):
+    for name in ("order_v10", "order_v11", "order_v12"):
         row = report["ablations"][name]
         lines.append(f"  {row['label']}: {row['p10']:.3f}; {_ci(row['vs_ours'])}")
     twin = report["twins"]
@@ -667,8 +712,11 @@ def console(report: dict[str, Any]) -> str:
     )
     stuff = report["stuffing"]
     lines.append(
-        "Накрутка заявленным (вошло в топ-10 / вытеснено более сильных): "
-        + "; ".join(f"{name} — {row['entered']:.2f} / {row['displaced']:.2f}" for name, row in stuff.items())
+        "Накрутка заявленным (вошло в топ-10 / вытеснено более сильных / P@10 до → после): "
+        + "; ".join(
+            f"{name} — {row['entered']:.2f} / {row['displaced']:.2f} / {row['p10']:.3f} → {row['p10_stuffed']:.3f}"
+            for name, row in stuff.items()
+        )
     )
     lines += [*report["notes"], "summary: " + json.dumps(report["summary"], ensure_ascii=False)]
     return "\n".join(lines)

@@ -11,17 +11,29 @@ from datetime import datetime
 from typing import Annotated, Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field, StringConstraints, field_validator
+from pydantic import AfterValidator, BaseModel, Field, StringConstraints, field_validator
 from pydantic_core import PydanticCustomError
 
+from app.modules.identity import passwords
 from app.modules.identity.constants import EMAIL_MAX_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH
 from app.modules.identity.emails import normalize_email
 from app.shared.enums import Role
 
 _TOKEN_MAX_LENGTH = 200
 
-#: Новый пароль: 8–128 знаков (Арх. 10.1). Пробелы по краям не обрезаются — это часть пароля.
-NewPassword = Annotated[str, StringConstraints(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH)]
+def _not_trivial(value: str) -> str:
+    if passwords.is_trivial(value):
+        raise PydanticCustomError("password_too_simple", passwords.MESSAGE)
+    return value
+
+
+#: Новый пароль: 8–128 знаков (Арх. 10.1) и не из очевидных (`passwords.is_trivial`). Пробелы по краям
+#: не обрезаются — это часть пароля.
+NewPassword = Annotated[
+    str,
+    StringConstraints(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH),
+    AfterValidator(_not_trivial),
+]
 #: Пароль, который только сверяется: длина ограничена, правила состава не проверяются.
 PasswordToCheck = Annotated[str, StringConstraints(min_length=1, max_length=PASSWORD_MAX_LENGTH)]
 Token = Annotated[str, StringConstraints(min_length=1, max_length=_TOKEN_MAX_LENGTH)]

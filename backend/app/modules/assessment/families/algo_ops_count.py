@@ -92,7 +92,7 @@ def _level2(rng: Random, n: int, counter: str, loop_vars: list[str]) -> tuple[st
     if step == 2 and ", n" in text:
         text += ", 2"
         base = inner
-        inner = lambda x, base=base: range(base(x).start, base(x).stop, 2)  # noqa: E731
+        inner = lambda x, base=base: range(base(x).start, base(x).stop, 2)  # type: ignore[misc]  # noqa: E731
     outer = range(outer_start, n, outer_step)
     src = (
         f"n = {n}\n{counter} = 0\nfor {i} in range({outer_text}):\n    for {j} in range({text}):\n"
@@ -183,7 +183,7 @@ def _level3(rng: Random, counter: str, loop_vars: list[str]) -> tuple[str, Model
         f"        {j} *= 2\nprint({counter})"
     )
 
-    def model(flag: str | None) -> int:
+    def model(flag: str | None) -> int:  # type: ignore[no-redef]
         inner = 0
         x = 1
         while x < n:

@@ -155,7 +155,7 @@ export function EmployerInvitationDetail({ id }: { id: string }) {
                 {cond ? (
                   <p className="type-body text-ink">
                     {cond.kind === 'salary_from'
-                      ? `Готов(а) рассмотреть от ${formatMoney(Number(cond.value))} ₽`
+                      ? `Готов(а) рассмотреть от ${formatMoney(Number(cond.value))}`
                       : `Рассмотрит формат: ${WORK_FORMAT_LABELS[cond.value as WorkFormat]}`}
                   </p>
                 ) : null}

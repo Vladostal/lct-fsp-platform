@@ -118,7 +118,7 @@ def _level3(rng: Random) -> tuple[str, Model, int]:
     copier = rng.choice(["a[:]", "list(a)", "a.copy()"])
     src = f"a = {rows}\nb = {copier}\nb[{row}].append({add})\nb.append([{extra}])\nprint(sum(a[{row}]) + len(a))"
 
-    def model(flag: str | None) -> int:
+    def model(flag: str | None) -> int:  # type: ignore[no-redef]
         a = copy.deepcopy(rows)
         b = copy.deepcopy(a) if flag == "copy_instead_of_alias" else list(a)
         b[row].append(add)

@@ -20,6 +20,39 @@ type Screen = {
   prepare?: (page: Page) => Promise<void>
 }
 
+/** Идущая сессия теста с одним заданием: заголовок экрана C5 — условие текущего задания. */
+const TEST_PROMPT = 'Что напечатает программа? Ответ — целое число.'
+const TEST_SESSION: MockOptions['handlers'] = {
+  'GET /assessment/sessions/session-1': (route) =>
+    json(route, {
+      id: 'session-1',
+      status: 'in_progress',
+      target: {
+        code: 'backend:middle',
+        title: 'Backend · Middle',
+        specialization: { code: 'backend', title: 'Backend-разработка' },
+        grade: { code: 'middle', title: 'Middle' },
+      },
+      expires_at: new Date(Date.now() + 30 * 60_000).toISOString(),
+      server_now: new Date().toISOString(),
+      progress: { answered: 3, min_total: 14, max_total: 26 },
+      item: {
+        id: 'item-4',
+        kind: 'numeric_input',
+        skill_label: 'Чтение кода и поиск ошибок',
+        prompt: TEST_PROMPT,
+        code: {
+          language: 'python',
+          text: 'total = 0\nfor j in range(1, 7):\n    if j > 3:\n        total += j * 3\nprint(total)',
+        },
+        tables: null,
+        options: null,
+        blocks: null,
+        input: { placeholder: 'целое число', unit: null, max_length: 8 },
+      },
+    }),
+}
+
 /** Кандидат на шаге «Опрос»: мастер показывает степпер. */
 const WIZARD_STATE: MockOptions['handlers'] = {
   'GET /assessment/state': (route) =>
@@ -142,8 +175,8 @@ const SCREENS: Screen[] = [
   {
     name: 'C5 каркас теста',
     path: '/candidate/test/session-1',
-    mock: { me: CANDIDATE },
-    heading: 'Тест',
+    mock: { me: CANDIDATE, handlers: TEST_SESSION },
+    heading: TEST_PROMPT,
   },
   { name: 'E2 каркас кабинета работодателя', path: '/employer/needs', mock: { me: EMPLOYER }, heading: 'Потребности' },
   { name: 'E10 аккаунт работодателя', path: '/employer/settings/account', mock: { me: EMPLOYER }, heading: 'Аккаунт' },
@@ -242,7 +275,9 @@ test.describe('охрана маршрутов', () => {
       consent_version: '2026-10-01',
       is_adult: true,
     })
-    await expect(page).toHaveURL(/\/signup\/check-email\?email=hr%40example\.com$/)
+    // Адрес почты в адресную строку не попадает: экран берёт его из хранилища вкладки.
+    await expect(page).toHaveURL(/\/signup\/check-email$/)
+    await expect(page.getByText('hr@example.com')).toBeVisible()
     await expect(page.getByRole('heading', { level: 1, name: 'Проверьте почту' })).toBeVisible()
   })
 

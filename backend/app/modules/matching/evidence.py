@@ -113,7 +113,7 @@ class Pool:
         return C.FSP_SIGNAL_VERSION_FALLBACK
 
     def scorer_version(self) -> str:
-        """`"match-1+{fsp_signal.version}+skills-{SKILLS_VERSION}"` (Арх. 6.10)."""
+        """`"match-2+{fsp_signal.version}+skills-{SKILLS_VERSION}"` (Арх. 6.10)."""
         return f"{C.SCORER_VERSION}+{self.fsp_version()}+skills-{catalog.SKILLS_VERSION}"
 
 

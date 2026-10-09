@@ -11,7 +11,7 @@ from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
 from app.core.errors import ApiException, not_found
-from app.modules.assessment import repo
+from app.modules.assessment import repo, sessions
 from app.modules.assessment.config import get_config
 from app.modules.assessment.models import (
     BlueprintCounter,
@@ -34,6 +34,9 @@ from app.shared.enums import FamilyStatus, VariantStatus
 
 #: Подсветка экспозиции (Арх. 5.8).
 EXPOSURE_HIGH = 0.60
+#: Подсветка «быстрых» верных ответов: доля и наименьшее число верных ответов, с которого она считается.
+FAST_HIGH = 0.30
+FAST_MIN_CORRECT = 10
 #: Сходство текста, с которого вариант считается найденным.
 FUZZY_THRESHOLD = 85.0
 MAX_MATCHES = 10
@@ -83,6 +86,18 @@ def bank_health(db: Session) -> BankHealthView:
             .group_by(SessionItemRow.family_id)
         )
     }
+    fast_correct = {
+        family_id: int(count)
+        for family_id, count in db.execute(
+            select(SessionItemRow.family_id, func.count())
+            .where(
+                SessionItemRow.status.in_(repo.COUNTED),
+                SessionItemRow.score == 1,
+                SessionItemRow.flags.contains([sessions.ITEM_FLAG_FAST]),
+            )
+            .group_by(SessionItemRow.family_id)
+        )
+    }
     levels: dict[str, int] = {
         family_id: int(count)
         for family_id, count in db.execute(
@@ -111,6 +126,8 @@ def bank_health(db: Session) -> BankHealthView:
                 exposure_high=share > EXPOSURE_HIGH,
                 answers=total_answers,
                 correct_share=round(correct / total_answers, 3) if total_answers else None,
+                fast_correct_share=round(fast_correct.get(row.id, 0) / correct, 3) if correct else None,
+                fast_high=correct >= FAST_MIN_CORRECT and fast_correct.get(row.id, 0) / correct > FAST_HIGH,
             )
         )
     return BankHealthView(

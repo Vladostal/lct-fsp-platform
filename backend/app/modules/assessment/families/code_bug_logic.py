@@ -21,7 +21,7 @@ from app.modules.assessment.families.registry import family_meta
 
 META = family_meta(
     "code.bug_logic",
-    version=1,
+    version=2,
     feature_bounds={
         1: {"code_lines": (8, 17), "options_count": (8, 17), "trap": (0, 0)},
         2: {"code_lines": (8, 17), "options_count": (8, 17), "trap": (0, 1)},
@@ -178,7 +178,10 @@ DESCRIPTIONS = {
 LEVEL_RULES = {
     1: (("clipped_sum", "mean_positive"), (0.4, 1.0)),
     2: (("clipped_sum", "percent", "mean_positive", "longest_run", "first_negative"), (0.05, 1.0)),
-    3: (("first_negative", "mean_positive", "longest_run", "percent"), (0.02, 0.35)),
+    # `longest_run` на уровне 3 не участвует: ни одна его мутация не даёт редкой ошибки (доля неверных входов
+    # 66–100 %), и каждый выпавший на него сид уходил в брак `rarity`. С ним брак уровня доходил до 52 % при
+    # пороге 50 %, то есть приёмка семейства зависела от значения `ASSESSMENT_SECRET`.
+    3: (("first_negative", "mean_positive", "percent"), (0.02, 0.35)),
 }
 
 

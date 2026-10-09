@@ -22,7 +22,7 @@ from app.modules.assessment.families.registry import family_meta
 
 META = family_meta(
     "py.exceptions_flow",
-    version=1,
+    version=2,
     feature_bounds={
         1: {"code_lines": (10, 17), "concepts": (3, 4), "nesting_depth": (2, 2)},
         2: {"code_lines": (9, 19), "concepts": (3, 4), "nesting_depth": (2, 4)},

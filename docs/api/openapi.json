@@ -2573,6 +2573,82 @@
         "title": "DeclineRequest",
         "type": "object"
       },
+      "DemoAccount": {
+        "description": "Строка таблицы демо-аккаунтов на `/demo`: ключ входа, название, роль и описание состояния.",
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "state_label": {
+            "title": "State Label",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "title",
+          "role",
+          "state_label"
+        ],
+        "title": "DemoAccount",
+        "type": "object"
+      },
+      "DemoLoginRequest": {
+        "properties": {
+          "account_key": {
+            "title": "Account Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "account_key"
+        ],
+        "title": "DemoLoginRequest",
+        "type": "object"
+      },
+      "DemoMe": {
+        "description": "Вошедший демо-пользователь (те же поля, что у `MeView` модуля `identity`).",
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "is_demo": {
+            "title": "Is Demo",
+            "type": "boolean"
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "server_now": {
+            "format": "date-time",
+            "title": "Server Now",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "role",
+          "is_demo",
+          "server_now"
+        ],
+        "title": "DemoMe",
+        "type": "object"
+      },
       "DiffCounts": {
         "description": "Счётчики различий с базовой версией: числа без идентификаторов (Арх. 6.11).",
         "properties": {
@@ -2976,6 +3052,22 @@
           "exposure_max": {
             "title": "Exposure Max",
             "type": "number"
+          },
+          "fast_correct_share": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fast Correct Share"
+          },
+          "fast_high": {
+            "default": false,
+            "title": "Fast High",
+            "type": "boolean"
           },
           "group_code": {
             "title": "Group Code",
@@ -7863,6 +7955,20 @@
         "title": "RelaxationHint",
         "type": "object"
       },
+      "RestartResult": {
+        "properties": {
+          "restarted_at": {
+            "format": "date-time",
+            "title": "Restarted At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "restarted_at"
+        ],
+        "title": "RestartResult",
+        "type": "object"
+      },
       "ResultPending": {
         "properties": {
           "status": {
@@ -8103,7 +8209,7 @@
         "type": "string"
       },
       "ShortlistCreate": {
-        "description": "Тело создания версии подборки: без полей — запрос из потребности; с `refinement` — уточнение родителя.",
+        "description": "Тело создания версии подборки: без полей — запрос из потребности; с `refinement` — уточнение версии\n`parent_id` (обязателен вместе с `refinement`: иначе 422 `parent_required`).",
         "properties": {
           "parent_id": {
             "anyOf": [
@@ -9971,7 +10077,7 @@
             "description": "Чужая роль или действие запрещено"
           }
         },
-        "summary": "Get Bank Health",
+        "summary": "Состояние семейств: статус, экспозиция (подсветка выше 0.60), ответы, запас вариантов",
         "tags": [
           "assessment",
           "admin"
@@ -10045,7 +10151,7 @@
             "description": "Ошибки полей или правил"
           }
         },
-        "summary": "Post Family Status",
+        "summary": "Карантин, возврат, вывод из банка",
         "tags": [
           "assessment",
           "admin"
@@ -10098,7 +10204,7 @@
             "description": "Ошибки полей или правил"
           }
         },
-        "summary": "Post Leak Lookup",
+        "summary": "По тексту найти вариант, семейство и сессии, которым он выдавался",
         "tags": [
           "assessment",
           "admin"
@@ -10263,7 +10369,7 @@
             "description": "Действие противоречит текущему состоянию"
           }
         },
-        "summary": "Get Blueprints",
+        "summary": "Планы теста по грейдам своей специализации",
         "tags": [
           "assessment",
           "assessment"
@@ -10336,7 +10442,7 @@
             "description": "Превышен лимит; params.retry_after — секунды"
           }
         },
-        "summary": "Post Blueprint Preview",
+        "summary": "План теста из описания вакансии",
         "tags": [
           "assessment",
           "assessment"
@@ -10409,7 +10515,7 @@
             "description": "Ошибки полей или правил"
           }
         },
-        "summary": "Put Claim",
+        "summary": "Заявить грейд",
         "tags": [
           "assessment",
           "assessment"
@@ -10456,7 +10562,7 @@
             "description": "Чужая роль или действие запрещено"
           }
         },
-        "summary": "Get History",
+        "summary": "Опросы и тесты; без верности заданий",
         "tags": [
           "assessment",
           "assessment"
@@ -10479,7 +10585,7 @@
             "description": "Successful Response"
           }
         },
-        "summary": "Get Methodology",
+        "summary": "Константы механики и состав банка — без входа",
         "tags": [
           "assessment",
           "assessment"
@@ -10562,7 +10668,7 @@
             "description": "Сервис временно недоступен"
           }
         },
-        "summary": "Create Session",
+        "summary": "Начать тест",
         "tags": [
           "assessment",
           "assessment"
@@ -10636,7 +10742,7 @@
             "description": "Ошибки полей или правил"
           }
         },
-        "summary": "Get Session",
+        "summary": "Сессия с текущим заданием; закрывает сессию, если время вышло",
         "tags": [
           "assessment",
           "assessment"
@@ -10645,7 +10751,7 @@
     },
     "/api/v1/assessment/sessions/{session_id}/answers": {
       "post": {
-        "description": "Ответ на текущее задание. 409: `item_already_answered`, `session_finished`; 410 `session_expired`.\n\nПовтор запроса с тем же `Idempotency-Key` возвращает текущее состояние. Верность ответа не сообщается.",
+        "description": "Ответ на текущее задание. 409: `item_already_answered`, `session_finished`; 410 `session_expired`;\n422 `answer_malformed` — в теле нет поля ответа для задания этого вида (задание остаётся текущим).\n\nПовтор запроса с тем же `Idempotency-Key` возвращает текущее состояние. Верность ответа не сообщается.",
         "operationId": "assessment-post_answer",
         "parameters": [
           {
@@ -10757,7 +10863,7 @@
             "description": "Ошибки полей или правил"
           }
         },
-        "summary": "Post Answer",
+        "summary": "Ответ на текущее задание",
         "tags": [
           "assessment",
           "assessment"
@@ -10841,7 +10947,7 @@
             "description": "Ошибки полей или правил"
           }
         },
-        "summary": "Get Result",
+        "summary": "Результат закрытой сессии; 202 `{status: \"in_progress\"}`, пока сессия идёт",
         "tags": [
           "assessment",
           "assessment"
@@ -10884,7 +10990,7 @@
             "description": "Чужая роль или действие запрещено"
           }
         },
-        "summary": "Get State",
+        "summary": "Опрос, заявленный грейд, категория, уровень, активная сессия и доступные действия",
         "tags": [
           "assessment",
           "assessment"
@@ -10927,7 +11033,7 @@
             "description": "Чужая роль или действие запрещено"
           }
         },
-        "summary": "Get Survey",
+        "summary": "Схема опроса и сохранённые ответы",
         "tags": [
           "assessment",
           "assessment"
@@ -10998,7 +11104,7 @@
             "description": "Ошибки полей или правил"
           }
         },
-        "summary": "Put Survey",
+        "summary": "Сохранить ответы опроса",
         "tags": [
           "assessment",
           "assessment"
@@ -11524,6 +11630,7 @@
     },
     "/api/v1/candidate/access-log": {
       "get": {
+        "description": "Журнал доступа: кто и когда получил или открыл данные кандидата.",
         "operationId": "profile-get_access_log",
         "parameters": [
           {
@@ -11602,7 +11709,7 @@
             "description": "Ошибки полей или правил"
           }
         },
-        "summary": "Get Access Log",
+        "summary": "Журнал доступа: кто и когда получил или открыл данные кандидата",
         "tags": [
           "profile"
         ]
@@ -11610,6 +11717,7 @@
     },
     "/api/v1/candidate/conditions": {
       "get": {
+        "description": "Условия кандидата: скрытый минимум зарплаты, форматы работы, готовность к переезду.",
         "operationId": "profile-get_conditions",
         "responses": {
           "200": {
@@ -11643,12 +11751,13 @@
             "description": "Чужая роль или действие запрещено"
           }
         },
-        "summary": "Get Conditions",
+        "summary": "Условия кандидата: скрытый минимум зарплаты, форматы работы, готовность к переезду",
         "tags": [
           "profile"
         ]
       },
       "put": {
+        "description": "Сохранить условия; минимум зарплаты работодателям не показывается.",
         "operationId": "profile-put_conditions",
         "requestBody": {
           "content": {
@@ -11702,7 +11811,7 @@
             "description": "Ошибки полей или правил"
           }
         },
-        "summary": "Put Conditions",
+        "summary": "Сохранить условия; минимум зарплаты работодателям не показывается",
         "tags": [
           "profile"
         ]
@@ -11710,6 +11819,7 @@
     },
     "/api/v1/candidate/consents": {
       "get": {
+        "description": "Согласия кандидата и состояние показа профиля.",
         "operationId": "profile-get_consents",
         "responses": {
           "200": {
@@ -11743,7 +11853,7 @@
             "description": "Чужая роль или действие запрещено"
           }
         },
-        "summary": "Get Consents",
+        "summary": "Согласия кандидата и состояние показа профиля",
         "tags": [
           "profile"
         ]
@@ -11751,6 +11861,7 @@
     },
     "/api/v1/candidate/consents/publication": {
       "post": {
+        "description": "Дать или отозвать согласие на публикацию профиля.",
         "operationId": "profile-post_publication",
         "requestBody": {
           "content": {
@@ -11814,7 +11925,7 @@
             "description": "Ошибки полей или правил"
           }
         },
-        "summary": "Post Publication",
+        "summary": "Дать или отозвать согласие на публикацию профиля",
         "tags": [
           "profile"
         ]
@@ -11822,6 +11933,7 @@
     },
     "/api/v1/candidate/evidence": {
       "get": {
+        "description": "Подтверждённые и заявленные навыки кандидата с источником каждого.",
         "operationId": "matching-get_own_evidence",
         "responses": {
           "200": {
@@ -11855,7 +11967,7 @@
             "description": "Чужая роль или действие запрещено"
           }
         },
-        "summary": "Get Own Evidence",
+        "summary": "Подтверждённые и заявленные навыки кандидата с источником каждого",
         "tags": [
           "matching",
           "matching"
@@ -12613,6 +12725,7 @@
     },
     "/api/v1/candidate/profile": {
       "get": {
+        "description": "Профиль кандидата: поля, заявленные навыки, подсказки из резюме и заполненность.",
         "operationId": "profile-get_profile",
         "responses": {
           "200": {
@@ -12646,12 +12759,13 @@
             "description": "Чужая роль или действие запрещено"
           }
         },
-        "summary": "Get Profile",
+        "summary": "Профиль кандидата: поля, заявленные навыки, подсказки из резюме и заполненность",
         "tags": [
           "profile"
         ]
       },
       "put": {
+        "description": "Сохранить профиль; принятые поля резюме берутся из загрузки `resume_upload_id`.",
         "operationId": "profile-put_profile",
         "requestBody": {
           "content": {
@@ -12715,7 +12829,7 @@
             "description": "Ошибки полей или правил"
           }
         },
-        "summary": "Put Profile",
+        "summary": "Сохранить профиль; принятые поля резюме берутся из загрузки `resume_upload_id`",
         "tags": [
           "profile"
         ]
@@ -12723,6 +12837,7 @@
     },
     "/api/v1/candidate/profile/pdf": {
       "get": {
+        "description": "Стандартизированный PDF-профиль кандидата.",
         "operationId": "matching-get_own_pdf",
         "responses": {
           "200": {
@@ -12772,7 +12887,7 @@
             "description": "Превышен лимит; params.retry_after — секунды"
           }
         },
-        "summary": "Get Own Pdf",
+        "summary": "Стандартизированный PDF-профиль кандидата",
         "tags": [
           "matching",
           "matching"
@@ -12851,7 +12966,7 @@
             "description": "Ошибки полей или правил"
           }
         },
-        "summary": "Preview Profile",
+        "summary": "Карточка глазами работодателя: до и после раскрытия контактов",
         "tags": [
           "matching",
           "matching"
@@ -12860,6 +12975,7 @@
     },
     "/api/v1/candidate/profile/resume": {
       "post": {
+        "description": "Загрузить резюме в PDF и получить распознанные поля; файл и его текст не сохраняются.",
         "operationId": "profile-post_resume",
         "requestBody": {
           "content": {
@@ -12943,7 +13059,7 @@
             "description": "Превышен лимит; params.retry_after — секунды"
           }
         },
-        "summary": "Post Resume",
+        "summary": "Загрузить резюме в PDF и получить распознанные поля; файл и его текст не сохраняются",
         "tags": [
           "profile"
         ]
@@ -12951,6 +13067,7 @@
     },
     "/api/v1/candidate/settings/privacy": {
       "get": {
+        "description": "Настройки приватности: что видно до согласия и что раскрывается после.",
         "operationId": "profile-get_privacy",
         "responses": {
           "200": {
@@ -12984,12 +13101,13 @@
             "description": "Чужая роль или действие запрещено"
           }
         },
-        "summary": "Get Privacy",
+        "summary": "Настройки приватности: что видно до согласия и что раскрывается после",
         "tags": [
           "profile"
         ]
       },
       "put": {
+        "description": "Сохранить настройки приватности.",
         "operationId": "profile-put_privacy",
         "requestBody": {
           "content": {
@@ -13043,7 +13161,7 @@
             "description": "Ошибки полей или правил"
           }
         },
-        "summary": "Put Privacy",
+        "summary": "Сохранить настройки приватности",
         "tags": [
           "profile"
         ]
@@ -13051,6 +13169,7 @@
     },
     "/api/v1/candidate/visibility": {
       "post": {
+        "description": "Показать профиль работодателям или поставить показ на паузу.",
         "operationId": "profile-post_visibility",
         "requestBody": {
           "content": {
@@ -13114,7 +13233,7 @@
             "description": "Ошибки полей или правил"
           }
         },
-        "summary": "Post Visibility",
+        "summary": "Показать профиль работодателям или поставить показ на паузу",
         "tags": [
           "profile"
         ]
@@ -13228,6 +13347,155 @@
         "summary": "Медиана вилок принятых приглашений категории — «ориентир рынка»; null, если данных мало",
         "tags": [
           "contact"
+        ]
+      }
+    },
+    "/api/v1/demo/accounts": {
+      "get": {
+        "operationId": "demo-list_accounts",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DemoAccount"
+                  },
+                  "title": "Response Demo-List Accounts",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Объекта нет или он чужой"
+          }
+        },
+        "summary": "Именованные демо-аккаунты сценария",
+        "tags": [
+          "demo"
+        ]
+      }
+    },
+    "/api/v1/demo/login": {
+      "post": {
+        "description": "Открывает сессию и ставит cookie; 404 — нет такого аккаунта (в том числе `nina`: клонов в сборке нет).",
+        "operationId": "demo-demo_login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DemoLoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoMe"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Объекта нет или он чужой"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Ошибки полей или правил"
+          }
+        },
+        "summary": "Вход «как…» в именованный демо-аккаунт",
+        "tags": [
+          "demo"
+        ]
+      }
+    },
+    "/api/v1/demo/scenario/restart": {
+      "post": {
+        "description": "Сессия именованного демо-аккаунта либо `X-Admin-Token` (без лимитов).\n\n401 — нет сессии; 403 — живой пользователь, не аккаунт сценария либо `DEMO_PUBLIC_RESTART=false`;\n429 — раз в 10 минут с одного IP и раз в 2 минуты на стенд (`params.retry_after`).",
+        "operationId": "demo-restart",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestartResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Нет действующей сессии"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Чужая роль или действие запрещено"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Объекта нет или он чужой"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Превышен лимит; params.retry_after — секунды"
+          }
+        },
+        "summary": "Начать сценарий заново",
+        "tags": [
+          "demo"
         ]
       }
     },
@@ -13429,7 +13697,7 @@
             "description": "Превышен лимит; params.retry_after — секунды"
           }
         },
-        "summary": "List Candidates",
+        "summary": "Банк кандидатов: все видимые кандидаты; потребность не нужна, версия не создаётся",
         "tags": [
           "matching",
           "matching"
@@ -13548,7 +13816,7 @@
             "description": "Превышен лимит; params.retry_after — секунды"
           }
         },
-        "summary": "Get Candidate Card",
+        "summary": "Карточка кандидата; скрытый кандидат нераскрытой пары — 404",
         "tags": [
           "matching",
           "matching"
@@ -13623,7 +13891,7 @@
             "description": "Ошибки полей или правил"
           }
         },
-        "summary": "Get Contacts",
+        "summary": "Каналы связи раскрытой пары — только те, что выбрал кандидат",
         "tags": [
           "profile"
         ]
@@ -13693,7 +13961,7 @@
             "description": "Превышен лимит; params.retry_after — секунды"
           }
         },
-        "summary": "Get Candidate Pdf",
+        "summary": "PDF-профиль раскрытой пары; пишет `pdf_downloaded` в журнал доступа кандидата",
         "tags": [
           "matching",
           "matching"
@@ -14522,6 +14790,7 @@
     },
     "/api/v1/employer/needs": {
       "get": {
+        "description": "Потребности работодателя: активные и архивные.",
         "operationId": "matching-list_needs",
         "responses": {
           "200": {
@@ -14559,13 +14828,14 @@
             "description": "Чужая роль или действие запрещено"
           }
         },
-        "summary": "List Needs",
+        "summary": "Потребности работодателя: активные и архивные",
         "tags": [
           "matching",
           "matching"
         ]
       },
       "post": {
+        "description": "Создать потребность: специализация, грейд, навыки, форматы и обязательная вилка в рублях.",
         "operationId": "matching-create_need",
         "requestBody": {
           "content": {
@@ -14629,7 +14899,7 @@
             "description": "Ошибки полей или правил"
           }
         },
-        "summary": "Create Need",
+        "summary": "Создать потребность: специализация, грейд, навыки, форматы и обязательная вилка в рублях",
         "tags": [
           "matching",
           "matching"
@@ -14692,7 +14962,7 @@
             "description": "Ошибки полей или правил"
           }
         },
-        "summary": "Parse Need",
+        "summary": "Разобрать текст вакансии в черновик потребности; в базу потребностей ничего не пишет",
         "tags": [
           "matching",
           "matching"
@@ -14701,6 +14971,7 @@
     },
     "/api/v1/employer/needs/{need_id}": {
       "get": {
+        "description": "Потребность по идентификатору.",
         "operationId": "matching-get_need",
         "parameters": [
           {
@@ -14766,13 +15037,14 @@
             "description": "Ошибки полей или правил"
           }
         },
-        "summary": "Get Need",
+        "summary": "Потребность по идентификатору",
         "tags": [
           "matching",
           "matching"
         ]
       },
       "put": {
+        "description": "Изменить потребность; прежние версии подборки сохраняются.",
         "operationId": "matching-update_need",
         "parameters": [
           {
@@ -14858,7 +15130,7 @@
             "description": "Ошибки полей или правил"
           }
         },
-        "summary": "Update Need",
+        "summary": "Изменить потребность; прежние версии подборки сохраняются",
         "tags": [
           "matching",
           "matching"
@@ -14867,6 +15139,7 @@
     },
     "/api/v1/employer/needs/{need_id}/archive": {
       "post": {
+        "description": "Перенести потребность в архив.",
         "operationId": "matching-archive_need",
         "parameters": [
           {
@@ -14932,7 +15205,7 @@
             "description": "Ошибки полей или правил"
           }
         },
-        "summary": "Archive Need",
+        "summary": "Перенести потребность в архив",
         "tags": [
           "matching",
           "matching"
@@ -15014,6 +15287,7 @@
     },
     "/api/v1/employer/needs/{need_id}/pins/{candidate_id}": {
       "delete": {
+        "description": "Снять закрепление кандидата.",
         "operationId": "matching-unpin_candidate",
         "parameters": [
           {
@@ -15082,13 +15356,14 @@
             "description": "Ошибки полей или правил"
           }
         },
-        "summary": "Unpin Candidate",
+        "summary": "Снять закрепление кандидата",
         "tags": [
           "matching",
           "matching"
         ]
       },
       "put": {
+        "description": "Закрепить кандидата за потребностью; закрепление переживает уточнения запроса.",
         "operationId": "matching-pin_candidate",
         "parameters": [
           {
@@ -15167,7 +15442,7 @@
             "description": "Ошибки полей или правил"
           }
         },
-        "summary": "Pin Candidate",
+        "summary": "Закрепить кандидата за потребностью; закрепление переживает уточнения запроса",
         "tags": [
           "matching",
           "matching"
@@ -15176,6 +15451,7 @@
     },
     "/api/v1/employer/needs/{need_id}/shortlists": {
       "get": {
+        "description": "Версии подборки потребности — для переключателя версий.",
         "operationId": "matching-list_shortlists",
         "parameters": [
           {
@@ -15245,7 +15521,7 @@
             "description": "Ошибки полей или правил"
           }
         },
-        "summary": "List Shortlists",
+        "summary": "Версии подборки потребности — для переключателя версий",
         "tags": [
           "matching",
           "matching"
@@ -15365,7 +15641,7 @@
             "description": "Превышен лимит; params.retry_after — секунды"
           }
         },
-        "summary": "Create Shortlist",
+        "summary": "Создать версию подборки",
         "tags": [
           "matching",
           "matching"
@@ -15374,6 +15650,7 @@
     },
     "/api/v1/employer/shortlists/{snapshot_id}": {
       "get": {
+        "description": "Версия подборки: строки с объяснением, воронка и подсказки; прежние версии доступны всегда.",
         "operationId": "matching-get_shortlist",
         "parameters": [
           {
@@ -15439,7 +15716,7 @@
             "description": "Ошибки полей или правил"
           }
         },
-        "summary": "Get Shortlist",
+        "summary": "Версия подборки: строки с объяснением, воронка и подсказки; прежние версии доступны всегда",
         "tags": [
           "matching",
           "matching"
@@ -15448,6 +15725,7 @@
     },
     "/api/v1/employer/shortlists/{snapshot_id}/diff": {
       "get": {
+        "description": "Различия двух версий подборки одной потребности.",
         "operationId": "matching-diff_shortlists",
         "parameters": [
           {
@@ -15533,7 +15811,7 @@
             "description": "Ошибки полей или правил"
           }
         },
-        "summary": "Diff Shortlists",
+        "summary": "Различия двух версий подборки одной потребности",
         "tags": [
           "matching",
           "matching"

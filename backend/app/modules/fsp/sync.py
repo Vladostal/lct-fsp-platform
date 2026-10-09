@@ -400,7 +400,9 @@ def run_sync(
     if trigger == "manual":
         wait = manual_wait(db, identity.id, now)
         if wait > 0:
-            raise ApiException(429, "fsp_sync_too_frequent", params={"retry_after": wait})
+            raise ApiException(
+                429, "fsp_sync_too_frequent", c.ERROR_MESSAGES["fsp_sync_too_frequent"], params={"retry_after": wait}
+            )
     db.execute(
         update(FspSyncAttempt)
         .where(

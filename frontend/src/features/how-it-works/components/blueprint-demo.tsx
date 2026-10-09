@@ -128,7 +128,6 @@ export function BlueprintDemo({ min, max }: { min: number; max: number }) {
           </div>
           <Slots data={preview.data} />
           <p className="type-sm text-ink-muted">{T.slotsNote}</p>
-          <p className="type-sm text-ink-muted">{T.pulseNote}</p>
         </div>
       ) : null}
     </div>

@@ -31,6 +31,7 @@ from app.modules.matching.features import FEATURE_FIELDS, CandidateFeatures, Ski
 from app.modules.matching.ranking import (
     DEFAULT_KEY_ORDER,
     KEY_ORDER_V11,
+    KEY_ORDER_V12,
     DiffInput,
     counterfactuals,
     diff_snapshots,
@@ -111,7 +112,7 @@ def scored(features: CandidateFeatures, q: ShortlistQuery) -> ranking.Scored:
 
 
 def ctx(**fields: Any) -> ExplainContext:
-    return ExplainContext(scorer_version="match-1+test", skill_title=str.title, grade_title=str.title, **fields)
+    return ExplainContext(scorer_version="match-2+test", skill_title=str.title, grade_title=str.title, **fields)
 
 
 WORKED = {
@@ -141,7 +142,8 @@ def test_worked_example() -> None:
     assert power.t == pytest.approx(0.4153, abs=1e-4) and power.t_fresh == pytest.approx(0.4267, abs=1e-4)
     assert (power.value, power.band, power.label) == (42.6, 4, "medium")
     key = sort_key(item, SEED)
-    assert key[:4] == (0, -4, -3, -5)  # раздел; сила, подтверждённое покрытие, покрытие с заявленным
+    # раздел; обязательных без данных, подтверждённое покрытие, сила, покрытие с заявленным
+    assert key[:5] == (0, 0, -3, -4, -5)
 
     expl = build_explanation(item.features, query(), item, ctx(fsp_line="призёр", fsp_fact_id="f1"))
     points = {row.code: (row.points, row.max_points) for row in expl.contributions}
@@ -151,16 +153,18 @@ def test_worked_example() -> None:
 
 
 def test_worked_example_single_item_weight() -> None:
-    """Ошибся в одном задании из двух: `python` имеет вес 0.7 — меняется только второй ключ."""
+    """Ошибся в одном задании из двух: `python` имеет вес 0.7 — меняется только ключ подтверждённого покрытия."""
     item = scored(worked(full=False), query())
     assert item.coverage.confirmed_band == 2
-    assert sort_key(item, SEED)[1] == -4
+    assert sort_key(item, SEED)[:4] == (0, 0, -2, -4)
 
 
 def test_worked_example_without_declared() -> None:
-    """Удалил заявленные навыки: меняется только третий ключ и подпись; из подборки не выпадает."""
+    """Удалил заявленные навыки: два обязательных остались без данных — меняются первый и последний ключи
+    и подпись; подтверждённое покрытие и сила те же; из подборки кандидат не выпадает.
+    """
     item = scored(cand(10042, [ev("python")], **WORKED), query())
-    assert sort_key(item, SEED)[:4] == (0, -4, -3, -3)
+    assert sort_key(item, SEED)[:5] == (0, 2, -3, -4, -3)
     assert item.fit_band == FitBand.PARTIAL
     assert order(query(), [item.features]) == [item.features.candidate_id]
 
@@ -181,36 +185,52 @@ def test_public_functions_have_formula_docstrings() -> None:
 
 
 # --------------------------------------------------------------------------------------------------------------------
-# Порядок ключей: сила → подтверждённое покрытие → заявленное (Арх. 6.7)
+# Порядок ключей: закрытые обязательные → подтверждённое покрытие → сила → заявленное (Арх. 6.7)
 # --------------------------------------------------------------------------------------------------------------------
 
 
-def test_key_order_strength_then_confirmed_then_declared() -> None:
+def test_key_order_must_then_confirmed_then_strength_then_declared() -> None:
     q = query()
-    strong_empty = cand(1, [], theta=2.0)  # сила выше, покрытия нет вовсе
+    # 1. Соответствие потребности важнее силы: сильный без единого навыка потребности — ниже слабого с полным набором.
+    strong_empty = cand(1, [], theta=2.0)
     weak_full = cand(2, [ev("python"), ev("postgresql"), ev("kafka"), ev("docker")], theta=0.9)
     assert scored(strong_empty, q).strength.band > scored(weak_full, q).strength.band
-    assert order(q, [weak_full, strong_empty]) == [strong_empty.candidate_id, weak_full.candidate_id]
+    assert order(q, [strong_empty, weak_full]) == [weak_full.candidate_id, strong_empty.candidate_id]
 
-    more_confirmed = cand(3, [ev("python"), ev("postgresql")])
-    less_confirmed = cand(
-        4, [ev("python"), ev("postgresql", "declared"), ev("kafka", "declared"), ev("docker", "declared")]
-    )
-    assert scored(more_confirmed, q).strength.band == scored(less_confirmed, q).strength.band
-    assert scored(more_confirmed, q).coverage.confirmed_band > scored(less_confirmed, q).coverage.confirmed_band
-    assert order(q, [less_confirmed, more_confirmed]) == [more_confirmed.candidate_id, less_confirmed.candidate_id]
+    # 2. Заявленный навык закрывает пробел в обязательных: полный набор «со слов» выше двух подтверждённых из трёх.
+    two_confirmed = cand(3, [ev("python"), ev("postgresql")])
+    all_covered = cand(4, [ev("python"), ev("postgresql", "declared"), ev("kafka", "declared")])
+    assert scored(two_confirmed, q).coverage.confirmed_band > scored(all_covered, q).coverage.confirmed_band
+    assert order(q, [two_confirmed, all_covered]) == [all_covered.candidate_id, two_confirmed.candidate_id]
 
-    declared_more = cand(5, [ev("python"), ev("kafka", "declared")])
-    declared_less = cand(6, [ev("python")])
+    # 3. При равном числе закрытых обязательных подтверждённое важнее силы.
+    declared_strong = cand(5, [ev(skill, "declared") for skill in ("python", "postgresql", "kafka")], theta=2.0)
+    confirmed_weak = cand(6, [ev("python"), ev("postgresql", "declared"), ev("kafka", "declared")], theta=0.9)
+    assert scored(declared_strong, q).strength.band > scored(confirmed_weak, q).strength.band
+    assert order(q, [declared_strong, confirmed_weak]) == [confirmed_weak.candidate_id, declared_strong.candidate_id]
+
+    # 4. При равном соответствии решает сила профиля.
+    evidence = [ev("python"), ev("postgresql"), ev("kafka")]
+    stronger, weaker = cand(7, evidence, theta=2.0), cand(8, evidence, theta=0.9)
+    assert order(q, [weaker, stronger]) == [stronger.candidate_id, weaker.candidate_id]
+
+    # 5. Заявленное по желательным — последним: только среди равных по трём ключам выше.
+    declared_more = cand(9, [*evidence, ev("docker", "declared")])
+    declared_less = cand(10, evidence)
     assert order(q, [declared_less, declared_more]) == [declared_more.candidate_id, declared_less.candidate_id]
 
 
 def test_key_order_is_a_parameter_only_for_ablations() -> None:
     assert inspect.signature(rank_need).parameters["key_order"].default == DEFAULT_KEY_ORDER
-    assert DEFAULT_KEY_ORDER == ("strength", "confirmed", "coverage")
+    assert DEFAULT_KEY_ORDER == ("must", "confirmed", "strength", "coverage")
     q = query()
     strong_empty = cand(1, [], theta=2.0)
     weak_full = cand(2, [ev("python"), ev("postgresql"), ev("kafka")], theta=0.9)
+    # Прежний порядок «сила первой» остаётся только абляцией отчёта.
+    assert order(q, [strong_empty, weak_full], key_order=KEY_ORDER_V12) == [
+        strong_empty.candidate_id,
+        weak_full.candidate_id,
+    ]
     assert order(q, [strong_empty, weak_full], key_order=KEY_ORDER_V11) == [
         weak_full.candidate_id,
         strong_empty.candidate_id,
@@ -218,8 +238,8 @@ def test_key_order_is_a_parameter_only_for_ablations() -> None:
 
 
 def test_declared_stuffing() -> None:
-    """Добавление любых заявленных навыков не поднимает кандидата выше того, у кого больше сила либо при
-    равной силе больше подтверждено.
+    """Накрутка заявленного не меняет ни силу, ни подтверждённое покрытие и не поднимает кандидата выше того,
+    у кого обязательных закрыто не меньше, а подтверждено больше (либо подтверждено столько же при большей силе).
     """
     q = query()
     rng = random.Random(7)
@@ -231,6 +251,10 @@ def test_declared_stuffing() -> None:
             for skill in rng.sample(skills, rng.randint(0, 4))
         ]
         pool.append(cand(number, evidence, theta=rng.uniform(-0.5, 2.5), se=rng.uniform(0.3, 0.6), se_eff=0.6))
+
+    def missing(item: ranking.Scored) -> int:
+        return item.coverage.must_total - item.coverage.must_covered
+
     for target in pool[:12]:
         stuffed_evidence = [*target.evidence.values(), *(ev(skill, "declared") for skill in skills)]
         stuffed = replace(target, evidence=merge_evidence(stuffed_evidence))
@@ -239,18 +263,21 @@ def test_declared_stuffing() -> None:
             before.strength.band,
             before.coverage.confirmed_band,
         )
+        assert missing(after) == 0
         new_pool = [stuffed if item.candidate_id == target.candidate_id else item for item in pool]
         ranked = order(q, new_pool, section_limits={})
         place = ranked.index(target.candidate_id)
         by_id = {item.candidate_id: item for item in new_pool}
         for other_id in ranked[place + 1 :]:
             other = scored(by_id[other_id], q)
-            stronger = other.strength.band > after.strength.band
-            more_confirmed = (
-                other.strength.band == after.strength.band
-                and other.coverage.confirmed_band > after.coverage.confirmed_band
+            if missing(other) > missing(after):
+                continue  # у обойдённого остался пробел в обязательных — это и есть цена первого ключа
+            more_confirmed = other.coverage.confirmed_band > after.coverage.confirmed_band
+            stronger = (
+                other.coverage.confirmed_band == after.coverage.confirmed_band
+                and other.strength.band > after.strength.band
             )
-            assert not stronger and not more_confirmed
+            assert not more_confirmed and not stronger
 
 
 def test_declared_only_gives_at_most_partial() -> None:
@@ -281,7 +308,7 @@ def test_implies_transfers_only_upwards() -> None:
 
 
 def band_key(features: CandidateFeatures, q: ShortlistQuery) -> tuple[int | str, ...]:
-    return sort_key(scored(features, q), SEED)[1:4]
+    return sort_key(scored(features, q), SEED)[1:5]
 
 
 def test_monotonicity() -> None:
@@ -393,7 +420,8 @@ def test_empty_requirements_order_equals_bank_order() -> None:
     q = query(must_skills=[], nice_skills=[])
     result = rank(q, pool)
     assert all(item.scored.coverage.pct is None and item.scored.fit_band is None for item in result.items)
-    assert all(item.key[2] == 0 and item.key[3] == 0 for item in result.items)
+    # Без требований ключи соответствия нулевые: порядок задаёт только сила — как в банке.
+    assert all(item.key[1] == 0 and item.key[2] == 0 and item.key[4] == 0 for item in result.items)
     bank = rank_bank(pool, SEED, specializations=["backend"], grades=GRADES)
     assert [item.candidate_id for item in result.items] == [row.features.candidate_id for row in bank]
     nobody = rank(query(must_skills=["redis"], nice_skills=[]), pool)

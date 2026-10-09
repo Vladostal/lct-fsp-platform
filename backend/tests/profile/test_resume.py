@@ -152,6 +152,83 @@ def test_text_criterion_letters_and_share() -> None:
     assert not extract.is_usable("а" * 200 + "1" * 400, 200, 0.5)  # цифры и знаки: доля букв меньше половины
 
 
+def test_short_text_resume_is_not_taken_for_a_scan() -> None:
+    """Короткое, но настоящее резюме (сотня букв) пригодно: порог отсекает сканы, а не лаконичных людей."""
+    from app.modules.profile.constants import RESUME_MIN_LETTERS
+
+    assert RESUME_MIN_LETTERS == extract.DEFAULTS["min_letters"] == 100
+    short = "Иванов И. тел 89001234567. Ищу работу программистом: php, js, mysql, вёрстка. Воронеж, можно удалённо."
+    letters, _share = extract.letter_stats(short)
+    assert 60 <= letters < 100 and not extract.is_usable(short, 100, 0.5)
+    assert extract.is_usable(short + " Делал сайты на битриксе и вордпрессе, интеграции с crm.", 100, 0.5)
+
+
+# --- поля из неудобной вёрстки ----------------------------------------------------------------------------------------
+
+
+def test_phone_split_by_line_break_is_joined() -> None:
+    from app.modules.profile.resume import fields
+
+    whole = fields.find_phone(["Тел.: +7 (912) 345-67-89"])
+    assert whole is not None and (whole.value, whole.confidence) == ("+79123456789", "high")
+    wrapped = fields.find_phone(["КОНТАКТЫ", "Тел.: 8 912 345 67", "89", "Почта: a@example.com"])
+    assert wrapped is not None and (wrapped.value, wrapped.confidence) == ("+79123456789", "medium")
+    assert fields.find_phone(["Опыт 8 лет", "912 задач"]) is None
+    # Последняя цифра года — не начало номера: «2018» и числа следующей строки телефоном не становятся.
+    assert fields.find_phone(["Работал в 2015 – 2018", "345 123 45 67 задач закрыто"]) is None
+    assert fields.find_phone(["Проект 2018 345 123 45 67"]) is None
+
+
+def test_link_split_after_slash_is_joined() -> None:
+    from app.modules.profile.resume import fields
+
+    wrapped = fields.find_link(["почта · t.me/mpetrova · linkedin.com/in/", "mpetrova", "Summary"])
+    assert wrapped is not None and wrapped.value == "https://linkedin.com/in/mpetrova"
+    # Следующая строка — не продолжение адреса: ссылка остаётся как есть.
+    kept = fields.find_link(["github.com/anna-dev", "Опыт работы"])
+    assert kept is not None and kept.value == "https://github.com/anna-dev"
+    # Адрес с косой чертой в конце и заголовок раздела или слово с заглавной буквы на следующей строке.
+    for following in ("Skills", "summary", "Projects"):
+        whole = fields.find_link(["https://github.com/anna-dev/", following])
+        assert whole is not None and whole.value.rstrip("/") == "https://github.com/anna-dev", following
+
+
+def test_name_in_capitals_and_outside_the_head() -> None:
+    from app.modules.profile.resume import fields
+
+    caps = fields.name_candidate(["ДАРЬЯ ОРЛОВА", "Data Scientist"])
+    assert caps is not None and caps.words == ("Дарья", "Орлова")
+    # Заголовок прописными именем не считается.
+    assert fields.name_candidate(["ЯЗЫКИ ПРОГРАММИРОВАНИЯ", "Python"]) is None
+    assert fields.name_candidate(["КЛЮЧЕВЫЕ НАВЫКИ"]) is None
+    # Латиница прописными не принимается: «CONTACT INFORMATION» от имени по форме не отличить.
+    assert fields.name_candidate(["CONTACT INFORMATION", "John Smith"]).words == ("John", "Smith")
+    assert fields.name_candidate(["SOFTWARE ENGINEER"]) is None
+
+    two_columns = ["КОНТАКТЫ", "Тел.: 8 912 345 67", "89", "НАВЫКИ", "Python", "ДАРЬЯ ОРЛОВА", "ML-инженер, Middle"]
+    located = fields.name_by_dictionary(two_columns)
+    assert located is not None
+    candidate, next_line = located
+    assert candidate.words == ("Дарья", "Орлова") and next_line == "ML-инженер, Middle"
+    assert fields.name_by_dictionary(["КОНТАКТЫ", "НАВЫКИ", "Python Django"]) is None
+
+
+def test_two_column_resume_gets_name_and_grade_from_the_line_under_it() -> None:
+    from datetime import date
+
+    left_column = ["КОНТАКТЫ", "Тел.: 8 912 345 67", "89", "Почта:", "d.orlova@example.com", "г. Екатеринбург"]
+    skills = ["НАВЫКИ", "Python", "Pandas, NumPy", "SQL"]
+    right_column = ["ДАРЬЯ ОРЛОВА", "Data Scientist / ML-инженер, Middle", "ОПЫТ"]
+    jobs = ["2023 – н.в. — ML-инженер. Модели ранжирования.", "2021 – 2023 — младший аналитик данных."]
+    text = "\n".join([*left_column, *skills, *right_column, *jobs])
+    result = parser.build_result(text, today=date(2026, 10, 9), pages=1, engine="pypdf", started=time.monotonic())
+    fields_found = result.fields
+    assert (fields_found["first_name"].value, fields_found["last_name"].value) == ("Дарья", "Орлова")
+    assert fields_found["first_name"].confidence == "medium"  # найдено вне шапки — уверенность ниже
+    assert fields_found["phone"].value == "+79123456789"
+    assert fields_found["grade_hint"].value == "middle"
+
+
 # --- отдельный процесс ------------------------------------------------------------------------------------------------
 
 

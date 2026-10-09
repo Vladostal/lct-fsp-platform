@@ -81,6 +81,17 @@ def _check_invariants(db, now, limit):
         ("settle", 0, 0, 170),
     ]
 )
+# Явный путь до `accepted`: без него страховочный тест ниже зависел от того, дойдут ли до этого статуса случайные
+# последовательности, и изредка падал (в примере выше принятия нет).
+@example(
+    steps=[
+        ("send", 0, 0, 0),
+        ("view", 0, 0, 1),
+        ("accept", 0, 0, 2),
+        ("send", 1, 1, 0),
+        ("decline", 1, 1, 3),
+    ]
+)
 def test_random_sequences_keep_invariants(db, actors, world, monkeypatch, steps):
     monkeypatch.setattr(c, "SLOT_LIMIT", {TrustLevel.BASIC: 2, TrustLevel.VERIFIED: 2})
     employers = [actors.employer().id for _ in range(2)]

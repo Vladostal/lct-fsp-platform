@@ -124,12 +124,14 @@ def start_link(db: Session, user_id: UUID, body: FspLinkStartRequest) -> FspLink
     """`POST /fsp/link/start`: проверки, погашение прежних попыток, `state`, `nonce`, PKCE (приложение D, §3.2)."""
     settings = get_settings()
     if not body.accept:
-        raise ApiException(422, "fsp_consent_required")
+        raise ApiException(422, "fsp_consent_required", c.ERROR_MESSAGES["fsp_consent_required"])
     version = consent_text.current_version()
     if body.consent_version != version:
-        raise ApiException(409, "fsp_consent_outdated", params={"version": version})
+        raise ApiException(
+            409, "fsp_consent_outdated", c.ERROR_MESSAGES["fsp_consent_outdated"], params={"version": version}
+        )
     if db.scalar(select(ExternalIdentity.id).where(ExternalIdentity.user_id == user_id)) is not None:
-        raise ApiException(409, "fsp_link_exists")
+        raise ApiException(409, "fsp_link_exists", c.ERROR_MESSAGES["fsp_link_exists"])
     now = clock.real_now()
     window = timedelta(minutes=c.LINK_ATTEMPTS_WINDOW_MINUTES)
     recent = list(
@@ -142,12 +144,16 @@ def start_link(db: Session, user_id: UUID, body: FspLinkStartRequest) -> FspLink
     if len(recent) >= c.LINK_ATTEMPTS_LIMIT:
         retry_after = max(1, int((recent[0] + window - now).total_seconds() + 0.999))
         raise ApiException(
-            429, "fsp_too_many_attempts", params={"retry_after": retry_after}, headers={"Retry-After": str(retry_after)}
+            429,
+            "fsp_too_many_attempts",
+            c.ERROR_MESSAGES["fsp_too_many_attempts"],
+            params={"retry_after": retry_after},
+            headers={"Retry-After": str(retry_after)},
         )
     try:
         gateway = factory.get_fsp_gateway()
     except FspUnavailable as exc:
-        raise ApiException(503, "fsp_unavailable") from exc
+        raise ApiException(503, "fsp_unavailable", c.ERROR_MESSAGES["fsp_unavailable"]) from exc
 
     # Прежние неиспользованные попытки гасятся, а не удаляются: иначе не сработал бы лимит выше.
     db.execute(

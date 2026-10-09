@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { PageHeader } from '@/components/app'
+import { InviteFlow } from '@/features/invitations'
 import { CandidateView, cardSearchSchema } from '@/features/matching'
 
 /** E5. Карточка кандидата страницей (прямая ссылка из приглашений, письма). */
@@ -30,6 +31,7 @@ function Screen() {
         invite={Boolean(search.invite)}
         onInvite={() => navigate({ search: (prev) => ({ ...prev, invite: true }) })}
         onBackFromInvite={() => navigate({ search: (prev) => ({ ...prev, invite: undefined, revises: undefined }) })}
+        renderInvite={(invite) => <InviteFlow {...invite} revisesId={search.revises} />}
         layout="page"
       />
     </div>

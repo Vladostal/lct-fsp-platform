@@ -72,11 +72,13 @@ router = APIRouter(route_class=TxRoute)
 
 @router.get("/candidate/profile", response_model=CandidateProfileView, responses=error_responses(401, 403))
 def get_profile(user: Candidate, db: Db, now: Now) -> CandidateProfileView:
+    """Профиль кандидата: поля, заявленные навыки, подсказки из резюме и заполненность."""
     return profiles.profile_view(db, user.id, identity.get_user(db, user.id).email, now)
 
 
 @router.put("/candidate/profile", response_model=CandidateProfileView, responses=error_responses(401, 403, 404, 422))
 def put_profile(body: CandidateProfileUpdate, user: Candidate, db: Db, now: Now) -> CandidateProfileView:
+    """Сохранить профиль; принятые поля резюме берутся из загрузки `resume_upload_id`."""
     service.save_profile(db, user.id, body, now)
     return profiles.profile_view(db, user.id, identity.get_user(db, user.id).email, now)
 
@@ -84,6 +86,7 @@ def put_profile(body: CandidateProfileUpdate, user: Candidate, db: Db, now: Now)
 def post_resume(
     file: Annotated[UploadFile, File(description="PDF до 5 МБ")], user: Candidate, db: Db, now: Now
 ) -> ResumeParseResult:
+    """Загрузить резюме в PDF и получить распознанные поля; файл и его текст не сохраняются."""
     # Читаем на один байт больше предела: превышение видно, а файл целиком в память не уходит.
     data = file.file.read(RESUME_MAX_BYTES + 1)
     return upload_resume(db, user.id, data, now)
@@ -104,22 +107,26 @@ router.add_api_route(
 
 @router.get("/candidate/conditions", response_model=ConditionsView, responses=error_responses(401, 403))
 def get_conditions(user: Candidate, db: Db) -> ConditionsView:
+    """Условия кандидата: скрытый минимум зарплаты, форматы работы, готовность к переезду."""
     return profiles.conditions_view(db, user.id)
 
 
 @router.put("/candidate/conditions", response_model=ConditionsView, responses=error_responses(401, 403, 422))
 def put_conditions(body: ConditionsUpdate, user: Candidate, db: Db, now: Now) -> ConditionsView:
+    """Сохранить условия; минимум зарплаты работодателям не показывается."""
     service.save_conditions(db, user.id, body, now)
     return profiles.conditions_view(db, user.id)
 
 
 @router.get("/candidate/settings/privacy", response_model=PrivacySettings, responses=error_responses(401, 403))
 def get_privacy(user: Candidate, db: Db) -> PrivacySettings:
+    """Настройки приватности: что видно до согласия и что раскрывается после."""
     return PrivacySettings(**privacy_store.load(db, user.id).model_dump())
 
 
 @router.put("/candidate/settings/privacy", response_model=PrivacySettings, responses=error_responses(401, 403, 422))
 def put_privacy(body: PrivacySettings, user: Candidate, db: Db, now: Now) -> PrivacySettings:
+    """Сохранить настройки приватности."""
     # `hidden_domains` не передан — сохранённый список не меняется (экран P0 этого поля не знает).
     data = PrivacyData.model_validate(body.model_dump(exclude_unset=True))
     service.save_privacy(db, user.id, data, now)
@@ -145,6 +152,7 @@ def _consent_item(consent: Any, current_version: str | None) -> ConsentItem:
 
 @router.get("/candidate/consents", response_model=ConsentsView, responses=error_responses(401, 403))
 def get_consents(user: Candidate, db: Db, now: Now) -> ConsentsView:
+    """Согласия кандидата и состояние показа профиля."""
     given = identity.consents(db, user.id)
     fsp = given.get(ConsentKind.FSP_DATA)
     return ConsentsView(
@@ -164,12 +172,14 @@ def get_consents(user: Candidate, db: Db, now: Now) -> ConsentsView:
     "/candidate/consents/publication", response_model=VisibilityView, responses=error_responses(401, 403, 409, 422)
 )
 def post_publication(body: PublicationConsentRequest, user: Candidate, db: Db, now: Now) -> VisibilityView:
+    """Дать или отозвать согласие на публикацию профиля."""
     state = service.set_publication(db, user.id, granted=body.action == "grant", version=body.version, now=now)
     return _visibility_view(state)
 
 
 @router.post("/candidate/visibility", response_model=VisibilityView, responses=error_responses(401, 403, 409, 422))
 def post_visibility(body: VisibilityRequest, user: Candidate, db: Db, now: Now) -> VisibilityView:
+    """Показать профиль работодателям или поставить показ на паузу."""
     return _visibility_view(visibility_rules.set_manual_pause(db, user.id, paused=body.state == "paused", now=now))
 
 
@@ -178,6 +188,7 @@ def post_visibility(body: VisibilityRequest, user: Candidate, db: Db, now: Now) 
 
 @router.get("/candidate/access-log", response_model=Page[AccessLogItem], responses=error_responses(401, 403, 422))
 def get_access_log(user: Candidate, db: Db, paging: Paging) -> Page[AccessLogItem]:
+    """Журнал доступа: кто и когда получил или открыл данные кандидата."""
     return disclosure.access_log_page(db, user.id, paging)
 
 

@@ -43,6 +43,7 @@ def generate(level: int, seed: int) -> Variant:
     """
     rng = Random(seed)
     wrong_queries: dict[str, str] = {}
+    orders: list[tuple[object, ...]]
     if level == 1:
         rows = [
             (i, rng.randrange(10, 100, 5), rng.choice([None, 5, 10, 15]), names.pick(rng, names.STATUSES))

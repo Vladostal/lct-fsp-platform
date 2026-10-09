@@ -155,17 +155,18 @@ def test_snapshot_create_order_and_dedup(api: TestClient, world: Any, db: Sessio
     assert created.status_code == 201, created.text
     view = created.json()
     order = [item["candidate_id"] for item in view["items"]]
-    # Сила → подтверждённое покрытие → заявленное; пустой профиль остаётся с риском; junior с запасом — отдельно.
-    expected = ["top", "mid", "declared", "empty", "fsp", "junior"]
+    # Закрытые обязательные → подтверждённое покрытие → сила → заявленное: `fsp` закрыл один обязательный из двух
+    # и стоит выше пустого профиля, хотя тот сильнее; пустой остаётся с риском; junior с запасом — отдельно.
+    expected = ["top", "mid", "declared", "fsp", "empty", "junior"]
     assert order == [str(people[name].id) for name in expected]
     assert [item["position"] for item in view["items"]] == [1, 2, 3, 4, 5, 6]
     assert view["items"][-1]["relation"] == "lower_with_margin" and view["items"][-1]["grade_margin"] is True
     assert view["funnel"] == {"category_total": 6, "available": 6, "format_ok": 5, "must_ok": 3, "shown": 5}
-    empty_row = view["items"][3]
+    empty_row = view["items"][4]
     assert empty_row["risk"].startswith("Нет данных по обязательным навыкам") and empty_row["fit_band"] == "partial"
     assert view["items"][2]["fit_band"] == "partial"  # одними заявлениями не выше «частичного»
     assert "pct" not in json.dumps(view["items"]) and view["version_no"] == 1 and view["is_latest"] is True
-    assert view["scorer_version"] == "match-1+fsp-signal-test+skills-test"
+    assert view["scorer_version"] == "match-2+fsp-signal-test+skills-test"
     assert [row["relation"] for row in view["categories"]] == ["exact", "lower_with_margin", "higher"]
 
     again = api.post(f"{API}/employer/needs/{need_id}/shortlists")
@@ -230,8 +231,14 @@ def test_versions_are_immutable_and_pin_survives_refinement(
     assert api.delete(f"{API}/employer/needs/{need_id}/pins/{people['mid'].id}").status_code == 204
     assert api.get(f"{API}/employer/shortlists/{refined['id']}").json()["pinned_outside"] == []
 
-    mismatch = api.post(f"{API}/employer/needs/{need_id}/shortlists", json={"refinement": {"require_fsp": False}})
-    assert (mismatch.status_code, mismatch.json()["code"]) == (409, "parent_mismatch")
+    orphan = api.post(f"{API}/employer/needs/{need_id}/shortlists", json={"refinement": {"require_fsp": False}})
+    assert (orphan.status_code, orphan.json()["code"]) == (422, "parent_required")
+    assert "parent_id" in orphan.json()["message"]
+    foreign = api.post(
+        f"{API}/employer/needs/{need_id}/shortlists",
+        json={"parent_id": "00000000-0000-0000-0000-000000000001", "refinement": {"require_fsp": False}},
+    )
+    assert (foreign.status_code, foreign.json()["code"]) == (409, "parent_mismatch")
     bad = api.post(
         f"{API}/employer/needs/{need_id}/shortlists",
         json={"parent_id": first["id"], "refinement": {"must_skills": ["cobol"]}},
@@ -644,7 +651,7 @@ def test_explain_for_invitation_and_exposure_stats(api: TestClient, world: Any, 
     assert (why.source, why.target.code, explain.fit_band) == ("need", "backend:middle", "good")
     assert [(item.skill.code, item.kind) for item in why.matched] == [("python", "test"), ("postgresql", "declared")]
     assert why.unconfirmed is not None and why.unconfirmed.skill.code == "postgresql"
-    assert "категория и уровень по тесту" in why.employer_saw and explain.scorer_version.startswith("match-1+")
+    assert "категория и уровень по тесту" in why.employer_saw and explain.scorer_version.startswith("match-2+")
     dumped = json.dumps(explain.model_dump(mode="json"), ensure_ascii=False)
     assert "position" not in dumped and "risk" not in dumped and "contributions" not in dumped
 

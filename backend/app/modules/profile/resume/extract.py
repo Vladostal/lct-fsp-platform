@@ -26,7 +26,7 @@ DEFAULTS: dict[str, Any] = {
     "budget_s": 5.0,
     "max_pages": 10,
     "page_char_limit": 20_000,
-    "min_letters": 200,
+    "min_letters": 100,
     "min_letter_share": 0.5,
     "memory_bytes": 256 * 1024 * 1024,
     #: Порядок движков; в рабочем режиме всегда оба (параметр нужен тестам предела памяти второго движка).

@@ -22,6 +22,16 @@ OUTCOME_TITLES: dict[TestOutcome, str] = {
 }
 
 
+#: Запасные тексты ошибок запуска теста (клиент берёт свой текст по `code`, Арх. 9.2).
+ERROR_MESSAGES: dict[str, str] = {
+    "survey_required": "Сначала пройдите опрос",
+    "claim_required": "Сначала выберите грейд, который хотите подтвердить",
+    "grade_not_allowed": "Тест на этот грейд сейчас пройти нельзя: доступен заявленный грейд или соседний",
+    "session_active": "У вас уже идёт тест: сначала завершите его",
+    "cooldown_active": "Следующая попытка станет доступна позже",
+}
+
+
 def grade_ref(code: str) -> Ref:
     for grade in catalog.grades_ordered():
         if grade.code == code:
@@ -33,8 +43,16 @@ def category_ref(specialization: str, grade: str) -> CategoryRef:
     return catalog.category_ref(f"{specialization}:{grade}")
 
 
-def outcome_label(outcome: TestOutcome | str, grade: str) -> str:
-    return OUTCOME_TEMPLATES[TestOutcome(outcome)].format(grade=grade_ref(grade).title)
+#: Тест закрыт по времени и грейд не подтверждён: «на границе» здесь означало бы оценку, которой кандидат не дал.
+EXPIRED_TEMPLATE = "Время вышло: грейд {grade} не подтверждён"
+_CONFIRMING = frozenset({TestOutcome.CONFIRMED, TestOutcome.CONFIRMED_WITH_MARGIN})
+
+
+def outcome_label(outcome: TestOutcome | str, grade: str, *, expired: bool = False) -> str:
+    """Подпись исхода. `expired` — сессия закрыта по времени: неподтверждающий исход назван прямо."""
+    value = TestOutcome(outcome)
+    template = EXPIRED_TEMPLATE if expired and value not in _CONFIRMING else OUTCOME_TEMPLATES[value]
+    return template.format(grade=grade_ref(grade).title)
 
 
 def group_title(code: str) -> str:

@@ -13,6 +13,7 @@
 
 from __future__ import annotations
 
+import builtins
 import contextlib
 import copy
 import io
@@ -51,7 +52,7 @@ __all__ = [
 
 #: Встроенные функции, доступные программам банка. Ни `open`, ни `import`, ни `eval`.
 SAFE_BUILTINS: dict[str, Any] = {
-    name: __builtins__[name] if isinstance(__builtins__, dict) else getattr(__builtins__, name)
+    name: getattr(builtins, name)
     for name in (
         "range", "len", "print", "sum", "min", "max", "abs", "sorted", "list", "set", "dict", "tuple",
         "enumerate", "zip", "reversed", "int", "str", "bool", "isinstance", "any", "all",
@@ -233,7 +234,10 @@ def assemble_bug(
     positions = list(range(len(ref_lines)))  # где окажется каждая строка шаблона после вставки комментариев
     for note in notes:
         at = rng.randint(1, len(ref_lines))
-        ref_lines.insert(at, "    " + note)
+        # Отступ — как у строки, перед которой встаёт комментарий (в конце функции — как у последней строки):
+        # комментарий с чужим отступом посреди тела цикла читался бы как ошибка вёрстки.
+        anchor = ref_lines[at] if at < len(ref_lines) else ref_lines[at - 1]
+        ref_lines.insert(at, anchor[: len(anchor) - len(anchor.lstrip())] + note)
         positions = [pos + 1 if pos >= at else pos for pos in positions]
     cases = battery(template, seed)
     fails: list[tuple[tuple[Any, ...], Any]] = []

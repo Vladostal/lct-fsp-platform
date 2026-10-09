@@ -14,7 +14,7 @@ from app.modules.assessment.families.registry import family_meta
 
 META = family_meta(
     "algo.sort_state",
-    version=1,
+    version=2,
     feature_bounds={
         1: {"code_lines": (10, 13), "concepts": (1, 1), "answer_abs": (1, 40), "trap": (1, 1)},
         2: {"code_lines": (10, 12), "concepts": (2, 2), "answer_abs": (1, 40), "trap": (1, 1)},

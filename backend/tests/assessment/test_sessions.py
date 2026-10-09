@@ -15,7 +15,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.errors import ApiException
-from app.modules.assessment import candidate, repo, seeding, service, sessions
+from app.modules.assessment import admin, candidate, grading, repo, seeding, service, sessions
 from app.modules.assessment.config import get_config
 from app.modules.assessment.dto import SeedItem, SeedResult, SeedSession
 from app.modules.assessment.models import (
@@ -183,7 +183,9 @@ def test_idempotent_answer(db: Session, candidate_ready: Callable[..., Any]) -> 
     user = candidate_ready("middle")
     session = sessions.start_session(db, user.id, "middle", T0)
     first = sessions.session_items(db, session.id)[0]
-    args = (db, user.id, str(session.id), str(first.id), {"value": "1"}, False, None)
+    # Тело своего вида задания: с чужим полем сессия ответит 422 `answer_malformed` и задание не примет.
+    field = grading.answer_key(db.get(VariantRow, first.variant_id).payload["kind"])
+    args = (db, user.id, str(session.id), str(first.id), {field: "1"}, False, None)
     sessions.submit_answer(*args, "key-1", T0)
     snapshot = (first.status, first.score, first.answer, session.items_answered)
     # Повтор того же запроса с тем же ключом: текущее состояние, ничего не меняется.
@@ -192,7 +194,7 @@ def test_idempotent_answer(db: Session, candidate_ready: Callable[..., Any]) -> 
     assert candidate.answer_result(db, again, T0).next_item.id == str(sessions.session_items(db, session.id)[1].id)
     for key in ("key-2", None):
         with pytest.raises(ApiException) as error:
-            sessions.submit_answer(db, user.id, str(session.id), str(first.id), {"value": "2"}, False, None, key, T0)
+            sessions.submit_answer(db, user.id, str(session.id), str(first.id), {field: "2"}, False, None, key, T0)
         assert (error.value.status, error.value.code) == (409, "item_already_answered")
     # Ответ не на текущее, а на будущее задание тоже отклоняется.
     third = sessions.session_items(db, session.id)[2]
@@ -224,6 +226,9 @@ def test_expired_session_unfinished_stage_is_borderline(db: Session, candidate_r
     assert error.value.status == 410
     result = candidate.result_view(db, user.id, str(session.id), late)
     assert result.status == "expired" and any("Время теста вышло" in note for note in result.notes)
+    # Исход хранится как `borderline`, но подпись называет причину прямо, а не «результат на границе».
+    assert result.outcome == "borderline" and result.outcome_label == "Время вышло: грейд Middle не подтверждён"
+    assert result.level.verdict_label == result.outcome_label
 
 
 def test_answer_within_grace_is_accepted_and_get_closes(db: Session, candidate_ready: Callable[..., Any]) -> None:
@@ -242,6 +247,11 @@ def test_background_close_and_finished_session_error(db: Session, candidate_read
     assert service.close_expired_sessions(db, T0 + timedelta(minutes=5)) == 0
     assert service.close_expired_sessions(db, session.expires_at + timedelta(minutes=1)) == 1
     assert session.status == "expired" and session.outcome is not None
+    # Ни одного ответа: в результате и в истории — «время вышло», а не оценка «на границе».
+    closed_at = session.expires_at + timedelta(minutes=2)
+    assert candidate.result_view(db, user.id, str(session.id), closed_at).outcome_label.startswith("Время вышло")
+    row = next(h for h in candidate.history(db, user.id, closed_at) if h.session_id == str(session.id))
+    assert row.outcome_label == "Время вышло: грейд Middle не подтверждён"
     other = candidate_ready("junior")
     done = play(db, other, sessions.start_session(db, other.id, "junior", T0), lambda n, item: True)
     last = sessions.session_items(db, done.id)[-1]
@@ -376,3 +386,75 @@ def test_seed_session_in_progress_marks_demo_result(db: Session, make_user: Call
     with pytest.raises(ApiException) as error:
         service.seed_session_in_progress(db, candidate_ready("junior").id, "senior", 12, T0)
     assert error.value.code == "grade_not_allowed"
+
+
+# --------------------------------------------------------------------------------------------------------------------
+# Пометки скорости: сигнал утечки, на исход не влияют
+# --------------------------------------------------------------------------------------------------------------------
+
+
+def play_timed(db: Session, user: Any, session: SessionRow, seconds: int) -> SessionRow:
+    """Отвечать верно, тратя на каждое задание `seconds` секунд по часам сервера."""
+    now = T0
+    for n in range(99):
+        if session.status != SessionStatus.IN_PROGRESS.value:
+            break
+        item = next(i for i in sessions.session_items(db, session.id) if i.status == ItemStatus.SHOWN.value)
+        now = now + timedelta(seconds=seconds)
+        variant = db.get(VariantRow, item.variant_id)
+        session = sessions.submit_answer(db, user.id, str(session.id), str(item.id), seeding.correct_raw(variant), False, None, f"t{n}", now)
+    return session
+
+
+def test_instant_correct_answers_are_flagged_but_outcome_is_the_same(db: Session, candidate_ready: Callable[..., Any]) -> None:
+    """Верные ответы за секунду: задания помечены `fast`, сессия — `speed_suspect`, исход тот же, что у обычной."""
+    fast_user, slow_user = candidate_ready("junior"), candidate_ready("junior")
+    fast = play_timed(db, fast_user, sessions.start_session(db, fast_user.id, "junior", T0), seconds=1)
+    slow = play_timed(db, slow_user, sessions.start_session(db, slow_user.id, "junior", T0), seconds=60)
+
+    fast_items = sessions.session_items(db, fast.id)
+    assert all(item.flags == [sessions.ITEM_FLAG_FAST] for item in fast_items if item.status == "answered")
+    assert fast.flags[sessions.FLAG_FAST_CORRECT] == fast.items_answered
+    assert fast.flags[sessions.FLAG_SPEED_SUSPECT] is True
+    assert all(item.flags == [] for item in sessions.session_items(db, slow.id))
+    assert sessions.FLAG_SPEED_SUSPECT not in slow.flags and sessions.FLAG_FAST_CORRECT not in slow.flags
+
+    # На результат пометка не влияет: это обещано кандидату перед тестом.
+    assert fast.outcome == slow.outcome and fast.outcome in ("confirmed", "confirmed_with_margin")
+    assert db.get(CategoryRow, fast_user.id) is not None
+    fast_notes = candidate.result_view(db, fast_user.id, str(fast.id), T0 + timedelta(hours=1)).notes
+    slow_notes = candidate.result_view(db, slow_user.id, str(slow.id), T0 + timedelta(hours=1)).notes
+    assert any("быстрее" in note and "не влияет" in note for note in fast_notes)
+    assert not any("быстрее" in note for note in slow_notes)
+
+    # Служебная сводка банка показывает долю «быстрых» верных ответов по семействам.
+    health = {row.id: row for row in admin.bank_health(db).families}
+    touched = {item.family_id for item in fast_items}
+    assert all(health[family].fast_correct_share is not None and 0 < health[family].fast_correct_share <= 1 for family in touched)
+
+
+def test_skips_are_not_fast_answers(db: Session, candidate_ready: Callable[..., Any]) -> None:
+    """«Не знаю» за секунду — не признак готового ответа: пометок нет."""
+    user = candidate_ready("junior")
+    session = play(db, user, sessions.start_session(db, user.id, "junior", T0), lambda n, item: False)
+    assert all(item.flags == [] for item in sessions.session_items(db, session.id))
+    assert sessions.FLAG_SPEED_SUSPECT not in session.flags
+
+
+def test_malformed_answer_body_is_rejected_and_keeps_the_item(db: Session, candidate_ready: Callable[..., Any]) -> None:
+    """Тело без поля своего вида задания — сбой клиента: 422, задание не потрачено. Неразборчивое значение — ответ."""
+    user = candidate_ready("junior")
+    session = sessions.start_session(db, user.id, "junior", T0)
+    first = sessions.session_items(db, session.id)[0]
+    with pytest.raises(ApiException) as error:
+        sessions.submit_answer(db, user.id, str(session.id), str(first.id), {"foo": 1}, False, None, "bad", T0)
+    assert (error.value.status, error.value.code) == (422, "answer_malformed")
+    assert error.value.fields and error.value.fields[0].name == "answer"
+    db.refresh(first)
+    assert first.status == "shown" and first.answer is None and session.items_answered == 0
+
+    # То же задание принимает ответ нужного вида; заведомо неразборчивое значение — это уже ответ (балл 0).
+    variant = db.get(VariantRow, first.variant_id)
+    body = {grading.answer_key(variant.payload["kind"]): "не число и не вариант"}
+    sessions.submit_answer(db, user.id, str(session.id), str(first.id), body, False, None, "ok", T0)
+    assert first.status == "answered" and first.score == 0 and session.items_answered == 1

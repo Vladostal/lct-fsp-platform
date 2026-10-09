@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { assessmentCreateSession, assessmentGetBankHealth, assessmentGetBlueprints, assessmentGetHistory, assessmentGetMethodology, assessmentGetResult, assessmentGetSession, assessmentGetState, assessmentGetSurvey, assessmentPostAnswer, assessmentPostBlueprintPreview, assessmentPostFamilyStatus, assessmentPostLeakLookup, assessmentPutClaim, assessmentPutSurvey, catalogReadCatalog, companyGetCompany, companyPutCompany, contactAcceptCandidateInvitation, contactCandidateFunnel, contactCandidateInvitationComplaint, contactCandidateInvitationOutcome, contactCandidateInvitationsSummary, contactContactMetrics, contactCreateInvitation, contactDeclineCandidateInvitation, contactEmployerInvitationOutcome, contactGetCandidateInvitation, contactGetEmployerInvitation, contactInvitationsPairStates, contactInvitationsQuota, contactInvitationsStats, contactListCandidateInvitations, contactListComplaints, contactListEmployerInvitations, contactNeedInsights, contactPrecheckInvitation, contactResolveComplaint, contactResumeInvitations, contactSalaryHint, contactViewCandidateInvitation, contactWithdrawEmployerInvitation, coreHealth, fspDeleteLink, fspGetCalendar, fspGetConsent, fspGetLink, fspLinkCallback, fspPostSync, fspStartLink, identityChangePassword, identityDeleteAccount, identityForgotPassword, identityLegalDoc, identityLogin, identityLogout, identityMe, identityResendVerification, identityResetPassword, identitySignup, identityVerifyEmail, matchingArchiveNeed, matchingCreateNeed, matchingCreateShortlist, matchingDiffShortlists, matchingGetCandidateCard, matchingGetCandidatePdf, matchingGetNeed, matchingGetOwnEvidence, matchingGetOwnPdf, matchingGetShortlist, matchingListCandidates, matchingListNeeds, matchingListShortlists, matchingParseNeed, matchingPinCandidate, matchingPreviewProfile, matchingUnpinCandidate, matchingUpdateNeed, type Options, profileGetAccessLog, profileGetConditions, profileGetConsents, profileGetContacts, profileGetPrivacy, profileGetProfile, profilePostPublication, profilePostResume, profilePostVisibility, profilePutConditions, profilePutPrivacy, profilePutProfile, reportsValidationSummary } from '../sdk.gen';
-import type { AssessmentCreateSessionData, AssessmentCreateSessionError, AssessmentCreateSessionResponse, AssessmentGetBankHealthData, AssessmentGetBankHealthError, AssessmentGetBankHealthResponse, AssessmentGetBlueprintsData, AssessmentGetBlueprintsError, AssessmentGetBlueprintsResponse, AssessmentGetHistoryData, AssessmentGetHistoryError, AssessmentGetHistoryResponse, AssessmentGetMethodologyData, AssessmentGetMethodologyResponse, AssessmentGetResultData, AssessmentGetResultError, AssessmentGetResultResponse, AssessmentGetSessionData, AssessmentGetSessionError, AssessmentGetSessionResponse, AssessmentGetStateData, AssessmentGetStateError, AssessmentGetStateResponse, AssessmentGetSurveyData, AssessmentGetSurveyError, AssessmentGetSurveyResponse, AssessmentPostAnswerData, AssessmentPostAnswerError, AssessmentPostAnswerResponse, AssessmentPostBlueprintPreviewData, AssessmentPostBlueprintPreviewError, AssessmentPostBlueprintPreviewResponse, AssessmentPostFamilyStatusData, AssessmentPostFamilyStatusError, AssessmentPostFamilyStatusResponse, AssessmentPostLeakLookupData, AssessmentPostLeakLookupError, AssessmentPostLeakLookupResponse, AssessmentPutClaimData, AssessmentPutClaimError, AssessmentPutClaimResponse, AssessmentPutSurveyData, AssessmentPutSurveyError, AssessmentPutSurveyResponse, CatalogReadCatalogData, CatalogReadCatalogResponse, CompanyGetCompanyData, CompanyGetCompanyError, CompanyGetCompanyResponse, CompanyPutCompanyData, CompanyPutCompanyError, CompanyPutCompanyResponse, ContactAcceptCandidateInvitationData, ContactAcceptCandidateInvitationError, ContactAcceptCandidateInvitationResponse, ContactCandidateFunnelData, ContactCandidateFunnelError, ContactCandidateFunnelResponse, ContactCandidateInvitationComplaintData, ContactCandidateInvitationComplaintError, ContactCandidateInvitationComplaintResponse, ContactCandidateInvitationOutcomeData, ContactCandidateInvitationOutcomeError, ContactCandidateInvitationOutcomeResponse, ContactCandidateInvitationsSummaryData, ContactCandidateInvitationsSummaryError, ContactCandidateInvitationsSummaryResponse, ContactContactMetricsData, ContactContactMetricsResponse, ContactCreateInvitationData, ContactCreateInvitationError, ContactCreateInvitationResponse, ContactDeclineCandidateInvitationData, ContactDeclineCandidateInvitationError, ContactDeclineCandidateInvitationResponse, ContactEmployerInvitationOutcomeData, ContactEmployerInvitationOutcomeError, ContactEmployerInvitationOutcomeResponse, ContactGetCandidateInvitationData, ContactGetCandidateInvitationError, ContactGetCandidateInvitationResponse, ContactGetEmployerInvitationData, ContactGetEmployerInvitationError, ContactGetEmployerInvitationResponse, ContactInvitationsPairStatesData, ContactInvitationsPairStatesError, ContactInvitationsPairStatesResponse, ContactInvitationsQuotaData, ContactInvitationsQuotaError, ContactInvitationsQuotaResponse, ContactInvitationsStatsData, ContactInvitationsStatsError, ContactInvitationsStatsResponse, ContactListCandidateInvitationsData, ContactListCandidateInvitationsError, ContactListCandidateInvitationsResponse, ContactListComplaintsData, ContactListComplaintsError, ContactListComplaintsResponse, ContactListEmployerInvitationsData, ContactListEmployerInvitationsError, ContactListEmployerInvitationsResponse, ContactNeedInsightsData, ContactNeedInsightsError, ContactNeedInsightsResponse, ContactPrecheckInvitationData, ContactPrecheckInvitationError, ContactPrecheckInvitationResponse, ContactResolveComplaintData, ContactResolveComplaintError, ContactResolveComplaintResponse, ContactResumeInvitationsData, ContactResumeInvitationsError, ContactResumeInvitationsResponse, ContactSalaryHintData, ContactSalaryHintError, ContactSalaryHintResponse, ContactViewCandidateInvitationData, ContactViewCandidateInvitationError, ContactViewCandidateInvitationResponse, ContactWithdrawEmployerInvitationData, ContactWithdrawEmployerInvitationError, ContactWithdrawEmployerInvitationResponse, CoreHealthData, CoreHealthError, CoreHealthResponse, FspDeleteLinkData, FspDeleteLinkError, FspDeleteLinkResponse, FspGetCalendarData, FspGetCalendarError, FspGetCalendarResponse, FspGetConsentData, FspGetConsentError, FspGetConsentResponse, FspGetLinkData, FspGetLinkError, FspGetLinkResponse, FspLinkCallbackData, FspLinkCallbackError, FspPostSyncData, FspPostSyncError, FspPostSyncResponse, FspStartLinkData, FspStartLinkError, FspStartLinkResponse, IdentityChangePasswordData, IdentityChangePasswordError, IdentityChangePasswordResponse, IdentityDeleteAccountData, IdentityDeleteAccountError, IdentityDeleteAccountResponse, IdentityForgotPasswordData, IdentityForgotPasswordError, IdentityLegalDocData, IdentityLegalDocError, IdentityLegalDocResponse, IdentityLoginData, IdentityLoginError, IdentityLoginResponse, IdentityLogoutData, IdentityLogoutError, IdentityLogoutResponse, IdentityMeData, IdentityMeError, IdentityMeResponse, IdentityResendVerificationData, IdentityResendVerificationError, IdentityResetPasswordData, IdentityResetPasswordError, IdentityResetPasswordResponse, IdentitySignupData, IdentitySignupError, IdentityVerifyEmailData, IdentityVerifyEmailError, IdentityVerifyEmailResponse, MatchingArchiveNeedData, MatchingArchiveNeedError, MatchingArchiveNeedResponse, MatchingCreateNeedData, MatchingCreateNeedError, MatchingCreateNeedResponse, MatchingCreateShortlistData, MatchingCreateShortlistError, MatchingCreateShortlistResponse, MatchingDiffShortlistsData, MatchingDiffShortlistsError, MatchingDiffShortlistsResponse, MatchingGetCandidateCardData, MatchingGetCandidateCardError, MatchingGetCandidateCardResponse, MatchingGetCandidatePdfData, MatchingGetCandidatePdfError, MatchingGetCandidatePdfResponse, MatchingGetNeedData, MatchingGetNeedError, MatchingGetNeedResponse, MatchingGetOwnEvidenceData, MatchingGetOwnEvidenceError, MatchingGetOwnEvidenceResponse, MatchingGetOwnPdfData, MatchingGetOwnPdfError, MatchingGetOwnPdfResponse, MatchingGetShortlistData, MatchingGetShortlistError, MatchingGetShortlistResponse, MatchingListCandidatesData, MatchingListCandidatesError, MatchingListCandidatesResponse, MatchingListNeedsData, MatchingListNeedsError, MatchingListNeedsResponse, MatchingListShortlistsData, MatchingListShortlistsError, MatchingListShortlistsResponse, MatchingParseNeedData, MatchingParseNeedError, MatchingParseNeedResponse, MatchingPinCandidateData, MatchingPinCandidateError, MatchingPinCandidateResponse, MatchingPreviewProfileData, MatchingPreviewProfileError, MatchingPreviewProfileResponse, MatchingUnpinCandidateData, MatchingUnpinCandidateError, MatchingUnpinCandidateResponse, MatchingUpdateNeedData, MatchingUpdateNeedError, MatchingUpdateNeedResponse, ProfileGetAccessLogData, ProfileGetAccessLogError, ProfileGetAccessLogResponse, ProfileGetConditionsData, ProfileGetConditionsError, ProfileGetConditionsResponse, ProfileGetConsentsData, ProfileGetConsentsError, ProfileGetConsentsResponse, ProfileGetContactsData, ProfileGetContactsError, ProfileGetContactsResponse, ProfileGetPrivacyData, ProfileGetPrivacyError, ProfileGetPrivacyResponse, ProfileGetProfileData, ProfileGetProfileError, ProfileGetProfileResponse, ProfilePostPublicationData, ProfilePostPublicationError, ProfilePostPublicationResponse, ProfilePostResumeData, ProfilePostResumeError, ProfilePostResumeResponse, ProfilePostVisibilityData, ProfilePostVisibilityError, ProfilePostVisibilityResponse, ProfilePutConditionsData, ProfilePutConditionsError, ProfilePutConditionsResponse, ProfilePutPrivacyData, ProfilePutPrivacyError, ProfilePutPrivacyResponse, ProfilePutProfileData, ProfilePutProfileError, ProfilePutProfileResponse, ReportsValidationSummaryData, ReportsValidationSummaryResponse } from '../types.gen';
+import { assessmentCreateSession, assessmentGetBankHealth, assessmentGetBlueprints, assessmentGetHistory, assessmentGetMethodology, assessmentGetResult, assessmentGetSession, assessmentGetState, assessmentGetSurvey, assessmentPostAnswer, assessmentPostBlueprintPreview, assessmentPostFamilyStatus, assessmentPostLeakLookup, assessmentPutClaim, assessmentPutSurvey, catalogReadCatalog, companyGetCompany, companyPutCompany, contactAcceptCandidateInvitation, contactCandidateFunnel, contactCandidateInvitationComplaint, contactCandidateInvitationOutcome, contactCandidateInvitationsSummary, contactContactMetrics, contactCreateInvitation, contactDeclineCandidateInvitation, contactEmployerInvitationOutcome, contactGetCandidateInvitation, contactGetEmployerInvitation, contactInvitationsPairStates, contactInvitationsQuota, contactInvitationsStats, contactListCandidateInvitations, contactListComplaints, contactListEmployerInvitations, contactNeedInsights, contactPrecheckInvitation, contactResolveComplaint, contactResumeInvitations, contactSalaryHint, contactViewCandidateInvitation, contactWithdrawEmployerInvitation, coreHealth, demoDemoLogin, demoListAccounts, demoRestart, fspDeleteLink, fspGetCalendar, fspGetConsent, fspGetLink, fspLinkCallback, fspPostSync, fspStartLink, identityChangePassword, identityDeleteAccount, identityForgotPassword, identityLegalDoc, identityLogin, identityLogout, identityMe, identityResendVerification, identityResetPassword, identitySignup, identityVerifyEmail, matchingArchiveNeed, matchingCreateNeed, matchingCreateShortlist, matchingDiffShortlists, matchingGetCandidateCard, matchingGetCandidatePdf, matchingGetNeed, matchingGetOwnEvidence, matchingGetOwnPdf, matchingGetShortlist, matchingListCandidates, matchingListNeeds, matchingListShortlists, matchingParseNeed, matchingPinCandidate, matchingPreviewProfile, matchingUnpinCandidate, matchingUpdateNeed, type Options, profileGetAccessLog, profileGetConditions, profileGetConsents, profileGetContacts, profileGetPrivacy, profileGetProfile, profilePostPublication, profilePostResume, profilePostVisibility, profilePutConditions, profilePutPrivacy, profilePutProfile, reportsValidationSummary } from '../sdk.gen';
+import type { AssessmentCreateSessionData, AssessmentCreateSessionError, AssessmentCreateSessionResponse, AssessmentGetBankHealthData, AssessmentGetBankHealthError, AssessmentGetBankHealthResponse, AssessmentGetBlueprintsData, AssessmentGetBlueprintsError, AssessmentGetBlueprintsResponse, AssessmentGetHistoryData, AssessmentGetHistoryError, AssessmentGetHistoryResponse, AssessmentGetMethodologyData, AssessmentGetMethodologyResponse, AssessmentGetResultData, AssessmentGetResultError, AssessmentGetResultResponse, AssessmentGetSessionData, AssessmentGetSessionError, AssessmentGetSessionResponse, AssessmentGetStateData, AssessmentGetStateError, AssessmentGetStateResponse, AssessmentGetSurveyData, AssessmentGetSurveyError, AssessmentGetSurveyResponse, AssessmentPostAnswerData, AssessmentPostAnswerError, AssessmentPostAnswerResponse, AssessmentPostBlueprintPreviewData, AssessmentPostBlueprintPreviewError, AssessmentPostBlueprintPreviewResponse, AssessmentPostFamilyStatusData, AssessmentPostFamilyStatusError, AssessmentPostFamilyStatusResponse, AssessmentPostLeakLookupData, AssessmentPostLeakLookupError, AssessmentPostLeakLookupResponse, AssessmentPutClaimData, AssessmentPutClaimError, AssessmentPutClaimResponse, AssessmentPutSurveyData, AssessmentPutSurveyError, AssessmentPutSurveyResponse, CatalogReadCatalogData, CatalogReadCatalogResponse, CompanyGetCompanyData, CompanyGetCompanyError, CompanyGetCompanyResponse, CompanyPutCompanyData, CompanyPutCompanyError, CompanyPutCompanyResponse, ContactAcceptCandidateInvitationData, ContactAcceptCandidateInvitationError, ContactAcceptCandidateInvitationResponse, ContactCandidateFunnelData, ContactCandidateFunnelError, ContactCandidateFunnelResponse, ContactCandidateInvitationComplaintData, ContactCandidateInvitationComplaintError, ContactCandidateInvitationComplaintResponse, ContactCandidateInvitationOutcomeData, ContactCandidateInvitationOutcomeError, ContactCandidateInvitationOutcomeResponse, ContactCandidateInvitationsSummaryData, ContactCandidateInvitationsSummaryError, ContactCandidateInvitationsSummaryResponse, ContactContactMetricsData, ContactContactMetricsResponse, ContactCreateInvitationData, ContactCreateInvitationError, ContactCreateInvitationResponse, ContactDeclineCandidateInvitationData, ContactDeclineCandidateInvitationError, ContactDeclineCandidateInvitationResponse, ContactEmployerInvitationOutcomeData, ContactEmployerInvitationOutcomeError, ContactEmployerInvitationOutcomeResponse, ContactGetCandidateInvitationData, ContactGetCandidateInvitationError, ContactGetCandidateInvitationResponse, ContactGetEmployerInvitationData, ContactGetEmployerInvitationError, ContactGetEmployerInvitationResponse, ContactInvitationsPairStatesData, ContactInvitationsPairStatesError, ContactInvitationsPairStatesResponse, ContactInvitationsQuotaData, ContactInvitationsQuotaError, ContactInvitationsQuotaResponse, ContactInvitationsStatsData, ContactInvitationsStatsError, ContactInvitationsStatsResponse, ContactListCandidateInvitationsData, ContactListCandidateInvitationsError, ContactListCandidateInvitationsResponse, ContactListComplaintsData, ContactListComplaintsError, ContactListComplaintsResponse, ContactListEmployerInvitationsData, ContactListEmployerInvitationsError, ContactListEmployerInvitationsResponse, ContactNeedInsightsData, ContactNeedInsightsError, ContactNeedInsightsResponse, ContactPrecheckInvitationData, ContactPrecheckInvitationError, ContactPrecheckInvitationResponse, ContactResolveComplaintData, ContactResolveComplaintError, ContactResolveComplaintResponse, ContactResumeInvitationsData, ContactResumeInvitationsError, ContactResumeInvitationsResponse, ContactSalaryHintData, ContactSalaryHintError, ContactSalaryHintResponse, ContactViewCandidateInvitationData, ContactViewCandidateInvitationError, ContactViewCandidateInvitationResponse, ContactWithdrawEmployerInvitationData, ContactWithdrawEmployerInvitationError, ContactWithdrawEmployerInvitationResponse, CoreHealthData, CoreHealthError, CoreHealthResponse, DemoDemoLoginData, DemoDemoLoginError, DemoDemoLoginResponse, DemoListAccountsData, DemoListAccountsError, DemoListAccountsResponse, DemoRestartData, DemoRestartError, DemoRestartResponse, FspDeleteLinkData, FspDeleteLinkError, FspDeleteLinkResponse, FspGetCalendarData, FspGetCalendarError, FspGetCalendarResponse, FspGetConsentData, FspGetConsentError, FspGetConsentResponse, FspGetLinkData, FspGetLinkError, FspGetLinkResponse, FspLinkCallbackData, FspLinkCallbackError, FspPostSyncData, FspPostSyncError, FspPostSyncResponse, FspStartLinkData, FspStartLinkError, FspStartLinkResponse, IdentityChangePasswordData, IdentityChangePasswordError, IdentityChangePasswordResponse, IdentityDeleteAccountData, IdentityDeleteAccountError, IdentityDeleteAccountResponse, IdentityForgotPasswordData, IdentityForgotPasswordError, IdentityLegalDocData, IdentityLegalDocError, IdentityLegalDocResponse, IdentityLoginData, IdentityLoginError, IdentityLoginResponse, IdentityLogoutData, IdentityLogoutError, IdentityLogoutResponse, IdentityMeData, IdentityMeError, IdentityMeResponse, IdentityResendVerificationData, IdentityResendVerificationError, IdentityResetPasswordData, IdentityResetPasswordError, IdentityResetPasswordResponse, IdentitySignupData, IdentitySignupError, IdentityVerifyEmailData, IdentityVerifyEmailError, IdentityVerifyEmailResponse, MatchingArchiveNeedData, MatchingArchiveNeedError, MatchingArchiveNeedResponse, MatchingCreateNeedData, MatchingCreateNeedError, MatchingCreateNeedResponse, MatchingCreateShortlistData, MatchingCreateShortlistError, MatchingCreateShortlistResponse, MatchingDiffShortlistsData, MatchingDiffShortlistsError, MatchingDiffShortlistsResponse, MatchingGetCandidateCardData, MatchingGetCandidateCardError, MatchingGetCandidateCardResponse, MatchingGetCandidatePdfData, MatchingGetCandidatePdfError, MatchingGetCandidatePdfResponse, MatchingGetNeedData, MatchingGetNeedError, MatchingGetNeedResponse, MatchingGetOwnEvidenceData, MatchingGetOwnEvidenceError, MatchingGetOwnEvidenceResponse, MatchingGetOwnPdfData, MatchingGetOwnPdfError, MatchingGetOwnPdfResponse, MatchingGetShortlistData, MatchingGetShortlistError, MatchingGetShortlistResponse, MatchingListCandidatesData, MatchingListCandidatesError, MatchingListCandidatesResponse, MatchingListNeedsData, MatchingListNeedsError, MatchingListNeedsResponse, MatchingListShortlistsData, MatchingListShortlistsError, MatchingListShortlistsResponse, MatchingParseNeedData, MatchingParseNeedError, MatchingParseNeedResponse, MatchingPinCandidateData, MatchingPinCandidateError, MatchingPinCandidateResponse, MatchingPreviewProfileData, MatchingPreviewProfileError, MatchingPreviewProfileResponse, MatchingUnpinCandidateData, MatchingUnpinCandidateError, MatchingUnpinCandidateResponse, MatchingUpdateNeedData, MatchingUpdateNeedError, MatchingUpdateNeedResponse, ProfileGetAccessLogData, ProfileGetAccessLogError, ProfileGetAccessLogResponse, ProfileGetConditionsData, ProfileGetConditionsError, ProfileGetConditionsResponse, ProfileGetConsentsData, ProfileGetConsentsError, ProfileGetConsentsResponse, ProfileGetContactsData, ProfileGetContactsError, ProfileGetContactsResponse, ProfileGetPrivacyData, ProfileGetPrivacyError, ProfileGetPrivacyResponse, ProfileGetProfileData, ProfileGetProfileError, ProfileGetProfileResponse, ProfilePostPublicationData, ProfilePostPublicationError, ProfilePostPublicationResponse, ProfilePostResumeData, ProfilePostResumeError, ProfilePostResumeResponse, ProfilePostVisibilityData, ProfilePostVisibilityError, ProfilePostVisibilityResponse, ProfilePutConditionsData, ProfilePutConditionsError, ProfilePutConditionsResponse, ProfilePutPrivacyData, ProfilePutPrivacyError, ProfilePutPrivacyResponse, ProfilePutProfileData, ProfilePutProfileError, ProfilePutProfileResponse, ReportsValidationSummaryData, ReportsValidationSummaryResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -42,7 +42,7 @@ const createQueryKey = <TOptions extends Options>(id: string, options?: TOptions
 export const assessmentGetBankHealthQueryKey = (options?: Options<AssessmentGetBankHealthData>) => createQueryKey('assessmentGetBankHealth', options);
 
 /**
- * Get Bank Health
+ * Состояние семейств: статус, экспозиция (подсветка выше 0.60), ответы, запас вариантов
  *
  * Состояние семейств: статус, экспозиция (подсветка выше 0.60), ответы, запас вариантов.
  */
@@ -60,7 +60,7 @@ export const assessmentGetBankHealthOptions = (options?: Options<AssessmentGetBa
 });
 
 /**
- * Post Family Status
+ * Карантин, возврат, вывод из банка
  *
  * Карантин, возврат, вывод из банка. 422 `invalid_transition`.
  */
@@ -79,7 +79,7 @@ export const assessmentPostFamilyStatusMutation = (options?: Partial<Options<Ass
 };
 
 /**
- * Post Leak Lookup
+ * По тексту найти вариант, семейство и сессии, которым он выдавался
  *
  * По тексту найти вариант, семейство и сессии, которым он выдавался.
  */
@@ -135,7 +135,7 @@ export const contactResolveComplaintMutation = (options?: Partial<Options<Contac
 export const assessmentGetBlueprintsQueryKey = (options?: Options<AssessmentGetBlueprintsData>) => createQueryKey('assessmentGetBlueprints', options);
 
 /**
- * Get Blueprints
+ * Планы теста по грейдам своей специализации
  *
  * Планы теста по грейдам своей специализации. 409 `survey_required`.
  */
@@ -153,7 +153,7 @@ export const assessmentGetBlueprintsOptions = (options?: Options<AssessmentGetBl
 });
 
 /**
- * Post Blueprint Preview
+ * План теста из описания вакансии
  *
  * План теста из описания вакансии. Работодатель; при `features.demo` — без входа.
  *
@@ -175,7 +175,7 @@ export const assessmentPostBlueprintPreviewMutation = (options?: Partial<Options
 };
 
 /**
- * Put Claim
+ * Заявить грейд
  *
  * Заявить грейд. 409: `survey_required`, `claim_locked`; 422: `grade_unavailable`.
  */
@@ -196,7 +196,7 @@ export const assessmentPutClaimMutation = (options?: Partial<Options<AssessmentP
 export const assessmentGetHistoryQueryKey = (options?: Options<AssessmentGetHistoryData>) => createQueryKey('assessmentGetHistory', options);
 
 /**
- * Get History
+ * Опросы и тесты; без верности заданий
  *
  * Опросы и тесты; без верности заданий.
  */
@@ -216,7 +216,7 @@ export const assessmentGetHistoryOptions = (options?: Options<AssessmentGetHisto
 export const assessmentGetMethodologyQueryKey = (options?: Options<AssessmentGetMethodologyData>) => createQueryKey('assessmentGetMethodology', options);
 
 /**
- * Get Methodology
+ * Константы механики и состав банка — без входа
  *
  * Константы механики и состав банка — без входа.
  */
@@ -234,7 +234,7 @@ export const assessmentGetMethodologyOptions = (options?: Options<AssessmentGetM
 });
 
 /**
- * Create Session
+ * Начать тест
  *
  * Начать тест. 409: `session_active`, `cooldown_active`, `survey_required`, `claim_required`;
  * 422: `grade_not_allowed`, `grade_unavailable`; 503 `bank_unavailable`.
@@ -256,7 +256,7 @@ export const assessmentCreateSessionMutation = (options?: Partial<Options<Assess
 export const assessmentGetSessionQueryKey = (options: Options<AssessmentGetSessionData>) => createQueryKey('assessmentGetSession', options);
 
 /**
- * Get Session
+ * Сессия с текущим заданием; закрывает сессию, если время вышло
  *
  * Сессия с текущим заданием; закрывает сессию, если время вышло.
  */
@@ -274,9 +274,10 @@ export const assessmentGetSessionOptions = (options: Options<AssessmentGetSessio
 });
 
 /**
- * Post Answer
+ * Ответ на текущее задание
  *
- * Ответ на текущее задание. 409: `item_already_answered`, `session_finished`; 410 `session_expired`.
+ * Ответ на текущее задание. 409: `item_already_answered`, `session_finished`; 410 `session_expired`;
+ * 422 `answer_malformed` — в теле нет поля ответа для задания этого вида (задание остаётся текущим).
  *
  * Повтор запроса с тем же `Idempotency-Key` возвращает текущее состояние. Верность ответа не сообщается.
  */
@@ -297,7 +298,7 @@ export const assessmentPostAnswerMutation = (options?: Partial<Options<Assessmen
 export const assessmentGetResultQueryKey = (options: Options<AssessmentGetResultData>) => createQueryKey('assessmentGetResult', options);
 
 /**
- * Get Result
+ * Результат закрытой сессии; 202 `{status: "in_progress"}`, пока сессия идёт
  *
  * Результат закрытой сессии; 202 `{status: "in_progress"}`, пока сессия идёт.
  */
@@ -317,7 +318,7 @@ export const assessmentGetResultOptions = (options: Options<AssessmentGetResultD
 export const assessmentGetStateQueryKey = (options?: Options<AssessmentGetStateData>) => createQueryKey('assessmentGetState', options);
 
 /**
- * Get State
+ * Опрос, заявленный грейд, категория, уровень, активная сессия и доступные действия
  *
  * Опрос, заявленный грейд, категория, уровень, активная сессия и доступные действия.
  */
@@ -337,7 +338,7 @@ export const assessmentGetStateOptions = (options?: Options<AssessmentGetStateDa
 export const assessmentGetSurveyQueryKey = (options?: Options<AssessmentGetSurveyData>) => createQueryKey('assessmentGetSurvey', options);
 
 /**
- * Get Survey
+ * Схема опроса и сохранённые ответы
  *
  * Схема опроса и сохранённые ответы.
  */
@@ -355,7 +356,7 @@ export const assessmentGetSurveyOptions = (options?: Options<AssessmentGetSurvey
 });
 
 /**
- * Put Survey
+ * Сохранить ответы опроса
  *
  * Сохранить ответы опроса. 409: `survey_version_mismatch`, `session_active`,
  * `specialization_change_requires_confirm`, `cooldown_active`; 422: `specialization_unavailable`.
@@ -561,7 +562,9 @@ export const identityVerifyEmailMutation = (options?: Partial<Options<IdentityVe
 export const profileGetAccessLogQueryKey = (options?: Options<ProfileGetAccessLogData>) => createQueryKey('profileGetAccessLog', options);
 
 /**
- * Get Access Log
+ * Журнал доступа: кто и когда получил или открыл данные кандидата
+ *
+ * Журнал доступа: кто и когда получил или открыл данные кандидата.
  */
 export const profileGetAccessLogOptions = (options?: Options<ProfileGetAccessLogData>) => queryOptions<ProfileGetAccessLogResponse, ProfileGetAccessLogError, ProfileGetAccessLogResponse, ReturnType<typeof profileGetAccessLogQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -608,7 +611,9 @@ const createInfiniteParams = <K extends Pick<QueryKey<Options>[0], 'body' | 'hea
 export const profileGetAccessLogInfiniteQueryKey = (options?: Options<ProfileGetAccessLogData>): QueryKey<Options<ProfileGetAccessLogData>> => createQueryKey('profileGetAccessLog', options, true);
 
 /**
- * Get Access Log
+ * Журнал доступа: кто и когда получил или открыл данные кандидата
+ *
+ * Журнал доступа: кто и когда получил или открыл данные кандидата.
  */
 export const profileGetAccessLogInfiniteOptions = (options?: Options<ProfileGetAccessLogData>) => {
     const opts = infiniteQueryOptions<ProfileGetAccessLogResponse, ProfileGetAccessLogError, InfiniteData<ProfileGetAccessLogResponse>, QueryKey<Options<ProfileGetAccessLogData>>, string | null | Pick<QueryKey<Options<ProfileGetAccessLogData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
@@ -638,7 +643,9 @@ export const profileGetAccessLogInfiniteOptions = (options?: Options<ProfileGetA
 export const profileGetConditionsQueryKey = (options?: Options<ProfileGetConditionsData>) => createQueryKey('profileGetConditions', options);
 
 /**
- * Get Conditions
+ * Условия кандидата: скрытый минимум зарплаты, форматы работы, готовность к переезду
+ *
+ * Условия кандидата: скрытый минимум зарплаты, форматы работы, готовность к переезду.
  */
 export const profileGetConditionsOptions = (options?: Options<ProfileGetConditionsData>) => queryOptions<ProfileGetConditionsResponse, ProfileGetConditionsError, ProfileGetConditionsResponse, ReturnType<typeof profileGetConditionsQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -654,7 +661,9 @@ export const profileGetConditionsOptions = (options?: Options<ProfileGetConditio
 });
 
 /**
- * Put Conditions
+ * Сохранить условия; минимум зарплаты работодателям не показывается
+ *
+ * Сохранить условия; минимум зарплаты работодателям не показывается.
  */
 export const profilePutConditionsMutation = (options?: Partial<Options<ProfilePutConditionsData>>): UseMutationOptions<ProfilePutConditionsResponse, ProfilePutConditionsError, Options<ProfilePutConditionsData>> => {
     const mutationOptions: UseMutationOptions<ProfilePutConditionsResponse, ProfilePutConditionsError, Options<ProfilePutConditionsData>> = {
@@ -673,7 +682,9 @@ export const profilePutConditionsMutation = (options?: Partial<Options<ProfilePu
 export const profileGetConsentsQueryKey = (options?: Options<ProfileGetConsentsData>) => createQueryKey('profileGetConsents', options);
 
 /**
- * Get Consents
+ * Согласия кандидата и состояние показа профиля
+ *
+ * Согласия кандидата и состояние показа профиля.
  */
 export const profileGetConsentsOptions = (options?: Options<ProfileGetConsentsData>) => queryOptions<ProfileGetConsentsResponse, ProfileGetConsentsError, ProfileGetConsentsResponse, ReturnType<typeof profileGetConsentsQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -689,7 +700,9 @@ export const profileGetConsentsOptions = (options?: Options<ProfileGetConsentsDa
 });
 
 /**
- * Post Publication
+ * Дать или отозвать согласие на публикацию профиля
+ *
+ * Дать или отозвать согласие на публикацию профиля.
  */
 export const profilePostPublicationMutation = (options?: Partial<Options<ProfilePostPublicationData>>): UseMutationOptions<ProfilePostPublicationResponse, ProfilePostPublicationError, Options<ProfilePostPublicationData>> => {
     const mutationOptions: UseMutationOptions<ProfilePostPublicationResponse, ProfilePostPublicationError, Options<ProfilePostPublicationData>> = {
@@ -708,7 +721,9 @@ export const profilePostPublicationMutation = (options?: Partial<Options<Profile
 export const matchingGetOwnEvidenceQueryKey = (options?: Options<MatchingGetOwnEvidenceData>) => createQueryKey('matchingGetOwnEvidence', options);
 
 /**
- * Get Own Evidence
+ * Подтверждённые и заявленные навыки кандидата с источником каждого
+ *
+ * Подтверждённые и заявленные навыки кандидата с источником каждого.
  */
 export const matchingGetOwnEvidenceOptions = (options?: Options<MatchingGetOwnEvidenceData>) => queryOptions<MatchingGetOwnEvidenceResponse, MatchingGetOwnEvidenceError, MatchingGetOwnEvidenceResponse, ReturnType<typeof matchingGetOwnEvidenceQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -930,7 +945,9 @@ export const contactViewCandidateInvitationMutation = (options?: Partial<Options
 export const profileGetProfileQueryKey = (options?: Options<ProfileGetProfileData>) => createQueryKey('profileGetProfile', options);
 
 /**
- * Get Profile
+ * Профиль кандидата: поля, заявленные навыки, подсказки из резюме и заполненность
+ *
+ * Профиль кандидата: поля, заявленные навыки, подсказки из резюме и заполненность.
  */
 export const profileGetProfileOptions = (options?: Options<ProfileGetProfileData>) => queryOptions<ProfileGetProfileResponse, ProfileGetProfileError, ProfileGetProfileResponse, ReturnType<typeof profileGetProfileQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -946,7 +963,9 @@ export const profileGetProfileOptions = (options?: Options<ProfileGetProfileData
 });
 
 /**
- * Put Profile
+ * Сохранить профиль; принятые поля резюме берутся из загрузки `resume_upload_id`
+ *
+ * Сохранить профиль; принятые поля резюме берутся из загрузки `resume_upload_id`.
  */
 export const profilePutProfileMutation = (options?: Partial<Options<ProfilePutProfileData>>): UseMutationOptions<ProfilePutProfileResponse, ProfilePutProfileError, Options<ProfilePutProfileData>> => {
     const mutationOptions: UseMutationOptions<ProfilePutProfileResponse, ProfilePutProfileError, Options<ProfilePutProfileData>> = {
@@ -965,7 +984,9 @@ export const profilePutProfileMutation = (options?: Partial<Options<ProfilePutPr
 export const matchingGetOwnPdfQueryKey = (options?: Options<MatchingGetOwnPdfData>) => createQueryKey('matchingGetOwnPdf', options);
 
 /**
- * Get Own Pdf
+ * Стандартизированный PDF-профиль кандидата
+ *
+ * Стандартизированный PDF-профиль кандидата.
  */
 export const matchingGetOwnPdfOptions = (options?: Options<MatchingGetOwnPdfData>) => queryOptions<MatchingGetOwnPdfResponse, MatchingGetOwnPdfError, MatchingGetOwnPdfResponse, ReturnType<typeof matchingGetOwnPdfQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -983,7 +1004,7 @@ export const matchingGetOwnPdfOptions = (options?: Options<MatchingGetOwnPdfData
 export const matchingPreviewProfileQueryKey = (options?: Options<MatchingPreviewProfileData>) => createQueryKey('matchingPreviewProfile', options);
 
 /**
- * Preview Profile
+ * Карточка глазами работодателя: до и после раскрытия контактов
  *
  * Карточка глазами работодателя: до и после раскрытия контактов.
  */
@@ -1001,7 +1022,9 @@ export const matchingPreviewProfileOptions = (options?: Options<MatchingPreviewP
 });
 
 /**
- * Post Resume
+ * Загрузить резюме в PDF и получить распознанные поля; файл и его текст не сохраняются
+ *
+ * Загрузить резюме в PDF и получить распознанные поля; файл и его текст не сохраняются.
  */
 export const profilePostResumeMutation = (options?: Partial<Options<ProfilePostResumeData>>): UseMutationOptions<ProfilePostResumeResponse, ProfilePostResumeError, Options<ProfilePostResumeData>> => {
     const mutationOptions: UseMutationOptions<ProfilePostResumeResponse, ProfilePostResumeError, Options<ProfilePostResumeData>> = {
@@ -1020,7 +1043,9 @@ export const profilePostResumeMutation = (options?: Partial<Options<ProfilePostR
 export const profileGetPrivacyQueryKey = (options?: Options<ProfileGetPrivacyData>) => createQueryKey('profileGetPrivacy', options);
 
 /**
- * Get Privacy
+ * Настройки приватности: что видно до согласия и что раскрывается после
+ *
+ * Настройки приватности: что видно до согласия и что раскрывается после.
  */
 export const profileGetPrivacyOptions = (options?: Options<ProfileGetPrivacyData>) => queryOptions<ProfileGetPrivacyResponse, ProfileGetPrivacyError, ProfileGetPrivacyResponse, ReturnType<typeof profileGetPrivacyQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -1036,7 +1061,9 @@ export const profileGetPrivacyOptions = (options?: Options<ProfileGetPrivacyData
 });
 
 /**
- * Put Privacy
+ * Сохранить настройки приватности
+ *
+ * Сохранить настройки приватности.
  */
 export const profilePutPrivacyMutation = (options?: Partial<Options<ProfilePutPrivacyData>>): UseMutationOptions<ProfilePutPrivacyResponse, ProfilePutPrivacyError, Options<ProfilePutPrivacyData>> => {
     const mutationOptions: UseMutationOptions<ProfilePutPrivacyResponse, ProfilePutPrivacyError, Options<ProfilePutPrivacyData>> = {
@@ -1053,7 +1080,9 @@ export const profilePutPrivacyMutation = (options?: Partial<Options<ProfilePutPr
 };
 
 /**
- * Post Visibility
+ * Показать профиль работодателям или поставить показ на паузу
+ *
+ * Показать профиль работодателям или поставить показ на паузу.
  */
 export const profilePostVisibilityMutation = (options?: Partial<Options<ProfilePostVisibilityData>>): UseMutationOptions<ProfilePostVisibilityResponse, ProfilePostVisibilityError, Options<ProfilePostVisibilityData>> => {
     const mutationOptions: UseMutationOptions<ProfilePostVisibilityResponse, ProfilePostVisibilityError, Options<ProfilePostVisibilityData>> = {
@@ -1125,10 +1154,69 @@ export const contactSalaryHintOptions = (options?: Options<ContactSalaryHintData
     queryKey: contactSalaryHintQueryKey(options)
 });
 
+export const demoListAccountsQueryKey = (options?: Options<DemoListAccountsData>) => createQueryKey('demoListAccounts', options);
+
+/**
+ * Именованные демо-аккаунты сценария
+ */
+export const demoListAccountsOptions = (options?: Options<DemoListAccountsData>) => queryOptions<DemoListAccountsResponse, DemoListAccountsError, DemoListAccountsResponse, ReturnType<typeof demoListAccountsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await demoListAccounts({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: demoListAccountsQueryKey(options)
+});
+
+/**
+ * Вход «как…» в именованный демо-аккаунт
+ *
+ * Открывает сессию и ставит cookie; 404 — нет такого аккаунта (в том числе `nina`: клонов в сборке нет).
+ */
+export const demoDemoLoginMutation = (options?: Partial<Options<DemoDemoLoginData>>): UseMutationOptions<DemoDemoLoginResponse, DemoDemoLoginError, Options<DemoDemoLoginData>> => {
+    const mutationOptions: UseMutationOptions<DemoDemoLoginResponse, DemoDemoLoginError, Options<DemoDemoLoginData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await demoDemoLogin({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Начать сценарий заново
+ *
+ * Сессия именованного демо-аккаунта либо `X-Admin-Token` (без лимитов).
+ *
+ * 401 — нет сессии; 403 — живой пользователь, не аккаунт сценария либо `DEMO_PUBLIC_RESTART=false`;
+ * 429 — раз в 10 минут с одного IP и раз в 2 минуты на стенд (`params.retry_after`).
+ */
+export const demoRestartMutation = (options?: Partial<Options<DemoRestartData>>): UseMutationOptions<DemoRestartResponse, DemoRestartError, Options<DemoRestartData>> => {
+    const mutationOptions: UseMutationOptions<DemoRestartResponse, DemoRestartError, Options<DemoRestartData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await demoRestart({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
 export const matchingListCandidatesQueryKey = (options?: Options<MatchingListCandidatesData>) => createQueryKey('matchingListCandidates', options);
 
 /**
- * List Candidates
+ * Банк кандидатов: все видимые кандидаты; потребность не нужна, версия не создаётся
  *
  * Банк кандидатов: все видимые кандидаты; потребность не нужна, версия не создаётся.
  */
@@ -1148,7 +1236,7 @@ export const matchingListCandidatesOptions = (options?: Options<MatchingListCand
 export const matchingListCandidatesInfiniteQueryKey = (options?: Options<MatchingListCandidatesData>): QueryKey<Options<MatchingListCandidatesData>> => createQueryKey('matchingListCandidates', options, true);
 
 /**
- * List Candidates
+ * Банк кандидатов: все видимые кандидаты; потребность не нужна, версия не создаётся
  *
  * Банк кандидатов: все видимые кандидаты; потребность не нужна, версия не создаётся.
  */
@@ -1180,7 +1268,7 @@ export const matchingListCandidatesInfiniteOptions = (options?: Options<Matching
 export const matchingGetCandidateCardQueryKey = (options: Options<MatchingGetCandidateCardData>) => createQueryKey('matchingGetCandidateCard', options);
 
 /**
- * Get Candidate Card
+ * Карточка кандидата; скрытый кандидат нераскрытой пары — 404
  *
  * Карточка кандидата; скрытый кандидат нераскрытой пары — 404.
  */
@@ -1200,7 +1288,7 @@ export const matchingGetCandidateCardOptions = (options: Options<MatchingGetCand
 export const profileGetContactsQueryKey = (options: Options<ProfileGetContactsData>) => createQueryKey('profileGetContacts', options);
 
 /**
- * Get Contacts
+ * Каналы связи раскрытой пары — только те, что выбрал кандидат
  *
  * Каналы связи раскрытой пары — только те, что выбрал кандидат; запись `contacts_viewed` — раз в сутки на пару.
  */
@@ -1220,7 +1308,7 @@ export const profileGetContactsOptions = (options: Options<ProfileGetContactsDat
 export const matchingGetCandidatePdfQueryKey = (options: Options<MatchingGetCandidatePdfData>) => createQueryKey('matchingGetCandidatePdf', options);
 
 /**
- * Get Candidate Pdf
+ * PDF-профиль раскрытой пары; пишет `pdf_downloaded` в журнал доступа кандидата
  *
  * PDF-профиль раскрытой пары; пишет `pdf_downloaded` в журнал доступа кандидата.
  */
@@ -1467,7 +1555,9 @@ export const contactWithdrawEmployerInvitationMutation = (options?: Partial<Opti
 export const matchingListNeedsQueryKey = (options?: Options<MatchingListNeedsData>) => createQueryKey('matchingListNeeds', options);
 
 /**
- * List Needs
+ * Потребности работодателя: активные и архивные
+ *
+ * Потребности работодателя: активные и архивные.
  */
 export const matchingListNeedsOptions = (options?: Options<MatchingListNeedsData>) => queryOptions<MatchingListNeedsResponse, MatchingListNeedsError, MatchingListNeedsResponse, ReturnType<typeof matchingListNeedsQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -1483,7 +1573,9 @@ export const matchingListNeedsOptions = (options?: Options<MatchingListNeedsData
 });
 
 /**
- * Create Need
+ * Создать потребность: специализация, грейд, навыки, форматы и обязательная вилка в рублях
+ *
+ * Создать потребность: специализация, грейд, навыки, форматы и обязательная вилка в рублях.
  */
 export const matchingCreateNeedMutation = (options?: Partial<Options<MatchingCreateNeedData>>): UseMutationOptions<MatchingCreateNeedResponse, MatchingCreateNeedError, Options<MatchingCreateNeedData>> => {
     const mutationOptions: UseMutationOptions<MatchingCreateNeedResponse, MatchingCreateNeedError, Options<MatchingCreateNeedData>> = {
@@ -1500,7 +1592,7 @@ export const matchingCreateNeedMutation = (options?: Partial<Options<MatchingCre
 };
 
 /**
- * Parse Need
+ * Разобрать текст вакансии в черновик потребности; в базу потребностей ничего не пишет
  *
  * Разобрать текст вакансии в черновик потребности; в базу потребностей ничего не пишет.
  */
@@ -1521,7 +1613,9 @@ export const matchingParseNeedMutation = (options?: Partial<Options<MatchingPars
 export const matchingGetNeedQueryKey = (options: Options<MatchingGetNeedData>) => createQueryKey('matchingGetNeed', options);
 
 /**
- * Get Need
+ * Потребность по идентификатору
+ *
+ * Потребность по идентификатору.
  */
 export const matchingGetNeedOptions = (options: Options<MatchingGetNeedData>) => queryOptions<MatchingGetNeedResponse, MatchingGetNeedError, MatchingGetNeedResponse, ReturnType<typeof matchingGetNeedQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -1537,7 +1631,9 @@ export const matchingGetNeedOptions = (options: Options<MatchingGetNeedData>) =>
 });
 
 /**
- * Update Need
+ * Изменить потребность; прежние версии подборки сохраняются
+ *
+ * Изменить потребность; прежние версии подборки сохраняются.
  */
 export const matchingUpdateNeedMutation = (options?: Partial<Options<MatchingUpdateNeedData>>): UseMutationOptions<MatchingUpdateNeedResponse, MatchingUpdateNeedError, Options<MatchingUpdateNeedData>> => {
     const mutationOptions: UseMutationOptions<MatchingUpdateNeedResponse, MatchingUpdateNeedError, Options<MatchingUpdateNeedData>> = {
@@ -1554,7 +1650,9 @@ export const matchingUpdateNeedMutation = (options?: Partial<Options<MatchingUpd
 };
 
 /**
- * Archive Need
+ * Перенести потребность в архив
+ *
+ * Перенести потребность в архив.
  */
 export const matchingArchiveNeedMutation = (options?: Partial<Options<MatchingArchiveNeedData>>): UseMutationOptions<MatchingArchiveNeedResponse, MatchingArchiveNeedError, Options<MatchingArchiveNeedData>> => {
     const mutationOptions: UseMutationOptions<MatchingArchiveNeedResponse, MatchingArchiveNeedError, Options<MatchingArchiveNeedData>> = {
@@ -1589,7 +1687,9 @@ export const contactNeedInsightsOptions = (options: Options<ContactNeedInsightsD
 });
 
 /**
- * Unpin Candidate
+ * Снять закрепление кандидата
+ *
+ * Снять закрепление кандидата.
  */
 export const matchingUnpinCandidateMutation = (options?: Partial<Options<MatchingUnpinCandidateData>>): UseMutationOptions<MatchingUnpinCandidateResponse, MatchingUnpinCandidateError, Options<MatchingUnpinCandidateData>> => {
     const mutationOptions: UseMutationOptions<MatchingUnpinCandidateResponse, MatchingUnpinCandidateError, Options<MatchingUnpinCandidateData>> = {
@@ -1606,7 +1706,9 @@ export const matchingUnpinCandidateMutation = (options?: Partial<Options<Matchin
 };
 
 /**
- * Pin Candidate
+ * Закрепить кандидата за потребностью; закрепление переживает уточнения запроса
+ *
+ * Закрепить кандидата за потребностью; закрепление переживает уточнения запроса.
  */
 export const matchingPinCandidateMutation = (options?: Partial<Options<MatchingPinCandidateData>>): UseMutationOptions<MatchingPinCandidateResponse, MatchingPinCandidateError, Options<MatchingPinCandidateData>> => {
     const mutationOptions: UseMutationOptions<MatchingPinCandidateResponse, MatchingPinCandidateError, Options<MatchingPinCandidateData>> = {
@@ -1625,7 +1727,9 @@ export const matchingPinCandidateMutation = (options?: Partial<Options<MatchingP
 export const matchingListShortlistsQueryKey = (options: Options<MatchingListShortlistsData>) => createQueryKey('matchingListShortlists', options);
 
 /**
- * List Shortlists
+ * Версии подборки потребности — для переключателя версий
+ *
+ * Версии подборки потребности — для переключателя версий.
  */
 export const matchingListShortlistsOptions = (options: Options<MatchingListShortlistsData>) => queryOptions<MatchingListShortlistsResponse, MatchingListShortlistsError, MatchingListShortlistsResponse, ReturnType<typeof matchingListShortlistsQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -1641,7 +1745,7 @@ export const matchingListShortlistsOptions = (options: Options<MatchingListShort
 });
 
 /**
- * Create Shortlist
+ * Создать версию подборки
  *
  * Создать версию подборки; повтор того же запроса в пределах 10 минут возвращает прежнюю с кодом 200.
  */
@@ -1662,7 +1766,9 @@ export const matchingCreateShortlistMutation = (options?: Partial<Options<Matchi
 export const matchingGetShortlistQueryKey = (options: Options<MatchingGetShortlistData>) => createQueryKey('matchingGetShortlist', options);
 
 /**
- * Get Shortlist
+ * Версия подборки: строки с объяснением, воронка и подсказки; прежние версии доступны всегда
+ *
+ * Версия подборки: строки с объяснением, воронка и подсказки; прежние версии доступны всегда.
  */
 export const matchingGetShortlistOptions = (options: Options<MatchingGetShortlistData>) => queryOptions<MatchingGetShortlistResponse, MatchingGetShortlistError, MatchingGetShortlistResponse, ReturnType<typeof matchingGetShortlistQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -1680,7 +1786,9 @@ export const matchingGetShortlistOptions = (options: Options<MatchingGetShortlis
 export const matchingDiffShortlistsQueryKey = (options: Options<MatchingDiffShortlistsData>) => createQueryKey('matchingDiffShortlists', options);
 
 /**
- * Diff Shortlists
+ * Различия двух версий подборки одной потребности
+ *
+ * Различия двух версий подборки одной потребности.
  */
 export const matchingDiffShortlistsOptions = (options: Options<MatchingDiffShortlistsData>) => queryOptions<MatchingDiffShortlistsResponse, MatchingDiffShortlistsError, MatchingDiffShortlistsResponse, ReturnType<typeof matchingDiffShortlistsQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {

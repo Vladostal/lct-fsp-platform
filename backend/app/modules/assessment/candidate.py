@@ -79,7 +79,9 @@ def put_survey(
     rows = repo.sessions(db, candidate_id)
     active = next((row for row in rows if row.status == SessionStatus.IN_PROGRESS.value), None)
     if active is not None:
-        raise ApiException(409, "session_active", params={"session_id": str(active.id)})
+        raise ApiException(
+            409, "session_active", labels.ERROR_MESSAGES["session_active"], params={"session_id": str(active.id)}
+        )
     parsed, errors = survey_schema.validate(answers)
     if parsed is None:
         raise validation_error(*errors)
@@ -163,7 +165,15 @@ def put_claim(db: Session, candidate_id: UUID, grade: str, now: datetime) -> Ass
 
 
 def level_view(
-    theta: float, se: float, grade: str, verdict: str, tested_at: datetime, last_evidence_at: datetime, now: datetime
+    theta: float,
+    se: float,
+    grade: str,
+    verdict: str,
+    tested_at: datetime,
+    last_evidence_at: datetime,
+    now: datetime,
+    *,
+    expired: bool = False,
 ) -> LevelView:
     """`LevelView` (Арх. 5.6): точка и интервал на шкале экрана; единиц θ клиент не получает."""
     numbers = level_math.level_numbers(theta, se, grade, last_evidence_at, now)
@@ -173,7 +183,7 @@ def level_view(
         upper=round(numbers.upper, 1),
         thresholds=[LevelThreshold(grade=labels.grade_ref(g), pos=p) for g, p in level_math.thresholds()],
         verdict=TestOutcome(verdict),
-        verdict_label=labels.outcome_label(verdict, grade),
+        verdict_label=labels.outcome_label(verdict, grade, expired=expired),
         stale=numbers.stale,
         tested_at=tested_at,
         last_evidence_at=last_evidence_at,
@@ -340,6 +350,7 @@ def result_view(db: Session, candidate_id: UUID, session_id: str, now: datetime)
     assert session.outcome is not None and session.finished_at is not None
     category = repo.category(db, candidate_id)
     own = category is not None and category.specialization_code == session.specialization_code
+    expired = session.status == SessionStatus.EXPIRED.value
     if own and category is not None:
         level = category_level_view(category, now)
     else:
@@ -351,6 +362,7 @@ def result_view(db: Session, candidate_id: UUID, session_id: str, now: datetime)
             session.finished_at,
             session.finished_at,
             now,
+            expired=expired,
         )
     evidence = db.scalars(
         select(SkillEvidenceRow)
@@ -366,10 +378,15 @@ def result_view(db: Session, candidate_id: UUID, session_id: str, now: datetime)
         language = (_answers(db, repo.profile(db, candidate_id)) or {}).get("main_language")
         title = survey_schema.LANGUAGE_TITLES.get(str(language), "выбранного языка")
         notes.append(f"Языковой модуль не проверялся: для {title} заданий пока нет")
-    if session.status == SessionStatus.EXPIRED.value:
+    if expired:
         notes.append("Время теста вышло: незавершённый тест не подтверждает грейд")
     if session.flags.get(sessions.FLAG_PREFILLED):
         notes.append("Быстрый демо-тест: часть ответов подставлена, результат помечен как демо")
+    if session.flags.get(sessions.FLAG_SPEED_SUSPECT) and not session.flags.get(sessions.FLAG_PREFILLED):
+        notes.append(
+            "Большинство верных ответов дано быстрее, чем обычно читается условие. На результат это не влияет: "
+            "попытка отмечена, чтобы проверить задания на утечку"
+        )
     if category is None:
         notes.append("Профиль публикуется после подтверждения грейда")
     return TestResultView(
@@ -377,7 +394,7 @@ def result_view(db: Session, candidate_id: UUID, session_id: str, now: datetime)
         status=session.status,
         target=labels.category_ref(session.specialization_code, session.target_grade),
         outcome=TestOutcome(session.outcome),
-        outcome_label=labels.outcome_label(session.outcome, session.target_grade),
+        outcome_label=labels.outcome_label(session.outcome, session.target_grade, expired=expired),
         finished_at=session.finished_at,
         category=labels.category_ref(category.specialization_code, category.grade_code) if category else None,
         level=level,
@@ -415,7 +432,11 @@ def history(db: Session, candidate_id: UUID, now: datetime) -> list[HistoryItem]
                 target=labels.category_ref(row.specialization_code, row.target_grade),
                 status=SessionStatus(row.status),
                 outcome=TestOutcome(row.outcome) if row.outcome else None,
-                outcome_label=labels.outcome_label(row.outcome, row.target_grade) if row.outcome else None,
+                outcome_label=labels.outcome_label(
+                    row.outcome, row.target_grade, expired=row.status == SessionStatus.EXPIRED.value
+                )
+                if row.outcome
+                else None,
                 items=row.items_total,
                 duration_s=int((row.finished_at - row.started_at).total_seconds())
                 if finished and row.finished_at

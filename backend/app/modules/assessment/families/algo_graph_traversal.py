@@ -77,7 +77,7 @@ def _dfs(adj: dict[str, list[tuple[str, int]]], start: str) -> list[str]:
 
 def _dijkstra(adj: dict[str, list[tuple[str, int]]], start: str) -> dict[str, tuple[int, str | None]]:
     best: dict[str, tuple[int, str | None]] = {start: (0, None)}
-    heap = [(0, start, None)]
+    heap: list[tuple[int, str, str | None]] = [(0, start, None)]
     done: set[str] = set()
     while heap:
         d, u, _ = heapq.heappop(heap)
@@ -124,7 +124,7 @@ def _kahn_lex(labels: list[str], edges: list[Edge]) -> list[str]:
 
 def _topo_dfs(labels: list[str], edges: list[Edge]) -> list[str]:
     """Ошибка: обратный порядок завершения DFS (корректный порядок, но не лексикографический)."""
-    adj = {v: [] for v in labels} | _adjacency(edges, directed=True)
+    adj: dict[str, list[tuple[str, int]]] = {v: [] for v in labels} | _adjacency(edges, directed=True)
     seen: set[str] = set()
     post: list[str] = []
 
@@ -178,6 +178,8 @@ def generate(level: int, seed: int) -> Variant:
     rng = Random(seed)
     size = rng.randint(6, 8)
     labels = list(names.LABELS[:size])
+    answer: str | int
+    wrong: dict[str, str] | dict[str, int]
     if level == 1:
         edges = _connected_edges(rng, labels, rng.randint(3, 4), weighted=False)
         adj = _adjacency(edges)
@@ -300,10 +302,10 @@ def oracle_check(v: Variant) -> list[str]:
     text = v.prompt
     edges, labels = _parse(text)
     adj: dict[str, list[tuple[str, int]]] = {x: [] for x in labels}
-    for a, b, w in edges:
-        adj[a].append((b, w))
+    for a, b, weight in edges:
+        adj[a].append((b, weight))
         if ">" not in text.split(". ")[0]:
-            adj[b].append((a, w))
+            adj[b].append((a, weight))
     adj = {k: sorted(val) for k, val in adj.items()}
     if v.level == 1:
         start = re.search(r"от вершины (\w)", text).group(1)  # type: ignore[union-attr]

@@ -75,7 +75,8 @@ _YEARS_RE = re.compile(
 _EXPERIENCE_RE = re.compile(r"опыт|стаж|experience")
 
 _FORMATS = {
-    "remote": re.compile(r"удаленн\w*|remote|дистанционн\w*|из дома"),
+    # «удалённо», «удалённая работа» и разговорное «удалёнка» (ё уже заменена на е).
+    "remote": re.compile(r"удален[нк]\w*|remote|дистанционн\w*|из дома"),
     "hybrid": re.compile(r"гибрид\w*|hybrid"),
     "office": re.compile(r"офис\w*|on-?site"),
 }
@@ -271,12 +272,14 @@ def _formats(chunks: list[_Chunk]) -> list[str]:
 
 
 _NUM = r"(\d{1,3}(?: \d{3})+|\d+(?:[.,]\d+)?)"
-_MULT = r"(?:\s*(тыс\.?|тр\.?|т\.\s?р\.?|к|k|млн\.?)(?![a-zа-я0-9]))?"
+# Множитель после числа: «тыс.», «тысяч», «тр», «т.р.», «к», «млн», «миллиона»; полные слова — раньше сокращений.
+_MULT = r"(?:\s*(тысяч[аи]?|тыс\.?|тр\.?|т\.\s?р\.?|к|k|миллион\w*|млн\.?)(?![a-zа-я0-9]))?"
 _RANGE_RE = re.compile(rf"(?:от\s*)?{_NUM}{_MULT}\s*(?:до|-)\s*{_NUM}{_MULT}")
 _FROM_RE = re.compile(rf"\bот\s*{_NUM}{_MULT}")
 _TO_RE = re.compile(rf"\bдо\s*{_NUM}{_MULT}")
 _SALARY_CONTEXT_RE = re.compile(
-    r"зарплат|оклад|вилка|з/п|\bзп\b|доход|на руки|до вычета|gross|\bnet\b|₽|руб|\bтыс"
+    # «тыс.» — признак зарплаты, а полное «тысяч» — нет: «300 тысяч пользователей», «5 тысяч запросов в секунду».
+    r"зарплат|оклад|вилка|з/п|\bзп\b|доход|на руки|до вычета|gross|\bnet\b|₽|руб|\bтыс(?![а-я])"
     r"|\$|€|£|usd|eur|\brub\b|\d\s*[кk]\b"
 )
 _FOREIGN_RE = re.compile(r"\$|€|£|usd|eur|gbp|долл|евро")
@@ -286,7 +289,7 @@ _RUBLE_RE = re.compile(r"₽|руб|\brub\b|\bр\.|тыс\.?\s*р")
 def _scale(mult: str | None) -> int:
     if mult is None:
         return 1
-    return 1_000_000 if mult.startswith("млн") else 1000
+    return 1_000_000 if mult.startswith(("млн", "миллион")) else 1000
 
 
 def _amount(number: str, mult: str | None) -> float | None:

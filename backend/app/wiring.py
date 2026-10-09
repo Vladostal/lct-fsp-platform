@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import importlib
 import logging
+import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
@@ -201,6 +202,41 @@ def _operation_id(tag: str) -> Callable[[APIRoute], str]:
     return generate
 
 
+#: Предел длины названия метода в схеме OpenAPI.
+SUMMARY_MAX = 90
+_SENTENCE_END = re.compile(r"[.!?](?:\s|$)")
+
+
+def summary_from_doc(doc: str | None) -> str | None:
+    """Название метода для OpenAPI из docstring обработчика: первое предложение без точки в конце.
+
+    Слишком длинное предложение обрезается по первому `;` или `:`, а если их нет — по границе слова. Нужна
+    затем, чтобы в Swagger стояло «Начать тест», а не автоматическое «Create Session» из имени функции.
+    """
+    text = " ".join((doc or "").split())
+    if not text:
+        return None
+    end = _SENTENCE_END.search(text)
+    sentence = text[: end.start()] if end else text.rstrip(".")
+    if len(sentence) > SUMMARY_MAX:
+        for mark in ("; ", ": ", " — "):
+            cut = sentence.find(mark)
+            if 15 <= cut <= SUMMARY_MAX:
+                sentence = sentence[:cut]
+                break
+        else:
+            sentence = sentence[:SUMMARY_MAX].rsplit(" ", 1)[0] + "…"
+    return sentence.strip() or None
+
+
+def _fill_summaries(routers: list[APIRouter]) -> None:
+    """Проставить `summary` маршрутам, у которых оно не задано явно (до подключения роутера к приложению)."""
+    for router in routers:
+        for route in router.routes:
+            if isinstance(route, APIRoute) and not route.summary:
+                route.summary = summary_from_doc(route.endpoint.__doc__)
+
+
 def _check_routers(spec: str, routers: Any) -> list[APIRouter]:
     if not isinstance(routers, (list, tuple)) or not all(isinstance(item, APIRouter) for item in routers):
         raise WiringError(f"{spec}: ожидается list[APIRouter]")
@@ -234,6 +270,7 @@ def include_routers(app: FastAPI, settings: Settings | None = None) -> dict[str,
                 raise
             log.exception("модуль %s не подключён", module)
             continue
+        _fill_summaries(checked)
         for router in checked:
             app.include_router(
                 router, prefix=API_PREFIX, tags=[module], generate_unique_id_function=_operation_id(module)

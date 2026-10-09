@@ -21,7 +21,7 @@ from app.modules.assessment.families.registry import family_meta
 
 META = family_meta(
     "code.bug_boundary",
-    version=1,
+    version=2,
     feature_bounds={
         1: {"code_lines": (8, 17), "options_count": (8, 17), "trap": (0, 0)},
         2: {"code_lines": (8, 17), "options_count": (8, 17), "trap": (0, 1)},

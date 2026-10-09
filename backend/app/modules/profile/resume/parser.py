@@ -49,7 +49,7 @@ from app.modules.profile.constants import (
 from app.modules.profile.resume import fields as rules
 from app.modules.profile.resume.fields import Confidence, Found
 from app.modules.profile.resume.normalize import normalize
-from app.modules.profile.resume.sections import split_sections
+from app.modules.profile.resume.sections import heading_of, split_sections
 from app.modules.profile.schemas import ResumeField, ResumeMeta
 from app.modules.textparse import service as textparse
 from app.shared.schemas import Ref
@@ -239,6 +239,17 @@ def _skills(
     return make(hard), make(soft), list(count), list(unknown)[:10]
 
 
+def _looks_like_position(line: str) -> bool:
+    """Строка под именем похожа на должность: короткая, не заголовок раздела, без контактов и дат."""
+    stripped = line.strip()
+    return (
+        0 < len(stripped) <= 80
+        and heading_of(stripped) is None
+        and "@" not in stripped
+        and not any(ch.isdigit() for ch in stripped)
+    )
+
+
 def build_result(text: str, *, today: date, pages: int, engine: str, started: float) -> ParsedResume:
     """Все поля `ResumeParseResult` из нормализованного текста. `today` нужен для «по настоящее время»."""
     text = normalize(text)
@@ -253,8 +264,17 @@ def build_result(text: str, *, today: date, pages: int, engine: str, started: fl
 
     found: dict[str, Found | ResumeField | None] = {}
     candidate = rules.name_candidate(head)
+    position_guess: str | None = None
     if candidate is not None:
         found.update(rules.split_name(candidate))
+    else:
+        # В шапке имени нет (резюме в две колонки начинается с контактов): ищем по словарю имён дальше по тексту.
+        located = _safely("ФИО вне шапки", lambda: rules.name_by_dictionary(non_empty), None)
+        if located is not None:
+            candidate, position_guess = located
+            found.update(
+                {key: Found(item.value, "medium", item.snippet) for key, item in rules.split_name(candidate).items()}
+            )
     found["email"] = rules.find_email(non_empty)
     found["phone"] = rules.find_phone(non_empty)
     found["telegram"] = rules.find_telegram(non_empty, head)
@@ -285,6 +305,8 @@ def build_result(text: str, *, today: date, pages: int, engine: str, started: fl
         found["declared_skills"], found["soft_skills"] = hard_field, soft_field
 
     position_text = "\n".join(line for _, line in sections.get("position", []))
+    if not position_text and position_guess and _looks_like_position(position_guess):
+        position_text = position_guess
     titles = _job_titles(experience, lines, today)
     titles_text = "\n".join(title for _, title in titles)
 

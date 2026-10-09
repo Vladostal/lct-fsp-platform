@@ -14,11 +14,12 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
 from functools import lru_cache
+from itertools import pairwise
 from typing import Literal
 
 from app.modules.profile import validation
 from app.modules.profile.constants import ABOUT_MAX, EXPERIENCE_MAX_YEARS
-from app.modules.profile.resume.sections import SECTION_HEADINGS
+from app.modules.profile.resume.sections import SECTION_HEADINGS, heading_of
 from app.shared.contact_method import normalize_email
 
 Confidence = Literal["high", "medium", "low"]
@@ -43,7 +44,8 @@ def snippet_of(line: str) -> str:
 # --- e-mail, телефон, Telegram, ссылка -------------------------------------------------------------------------------
 
 _EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", _FLAGS)
-_PHONE_RU_RE = re.compile(r"(?:\+7|8)[\s(-]*\d{3}[\s)-]*\d{3}[\s-]*\d{2}[\s-]*\d{2}", _FLAGS)
+# Перед номером не цифра: иначе «8» в конце года («2018») начинало бы «телефон» из следующих за ним чисел.
+_PHONE_RU_RE = re.compile(r"(?<!\d)(?:\+7|8)[\s(-]*\d{3}[\s)-]*\d{3}[\s-]*\d{2}[\s-]*\d{2}(?!\d)", _FLAGS)
 _PHONE_ANY_RE = re.compile(r"\+\d[\d\s()-]{8,16}", _FLAGS)
 _TG_LINK_RE = re.compile(r"t\.me/([A-Za-z0-9_]{5,32})", _FLAGS)
 _TG_AT_RE = re.compile(r"(?<![\w.@])@([A-Za-z0-9_]{5,32})(?![\w@]|\.\w)", _FLAGS)
@@ -52,6 +54,8 @@ _URL_RE = re.compile(
     r"(?:https?://|www\.)[^\s<>\"']+|(?:github\.com|gitlab\.com|career\.habr\.com|linkedin\.com)/[^\s<>\"']+", _FLAGS
 )
 _LINK_PRIORITY = ("github.com", "gitlab.com", "career.habr.com", "linkedin.com")
+#: Продолжение адреса, перенесённое на следующую строку: одно слово без пробелов.
+_URL_TAIL_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._~-]{1,60}")
 _TRAILING = ".,;:)]}»"
 
 
@@ -65,15 +69,23 @@ def find_email(lines: Sequence[str]) -> Found | None:
 
 
 def find_phone(lines: Sequence[str]) -> Found | None:
-    for pattern in (_PHONE_RU_RE, _PHONE_ANY_RE):
-        for line in lines:
-            for match in pattern.finditer(line):
-                try:
-                    phone = validation.phone(match.group(0).strip())
-                except ValueError:
-                    continue
-                if phone:
-                    return Found(phone, "high", snippet_of(line))
+    """Телефон: сначала в отдельных строках, затем в парах соседних строк.
+
+    Второй проход нужен резюме в две колонки: узкая колонка контактов рвёт номер переносом («8 912 345 67» и
+    «89» на следующей строке). Уверенность у склеенного номера ниже.
+    """
+    joined = [f"{first} {second}" for first, second in pairwise(lines)]
+    passes: tuple[tuple[Sequence[str], Confidence], ...] = ((lines, "high"), (joined, "medium"))
+    for candidates, confidence in passes:
+        for pattern in (_PHONE_RU_RE, _PHONE_ANY_RE):
+            for line in candidates:
+                for match in pattern.finditer(line):
+                    try:
+                        phone = validation.phone(match.group(0).strip())
+                    except ValueError:
+                        continue
+                    if phone:
+                        return Found(phone, confidence, snippet_of(line))
     return None
 
 
@@ -97,11 +109,17 @@ def find_telegram(lines: Sequence[str], head: Sequence[str]) -> Found | None:
 def find_link(lines: Sequence[str]) -> Found | None:
     """Первая ссылка по приоритету доменов: github, gitlab, habr, linkedin, прочие. Без схемы — `https://`."""
     best: tuple[int, str, str] | None = None
-    for line in lines:
+    for index, line in enumerate(lines):
         for match in _URL_RE.finditer(line):
             url = match.group(0).rstrip(_TRAILING)
             if "@" in url:
                 continue
+            # Адрес оборван переносом строки сразу после «/»: хвост — одиночное слово на следующей строке.
+            # Слово с заглавной буквы или заголовок раздела («Skills», «Summary») хвостом адреса не считается.
+            tail = lines[index + 1].strip() if index + 1 < len(lines) else ""
+            wrapped = url.endswith("/") and match.end() == len(line.rstrip()) and _URL_TAIL_RE.fullmatch(tail)
+            if wrapped and tail == tail.lower() and heading_of(tail) is None:
+                url += tail
             if not url.lower().startswith("http"):
                 url = "https://" + url
             try:
@@ -120,6 +138,8 @@ def find_link(lines: Sequence[str]) -> Found | None:
 # --- ФИО -------------------------------------------------------------------------------------------------------------
 
 _NAME_WORD_RE = re.compile(r"^[A-ZА-ЯЁ][a-zа-яё]+(?:-[A-ZА-ЯЁ][a-zа-яё]+)?$")
+#: То же слово, набранное прописными: «ДАРЬЯ», «ОРЛОВА-ПЕТРОВА».
+_NAME_CAPS_RE = re.compile(r"^[A-ZА-ЯЁ]{2,}(?:-[A-ZА-ЯЁ]{2,})?$")
 _NAME_STOP = frozenset(
     {"резюме", "curriculum", "vitae", "cv", "resume"}
     | {word for headings in SECTION_HEADINGS.values() for heading in headings for word in heading.split()}
@@ -145,6 +165,33 @@ def name_candidate(head: Sequence[str]) -> NameCandidate | None:
             continue
         if all(_NAME_WORD_RE.match(word) for word in words):
             return NameCandidate(tuple(words), line)
+        if all(_NAME_CAPS_RE.match(word) for word in words):
+            # Прописными в резюме набирают и заголовки («ЯЗЫКИ ПРОГРАММИРОВАНИЯ»). Кириллическая строка считается
+            # именем, только если словарь узнаёт в ней имя или фамилию; без словаря — не считается.
+            # Латиница прописными не принимается вовсе: словаря имён для неё нет, а «CONTACT INFORMATION»
+            # от «JOHN SMITH» по форме не отличить.
+            titled = tuple("-".join(part.capitalize() for part in word.split("-")) for word in words)
+            if not _CYRILLIC_RE.search(line) or not any({"Name", "Surn"} & _tags(word) for word in titled):
+                continue
+            return NameCandidate(titled, line)
+    return None
+
+
+def name_by_dictionary(lines: Sequence[str], limit: int = 40) -> tuple[NameCandidate, str | None] | None:
+    """Запасной поиск ФИО вне шапки — для резюме в две колонки, где текст начинается с колонки контактов.
+
+    Среди первых `limit` непустых строк берётся строка из 2–3 слов, в которой словарь узнаёт и имя, и фамилию.
+    Вместе с кандидатом возвращается следующая строка: в таких резюме под именем стоит должность.
+    """
+    for index, line in enumerate(lines[:limit]):
+        candidate = name_candidate([line])
+        if candidate is None or not _CYRILLIC_RE.search(line):
+            continue
+        tags = [_tags(word) for word in candidate.words]
+        has_name = any("Name" in found for found in tags)
+        has_surname = any("Surn" in found for found in tags)
+        if has_name and has_surname:
+            return candidate, (lines[index + 1] if index + 1 < len(lines) else None)
     return None
 
 

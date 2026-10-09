@@ -142,6 +142,68 @@ def test_session_app_runs_on_stubs(client):
     assert "/api/v1/health" in schema["paths"]
 
 
+def test_every_operation_has_a_human_summary(client):
+    """В Swagger у каждого метода своё название, а не автоматическое «Get Survey» из имени функции."""
+    import re
+
+    schema = client.get("/api/openapi.json").json()
+    auto = re.compile(r"[A-Z][a-z]+( [A-Z][a-z]+)*")
+    bad = [
+        f"{method.upper()} {path}: {operation.get('summary')!r}"
+        for path, methods in schema["paths"].items()
+        for method, operation in methods.items()
+        if not operation.get("summary") or auto.fullmatch(operation["summary"])
+    ]
+    assert bad == []
+    assert max(len(op["summary"]) for methods in schema["paths"].values() for op in methods.values()) <= 90
+
+
+@pytest.mark.parametrize(
+    ("doc", "summary"),
+    [
+        ("Начать тест. 409: `session_active`, `cooldown_active`.", "Начать тест"),
+        ("Схема опроса и сохранённые ответы.", "Схема опроса и сохранённые ответы"),
+        ("  Многострочное\n    описание метода.\n\n    Подробности ниже.", "Многострочное описание метода"),
+        ("Без точки в конце", "Без точки в конце"),
+        ("Версия 1.2 подборки; подробности.", "Версия 1.2 подборки; подробности"),
+        (
+            "Очень длинное название метода, которое не помещается в отведённые девяносто знаков: дальше идут "
+            "подробности, которые в название не нужны.",
+            "Очень длинное название метода, которое не помещается в отведённые девяносто знаков",
+        ),
+        (None, None),
+        ("   ", None),
+    ],
+)  # fmt: skip
+def test_summary_from_doc(doc, summary):
+    assert wiring.summary_from_doc(doc) == summary
+
+
+def test_explicit_summary_is_kept(monkeypatch, override_settings):
+    from fastapi import FastAPI
+
+    router = APIRouter(route_class=TxRoute)
+
+    @router.get("/beta/a", summary="Своё название")
+    def with_summary() -> dict[str, str]:
+        """Описание, которое в название попасть не должно."""
+        return {}
+
+    @router.get("/beta/b")
+    def from_doc() -> dict[str, str]:
+        """Название из описания. Остальное — в описание."""
+        return {}
+
+    name = fake_module(monkeypatch, "app.modules.fakebeta", ROUTERS=[router])
+    monkeypatch.setattr(wiring, "ROUTERS", (f"{name}:ROUTERS",))
+    override_settings(wiring_strict=True)
+    application = FastAPI()
+    wiring.include_routers(application)
+    paths = application.openapi()["paths"]
+    assert paths["/api/v1/beta/a"]["get"]["summary"] == "Своё название"
+    assert paths["/api/v1/beta/b"]["get"]["summary"] == "Название из описания"
+
+
 # --- роутеры --------------------------------------------------------------------------------------------------------
 
 

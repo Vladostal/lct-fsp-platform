@@ -106,7 +106,9 @@ class NeedView(BaseModel):
 
 
 class ShortlistCreate(BaseModel):
-    """Тело создания версии подборки: без полей — запрос из потребности; с `refinement` — уточнение родителя."""
+    """Тело создания версии подборки: без полей — запрос из потребности; с `refinement` — уточнение версии
+    `parent_id` (обязателен вместе с `refinement`: иначе 422 `parent_required`).
+    """
 
     parent_id: UUID | None = None
     refinement: ShortlistRefinement | None = None

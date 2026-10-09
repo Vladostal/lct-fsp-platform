@@ -19,7 +19,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
-from app.core.errors import ApiException, not_found
+from app.core.errors import ApiException, field_error, not_found
 from app.modules.assessment import blueprints, grading, labels, repo
 from app.modules.assessment.config import GRADES, get_config
 from app.modules.assessment.dto import TestItemView
@@ -32,6 +32,7 @@ from app.modules.assessment.models import (
     BlueprintCounter,
     CategoryRow,
     ExposureRow,
+    FamilyLevelRow,
     GradeChange,
     SessionItemRow,
     SessionRow,
@@ -52,6 +53,16 @@ from app.shared.enums import (
 FLAG_PREFILLED = "demo_prefilled"
 #: Пометка: языковой модуль не выдан, слоты `lang` ушли в группу `code` (Арх. 5.2).
 FLAG_NO_LANG = "lang_module_missing"
+#: Пометка задания: ответ дан быстрее `FAST_FACTOR` расчётного времени уровня — условие за это время не прочитать.
+ITEM_FLAG_FAST = "fast"
+#: Пометки сессии: сколько верных ответов дано «быстро» и признак «таких большинство». На исход теста не влияют
+#: (кандидату это обещано на экране перед тестом): это сигнал для разбора утечек — готовый ответ вводят быстрее,
+#: чем читают условие.
+FLAG_FAST_CORRECT = "fast_correct"
+FLAG_SPEED_SUSPECT = "speed_suspect"
+#: С какого числа быстрых верных ответов и с какой их доли среди учтённых ответов сессия помечается.
+SPEED_SUSPECT_MIN = 6
+SPEED_SUSPECT_SHARE = 0.6
 
 _ANSWERED = (ItemStatus.ANSWERED.value, ItemStatus.SKIPPED.value)
 
@@ -105,7 +116,8 @@ def start_error(decision: rules.StartDecision) -> ApiException:
         params["reason"] = decision.reason
     if decision.available_at:
         params["available_at"] = decision.available_at.isoformat()
-    return ApiException(decision.status, decision.code or "grade_not_allowed", params=params or None)
+    code = decision.code or "grade_not_allowed"
+    return ApiException(decision.status, code, labels.ERROR_MESSAGES.get(code), params=params or None)
 
 
 def window_posterior(db: Session, candidate_id: UUID, specialization: str, now: datetime) -> Posterior:
@@ -264,7 +276,7 @@ def create_session(
             db.add(session)
             db.flush()
     except IntegrityError as exc:  # частичный уникальный индекс: одна активная сессия на кандидата
-        raise ApiException(409, "session_active") from exc
+        raise ApiException(409, "session_active", labels.ERROR_MESSAGES["session_active"]) from exc
     try:
         _add_items(db, session, slots, first_position=0, now=now)
     except assemble.BankUnavailable as exc:
@@ -329,6 +341,8 @@ def submit_answer(
     0. Сессия блокируется `FOR UPDATE`.
     1. `now > expires_at + ANSWER_GRACE_S` → закрытие по времени и 410 `session_expired`.
     2. `item_id` — не текущее задание: тот же ключ идемпотентности → текущее состояние; иначе 409.
+    2а. В теле ответа нет поля своего вида задания (`grading.answer_key`) → 422 `answer_malformed`, задание
+       остаётся текущим.
     3. Балл 0 при пропуске, иначе `grading.grade`; ответ, время и телеметрия сохраняются.
     4. Есть следующее задание → оно показывается.
     5. Контрольная точка: `decide(estimate(окно + сессия))`; `borderline` и `stage < MAX_EXT_BLOCKS` → добавочный
@@ -359,6 +373,14 @@ def submit_answer(
 
     variant = db.get(VariantRow, current.variant_id)
     assert variant is not None
+    if not skipped and answer is not None:
+        expected = grading.answer_key(variant.payload["kind"])
+        if expected not in answer:
+            # Тело не того вида — сбой клиента, а не ответ: задание остаётся текущим, попытка не тратится.
+            message = f"В ответе нет поля «{expected}»: обновите страницу и ответьте ещё раз"
+            raise ApiException(
+                422, "answer_malformed", message, fields=[field_error("answer", "answer_malformed", message)]
+            )
     if skipped or answer is None:
         current.status = ItemStatus.SKIPPED.value
         current.score, current.parse_ok, current.error_tag, current.answer = 0, True, None, None
@@ -373,6 +395,8 @@ def submit_answer(
     current.client = dict(client) if client else None
     if current.shown_at is not None:
         current.time_spent_ms_server = max(0, int((now - current.shown_at).total_seconds() * 1000))
+        if current.status == ItemStatus.ANSWERED.value and _is_fast(db, current, cfg.fast_factor):
+            current.flags = [*current.flags, ITEM_FLAG_FAST]
     session.items_answered += 1
 
     following = next((item for item in items if item.status == ItemStatus.PENDING.value), None)
@@ -416,6 +440,31 @@ def submit_answer(
 # --------------------------------------------------------------------------------------------------------------------
 
 
+def _is_fast(db: Session, item: SessionItemRow, fast_factor: float) -> bool:
+    """Ответ дан быстрее `fast_factor` расчётного времени уровня семейства (`assessment_family_level`)."""
+    level = db.get(FamilyLevelRow, (item.family_id, item.level))
+    if level is None or item.time_spent_ms_server is None:
+        return False
+    return item.time_spent_ms_server < fast_factor * level.time_budget_s * 1000
+
+
+def speed_flags(items: list[SessionItemRow]) -> dict[str, Any]:
+    """Пометки скорости сессии по её заданиям (чистая функция).
+
+    `fast_correct` — верных ответов с пометкой `fast`; `speed_suspect` — их не меньше `SPEED_SUSPECT_MIN`
+    и не меньше `SPEED_SUSPECT_SHARE` всех учтённых ответов. Пропуск («не знаю») быстрым не считается: он не
+    говорит о знании ответа.
+    """
+    counted = [item for item in items if item.status in _ANSWERED]
+    fast_correct = sum(1 for item in counted if item.score == 1 and ITEM_FLAG_FAST in (item.flags or ()))
+    flags: dict[str, Any] = {}
+    if fast_correct:
+        flags[FLAG_FAST_CORRECT] = fast_correct
+    if fast_correct >= SPEED_SUSPECT_MIN and fast_correct >= SPEED_SUSPECT_SHARE * len(counted):
+        flags[FLAG_SPEED_SUSPECT] = True
+    return flags
+
+
 def finalize(db: Session, session: SessionRow, now: datetime, *, by_time: bool) -> None:
     """Закрыть сессию и применить результат (Арх. 5.5, `finalize`; 5.7, `apply_result`).
 
@@ -445,6 +494,8 @@ def finalize(db: Session, session: SessionRow, now: datetime, *, by_time: bool) 
     session.p_pass, session.p_margin = decision.p_pass, decision.p_margin
     session.items_answered = sum(1 for item in items if item.status in _ANSWERED)
     session.pooled_items = post.n
+    # Новый словарь, а не правка на месте: так ORM видит изменение столбца JSONB.
+    session.flags = {**session.flags, **speed_flags(items)}
 
     row = repo.category(db, session.candidate_id)
     foreign = row is not None and row.specialization_code != session.specialization_code
@@ -606,9 +657,12 @@ def progress(session: SessionRow) -> dict[str, int]:
 
 
 __all__ = [
+    "FLAG_FAST_CORRECT",
     "FLAG_NO_LANG",
     "FLAG_PREFILLED",
+    "FLAG_SPEED_SUSPECT",
     "GRADES",
+    "ITEM_FLAG_FAST",
     "close_expired",
     "close_expired_for",
     "create_session",
