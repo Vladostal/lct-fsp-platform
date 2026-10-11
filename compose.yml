@@ -5,8 +5,6 @@
 #
 # Порядок старта: db (healthcheck) → migrate (один раз, python -m app.scripts.init) → api (healthcheck) → web.
 # Наружу опубликован только web (8080). Лимиты памяти — таблица Арх. 2.1; проверяются измерением (Арх. 13.6).
-# Локальная разработка: docker compose -f compose.yml -f compose.dev.yml up -d db mailpit (порты на 127.0.0.1;
-# это отдельный проект compose со своей сетью, стенд и база разработки друг другу не мешают).
 
 x-backend: &backend
   build:

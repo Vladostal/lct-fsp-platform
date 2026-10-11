@@ -1,12 +1,12 @@
 # Команды проекта (Арх. 12.6). Справка: make help
 #
-# Локальное окружение бэкенда — backend/.venv (создаёт make venv через uv). Команды с базой ходят в базу
-# разработки на 127.0.0.1:5432 (make dev-db). Тесты читают только своё окружение (backend/tests/conftest.py).
+# Окружение бэкенда для проверок — backend/.venv (создаёт make venv через uv). Тесты читают только своё
+# окружение (backend/tests/conftest.py); адрес PostgreSQL для них — TEST_DATABASE_URL.
 
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
-.PHONY: help venv up down dev-db dev-db-down dev-init dev-api init-env test test-db-clean lint snapshot openapi client \
-        bank bank-check seed demo-reset eval-testing eval-matching eval-contact eval e2e
+.PHONY: help venv up down init-env test lint snapshot openapi client \
+        eval-testing eval-matching eval-contact eval e2e
 
 # uv: из PATH либо из окружения в корне проекта (python3 -m venv .venv && .venv/bin/pip install uv).
 UV ?= $(shell command -v uv 2>/dev/null || echo $(CURDIR)/.venv/bin/uv)
@@ -15,11 +15,10 @@ BIN := .venv/bin
 PY := $(BIN)/python
 
 COMPOSE ?= docker compose
-COMPOSE_DEV := $(COMPOSE) -f compose.yml -f compose.dev.yml
 
-# База и почта разработки (compose.dev.yml публикует их на 127.0.0.1).
+# Адрес базы для команд, запускаемых вне контейнеров.
 DEV_DATABASE_URL ?= postgresql+psycopg://app:app@127.0.0.1:5432/app
-# Окружение локальных команд: значения из .env, но адреса — локальные.
+# Окружение таких команд: значения из .env, адреса — локальные.
 LOCAL_ENV := APP_ENV_FILE=../.env DATABASE_URL=$(DEV_DATABASE_URL) SMTP_HOST=127.0.0.1 SMTP_PORT=1025
 
 # PKG — модуль или пакет: каталоги backend/app/modules/<PKG>, backend/app/<PKG>, backend/tests/<PKG>.
@@ -55,19 +54,6 @@ up: ## Поднять стенд: http://localhost:8080 (нужен .env: cp .en
 
 down: ## Остановить стенд (данные остаются; удалить том БД — docker compose down -v)
 	$(COMPOSE) down
-
-dev-db: ## База и почта для локальной разработки и тестов (127.0.0.1:5432, SMTP 1025, ящик 8025/mail/)
-	@test -f .env || cp .env.example .env
-	$(COMPOSE_DEV) up -d db mailpit
-
-dev-db-down: ## Остановить базу и почту разработки
-	$(COMPOSE_DEV) stop db mailpit
-
-dev-init: $(VENV)/bin/python ## Локальная инициализация: схема и шаги INIT_STEPS в базе разработки
-	cd backend && $(LOCAL_ENV) $(PY) -m app.scripts.init
-
-dev-api: $(VENV)/bin/python ## Локальный сервер API с перезагрузкой: http://127.0.0.1:8000/api/docs
-	cd backend && $(LOCAL_ENV) $(BIN)/uvicorn app.main:app --reload --host 127.0.0.1 --port 8000 --no-proxy-headers
 
 define INIT_ENV_PY
 import pathlib, re, secrets, sys
@@ -109,12 +95,6 @@ test: $(VENV)/bin/python ## pytest: всё, один пакет (PKG=модул�
 	  echo "нет каталога backend/tests/$(PKG)"; exit 1; fi; \
 	echo "pytest $$paths $(ARGS)"; \
 	$(PY) -m pytest $$paths $(ARGS)
-
-test-db-clean: ## Удалить оставшиеся базы test_* после аварийно убитых прогонов (только когда тесты никто не гоняет)
-	@if [ -z "$(CONFIRM)" ]; then echo "удалит ВСЕ базы test_* на сервере разработки, включая идущие прогоны: make test-db-clean CONFIRM=1"; exit 1; fi
-	@$(COMPOSE_DEV) exec -T db psql -U app -d app -Atc "SELECT datname FROM pg_database WHERE datname LIKE 'test\_%'" \
-	  | while read -r name; do echo "DROP DATABASE $$name"; \
-	      $(COMPOSE_DEV) exec -T db psql -U app -d app -qc "DROP DATABASE IF EXISTS \"$$name\" WITH (FORCE)"; done
 
 lint: $(VENV)/bin/python ## ruff, mypy, import-linter; с PKG — только пакет; без PKG — всё, alembic check, tsc и biome
 	@cd backend && set -e; \
@@ -163,18 +143,6 @@ client: ## Сгенерировать клиент фронтенда из docs/
 	cd frontend && npm run client
 
 # --- данные и валидация --------------------------------------------------------------------------------------------------
-
-bank: $(VENV)/bin/python ## Собрать банк заданий в базе разработки
-	cd backend && $(LOCAL_ENV) $(PY) -m app.modules.assessment.bank build $(ARGS)
-
-bank-check: $(VENV)/bin/python ## Проверить банк заданий без записи
-	cd backend && $(LOCAL_ENV) $(PY) -m app.modules.assessment.bank build --check-only $(ARGS)
-
-seed: $(VENV)/bin/python ## Сид демо-данных в базе разработки
-	cd backend && $(LOCAL_ENV) $(PY) -m app.seed all $(ARGS)
-
-demo-reset: $(VENV)/bin/python ## Сброс демо: пересоздать сид от текущего времени сервиса
-	cd backend && $(LOCAL_ENV) $(PY) -m app.seed all --reset $(ARGS)
 
 eval-testing: $(VENV)/bin/python ## Отчёт валидации тестирования → docs/validation/testing
 	cd backend && $(LOCAL_ENV) $(PY) -m app.eval.testing --seed 20261005 --n 4000 --out ../docs/validation/testing $(ARGS)

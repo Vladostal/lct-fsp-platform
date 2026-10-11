@@ -6,8 +6,7 @@
   к фикстурам `db` или `client` и удаляется по завершении запуска. Чужие базы и схемы тесты не трогают, поэтому
   пакеты запускают тесты одновременно на одном PostgreSQL. Схема создаётся той же функцией, что и на стенде без
   миграции: `core.db.create_schema`. Тест без базы (чистые ядра) PostgreSQL не требует вовсе.
-* **Сервер БД** берётся из переменной `TEST_DATABASE_URL` (по умолчанию `postgresql+psycopg://app:app@127.0.0.1:5432/app`
-  — это `docker compose -f compose.yml -f compose.dev.yml up -d db`). Имя базы в адресе заменяется на тестовое.
+* **Сервер БД** берётся из переменной `TEST_DATABASE_URL` (по умолчанию `postgresql+psycopg://app:app@127.0.0.1:5432/app`). Имя базы в адресе заменяется на тестовое.
 * **Окружение тестов задано здесь** и не зависит от `.env` разработчика: учебные секреты, `WIRING_STRICT=false`,
   фоновый цикл выключен, все флаги усилений включены, письма не уходят в SMTP, а складываются в `mailbox`.
 
@@ -145,7 +144,7 @@ def _create_database() -> None:
         pytest.exit(
             "PostgreSQL для тестов недоступен ("
             + _with_database(SERVER_URL, "…").split("@")[-1]
-            + "). Поднимите базу разработки: docker compose -f compose.yml -f compose.dev.yml up -d db\n"
+            + "). Задайте адрес PostgreSQL в переменной TEST_DATABASE_URL.\n"
             + f"Причина: {exc.orig}",
             returncode=3,
         )
