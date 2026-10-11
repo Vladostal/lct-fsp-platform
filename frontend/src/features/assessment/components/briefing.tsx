@@ -18,9 +18,8 @@ import { unavailableReason } from './next-actions'
 
 const ITEMS = PLURALS.task
 
-// Быстрый демо-тест: маршрута `POST /demo/assessment/quick-session` в API сейчас нет (кнопка получала 404).
-// Вернуть true, когда маршрут появится.
-const QUICK_TEST_AVAILABLE = false
+// Быстрый тест доступен в демо-режиме; сервер помечает результат как демонстрационный.
+const QUICK_TEST_AVAILABLE = true
 
 export function Briefing({ catalog, grade }: { catalog: Catalog | null; grade?: string }) {
   const queryClient = useQueryClient()

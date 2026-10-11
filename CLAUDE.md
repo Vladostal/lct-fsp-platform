@@ -149,7 +149,7 @@ compose.yml, compose.dev.yml, Makefile, README.md
 ### Отличия от первоначального плана
 
 Сделано проще, чем планировалось: нет Keycloak для своих пользователей, Redis и arq, pgvector и эмбеддингов,
-GigaChat и YandexGPT, Caddy. Модули называются иначе (`identity`, `profile`, `company`, `contact`, `assessment`,
+GigaChat и YandexGPT. Caddy используется только в отдельном публичном Compose-стенде. Модули называются иначе (`identity`, `profile`, `company`, `contact`, `assessment`,
 `textparse`). Вакансии с откликами и регулярные задания из сборки убраны. Адаптер `FSP_MODE=keycloak`
 не реализован.
 

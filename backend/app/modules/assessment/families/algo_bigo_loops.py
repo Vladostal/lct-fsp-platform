@@ -169,6 +169,7 @@ def _loop(kind: str, body: Loop | Seq | None = None, count: int = 0) -> Loop:
 def _build_loops(level: int, target: str, rng: Random) -> Node:
     """Дерево циклов с заданным порядком роста; всегда содержит конструкцию-ловушку для одной из моделей ошибок."""
     c = rng.randint(2, 5)
+    choices: list[Loop | Seq]
     const = _loop("const", None, c)
     if target == "1":
         return _loop("const", const if rng.random() < 0.5 else None, c)
@@ -188,8 +189,9 @@ def _build_loops(level: int, target: str, rng: Random) -> Node:
     if target == "n":
         if level == 1:
             return rng.choice([_loop("n", const), _loop("const", _loop("n"), c)])
-        return rng.choice([Seq((_loop("n"), _loop("log"))), Seq((_loop("log"), _loop("n"))),
-                           Seq((_loop("n", const), _loop("sqrt")))])  # fmt: skip
+        choices = [Seq((_loop("n"), _loop("log"))), Seq((_loop("log"), _loop("n"))),
+                   Seq((_loop("n", const), _loop("sqrt")))]  # fmt: skip
+        return rng.choice(choices)
     if target == "nlogn":
         return rng.choice([_loop("n", _loop("log")), _loop("n", _loop("halve")), _loop("log", _loop("n"))])
     if target == "n2":

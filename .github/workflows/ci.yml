@@ -1,0 +1,201 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-quality:
+    name: Backend / Ruff, imports, mypy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: "0.12.17"
+          python-version: "3.13"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - name: Install locked dependencies
+        id: dependencies
+        run: uv sync --frozen
+      - name: Ruff
+        run: uv run --frozen ruff check app alembic/env.py tests
+      - name: Module import contracts
+        if: ${{ !cancelled() && steps.dependencies.outcome == 'success' }}
+        run: uv run --frozen lint-imports --no-cache
+      - name: Python types
+        if: ${{ !cancelled() && steps.dependencies.outcome == 'success' }}
+        run: uv run --frozen mypy app alembic/env.py
+
+  backend-tests:
+    name: Backend / pytest, PostgreSQL, PDF
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      TEST_DATABASE_URL: postgresql+psycopg://app:app@127.0.0.1:5432/app
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: app
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app -d app"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: "0.12.17"
+          python-version: "3.13"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - name: Install PDF system libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0
+      - name: Install locked dependencies
+        run: uv sync --frozen
+      - name: Verify PDF renderer is available
+        run: uv run --frozen python -c "import weasyprint; print(weasyprint.__version__)"
+      - name: Run all backend tests
+        run: uv run --frozen pytest -q --junitxml="${{ runner.temp }}/pytest.xml"
+      - name: Upload test report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: backend-pytest
+          path: ${{ runner.temp }}/pytest.xml
+          if-no-files-found: ignore
+          retention-days: 14
+
+  frontend-quality:
+    name: Frontend / types, Biome, build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install locked dependencies
+        id: dependencies
+        run: npm ci
+      - name: TypeScript
+        run: npm run typecheck
+      - name: Biome
+        if: ${{ !cancelled() && steps.dependencies.outcome == 'success' }}
+        run: npm run lint
+      - name: Production build
+        if: ${{ !cancelled() && steps.dependencies.outcome == 'success' }}
+        run: npm run build
+      - name: Upload frontend build
+        if: ${{ success() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  frontend-layout:
+    name: Frontend / Playwright layouts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Install Chromium and system libraries
+        run: npx playwright install --with-deps chromium
+      - name: Run layout checks
+        run: npm run test:layout
+      - name: Upload browser reports and traces
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: frontend-playwright
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  docker-images:
+    name: Docker / ${{ matrix.component }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [backend, frontend]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build production image
+        run: docker build --tag fsp-podbor-${{ matrix.component }}:${{ github.sha }} --file ${{ matrix.component }}/Dockerfile ${{ matrix.component }}
+      - name: Save immutable release image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: docker image save fsp-podbor-${{ matrix.component }}:${{ github.sha }} | gzip -1 > "${{ runner.temp }}/${{ matrix.component }}.tar.gz"
+      - name: Upload private deployment image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: fsp-image-${{ matrix.component }}
+          path: ${{ runner.temp }}/${{ matrix.component }}.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+
+  deployment-contracts:
+    name: Deployment / archive validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: python3 -m unittest discover -s infra/deploy/tests -v
+      - run: bash -n infra/deploy/deploy.sh

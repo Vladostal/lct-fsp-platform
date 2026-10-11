@@ -1,0 +1,82 @@
+name: CD
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      ci_run_id:
+        description: Successful CI run for current main (recovery / retry)
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: fsp-production
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    environment: production
+    steps:
+      - name: Resolve successful CI run for current main
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id || inputs.ci_run_id }}
+        run: |
+          set -euo pipefail
+          [[ "$RUN_ID" =~ ^[0-9]+$ ]]
+          gh api "repos/$REPO/actions/runs/$RUN_ID" > "$RUNNER_TEMP/run.json"
+          main=$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)
+          workflow_id=$(gh api "repos/$REPO/actions/workflows/ci.yml" --jq .id)
+          sha=$(jq -r .head_sha "$RUNNER_TEMP/run.json")
+          jq -e --arg repo "$REPO" --arg main "$main" --argjson workflow "$workflow_id" \
+            '.conclusion == "success" and .event == "push" and .head_branch == "main" and .head_sha == $main and .head_repository.full_name == $repo and .workflow_id == $workflow' \
+            "$RUNNER_TEMP/run.json" >/dev/null
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "run=$RUN_ID" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.release.outputs.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: fsp-image-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/images
+          run-id: ${{ steps.release.outputs.run }}
+          github-token: ${{ github.token }}
+      - name: Package validated images and runtime
+        env:
+          SHA: ${{ steps.release.outputs.sha }}
+        run: python3 infra/deploy/package_release.py --sha "$SHA" --images "$RUNNER_TEMP/images" --output "$RUNNER_TEMP/release.tar"
+      - name: Deliver release through restricted SSH command
+        env:
+          FSP_DEPLOY_KEY: ${{ secrets.FSP_DEPLOY_KEY }}
+          FSP_KNOWN_HOSTS: ${{ secrets.FSP_KNOWN_HOSTS }}
+          FSP_SSH_HOST: ${{ vars.FSP_SSH_HOST }}
+          FSP_SSH_USER: ${{ vars.FSP_SSH_USER }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ steps.release.outputs.sha }}
+        run: |
+          set -euo pipefail
+          umask 077
+          [[ -n "$FSP_DEPLOY_KEY" && -n "$FSP_KNOWN_HOSTS" ]]
+          [[ "$FSP_SSH_HOST" =~ ^[a-zA-Z0-9.-]+$ && "$FSP_SSH_USER" =~ ^[a-zA-Z0-9_-]+$ ]]
+          key="$RUNNER_TEMP/fsp-key"
+          hosts="$RUNNER_TEMP/fsp-known-hosts"
+          trap 'rm -f "$key" "$hosts"' EXIT
+          printf '%s\n' "$FSP_DEPLOY_KEY" > "$key"
+          printf '%s\n' "$FSP_KNOWN_HOSTS" > "$hosts"
+          # Recheck after artifacts are downloaded to prevent a queued older run from replacing newer main.
+          [[ $(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha) == "$SHA" ]]
+          ssh -T -i "$key" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$hosts" -o ConnectTimeout=15 -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=10 "$FSP_SSH_USER@$FSP_SSH_HOST" < "$RUNNER_TEMP/release.tar"

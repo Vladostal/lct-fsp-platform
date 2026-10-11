@@ -12,7 +12,7 @@
 __pycache__/
 *.py[cod]
 .venv/
-backend/.venv/
+backend/.venv
 .mypy_cache/
 .ruff_cache/
 .pytest_cache/
@@ -48,6 +48,7 @@ frontend/.tanstack/
 # пакетов, отчёты в Markdown, диаграммы. Лежат на диске, в репозиторий не идут.
 # Тексты, нужные приложению (data/vacancies, тексты согласий), сюда не попадают.
 docs/**/*.md
+!docs/deployment/README.md
 docs/change-requests/
 *.drawio
 *.drawio.png

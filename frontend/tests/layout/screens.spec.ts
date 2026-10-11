@@ -552,7 +552,7 @@ test.describe('демо-вход: блок ведущего', () => {
       },
     })
     await page.goto('/demo')
-    await page.getByRole('button', { name: 'Для ведущего' }).click()
+    await page.locator('summary').filter({ hasText: 'Для ведущего' }).click()
 
     // Неверный ключ отклоняется сразу — по запросу часов, а не при первом действии.
     await page.getByLabel('Ключ ведущего').fill('wrong')
@@ -594,7 +594,9 @@ test.describe('сеанс', () => {
     await expect(page.getByRole('menu')).toContainText('anna@example.com')
     await page.getByRole('menuitem', { name: 'Выйти' }).click()
     await expect(page).toHaveURL(/\/$/)
-    await expect(page.getByRole('heading', { level: 1, name: /Платформа ИТ-специалистов, проверенных ФСП/ })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { level: 1, name: /Платформа ИТ-специалистов, проверенных ФСП/ }),
+    ).toBeVisible()
     await expect(page.getByText('Вы вышли из аккаунта')).toBeVisible()
   })
 

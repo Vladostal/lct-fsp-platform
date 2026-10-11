@@ -1,0 +1,98 @@
+# Самостоятельная конфигурация публичного стенда. Не объединять с compose.yml.
+name: fsp-platform
+x-backend: &backend
+  image: ${FSP_API_IMAGE:?release image required}
+  env_file: .env
+  volumes:
+    - ./docs/validation:/srv/docs/validation:ro
+    - ./data:/srv/data:ro
+  networks: [stand]
+  cpus: 1.0
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?database password required}
+      POSTGRES_DB: app
+    command: [postgres, -c, shared_buffers=64MB, -c, max_connections=30]
+    volumes: [db-data:/var/lib/postgresql]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U app -d app]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+    mem_limit: 384m
+    cpus: 0.75
+    restart: unless-stopped
+    networks: [stand]
+  migrate:
+    <<: *backend
+    command: [python, -m, app.scripts.init]
+    mem_limit: 1024m
+    restart: 'no'
+  api:
+    <<: *backend
+    command: [uvicorn, app.main:app, --host=0.0.0.0, --port=8000, --workers=1, --no-proxy-headers, --no-access-log]
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+    mem_limit: 768m
+    restart: unless-stopped
+  web:
+    image: ${FSP_WEB_IMAGE:?release image required}
+    environment:
+      NGINX_REAL_IP_FROM: ${NGINX_REAL_IP_FROM:?trusted TLS proxy required}
+      MAIL_UI_USER: ${MAIL_UI_USER:?mail user required}
+      MAIL_UI_PASSWORD: ${MAIL_UI_PASSWORD:?mail password required}
+      APP_NAME: ${APP_NAME:-ФСП.Подбор}
+      MAILPIT_PUBLIC_URL: /mail/
+    volumes:
+      - ./infra/nginx/default.conf:/etc/nginx/templates/default.conf.template:ro
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1/healthz]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    mem_limit: 64m
+    cpus: 0.5
+    restart: unless-stopped
+    networks: [stand]
+  mailpit:
+    image: axllent/mailpit:v1.31.4
+    environment:
+      MP_WEBROOT: /mail
+      MP_SMTP_AUTH_ACCEPT_ANY: '1'
+      MP_SMTP_AUTH_ALLOW_INSECURE: '1'
+      MP_MAX_MESSAGES: '500'
+    mem_limit: 64m
+    cpus: 0.25
+    restart: unless-stopped
+    networks: [stand]
+  caddy:
+    image: caddy:2.11.7-alpine
+    environment:
+      FSP_DOMAIN: ${FSP_DOMAIN:?domain required}
+    volumes:
+      - ./infra/deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - tls-data:/data
+      - tls-config:/config
+    ports: ['80:80', '443:443', '443:443/udp']
+    mem_limit: 128m
+    cpus: 0.5
+    restart: unless-stopped
+    networks:
+      stand:
+        ipv4_address: ${CADDY_IP:-172.28.8.2}
+volumes:
+  db-data:
+  tls-data:
+  tls-config:
+networks:
+  stand:
+    ipam:
+      config:
+        - subnet: ${STAND_SUBNET:-172.28.8.0/24}

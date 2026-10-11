@@ -213,7 +213,6 @@ export function DemoPage({ me, expired }: Props) {
 function HostBlock() {
   const [key, setKey] = useState(() => read(HOST_KEY_STORAGE, 'session'))
   const [draft, setDraft] = useState('')
-  const [open, setOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmReset, setConfirmReset] = useState(false)
   const clock = useDemoClock(Boolean(key), key)
@@ -255,16 +254,6 @@ function HostBlock() {
           } else bad(e)
         },
       },
-    )
-  }
-
-  if (!key && !open) {
-    return (
-      <p>
-        <Button type="button" variant="link" size="sm" onClick={() => setOpen(true)}>
-          {DEMO.host}
-        </Button>
-      </p>
     )
   }
 
