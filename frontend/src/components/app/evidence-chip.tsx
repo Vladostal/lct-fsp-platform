@@ -60,6 +60,8 @@ export function EvidenceChip({
   const kindLabel = label ?? EVIDENCE_LABELS[kind][audience]
   const fullText = skill ? `${skill} · ${kindLabel}` : kindLabel
   const labelVisible = size === 'md' && showLabel
+  // Пояснение, дословно повторяющее подпись чипа («заявлено кандидатом» — «Заявлено кандидатом»), не выводится.
+  const detailShown = Boolean(detail) && detail?.trim().toLowerCase() !== kindLabel.trim().toLowerCase()
 
   const chip = (
     <span
@@ -72,7 +74,7 @@ export function EvidenceChip({
           ? 'min-h-7 rounded-[14px] px-3 py-1 text-sm leading-5'
           : 'h-6 rounded-full px-2.5 text-xs leading-4',
         view.chip,
-        !detail && className,
+        !detailShown && className,
       )}
     >
       <Icon className={cn(size === 'md' ? 'size-4' : 'size-3.5', view.iconClass)} aria-hidden="true" />
@@ -98,7 +100,7 @@ export function EvidenceChip({
     </span>
   )
 
-  if (!detail) return chip
+  if (!detailShown) return chip
   return (
     <span className={cn('inline-flex max-w-full min-w-0 flex-wrap items-center gap-x-2 gap-y-1', className)}>
       {chip}

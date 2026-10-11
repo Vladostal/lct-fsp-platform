@@ -1,4 +1,4 @@
-import { expect, type Page, test } from '@playwright/test'
+import { expect, type Page, type Route, test } from '@playwright/test'
 import { apiError, CANDIDATE, EMPLOYER, json, type MockOptions, mockApi } from '../utils/api-mock'
 import { expectCleanLayout } from '../utils/layout'
 import { STRESS } from '../utils/stress'
@@ -307,35 +307,56 @@ test.describe('охрана маршрутов', () => {
     await expect(page).toHaveURL(/\/login\?next=%2Fcandidate%2Fcategory$/, { timeout: 15_000 })
     await expect(page.getByText('Сессия истекла. Войдите снова')).toBeVisible()
   })
+})
 
-  test('демо-приглашение запрашивается один раз за сессию браузера', async ({ page }) => {
-    let calls = 0
+test.describe('демо-вход: блок ведущего', () => {
+  test('ключ уходит с каждым запросом; сдвиг часов и сброс вызывают свои адреса', async ({ page }) => {
+    const KEY = 'host-key-for-tests'
+    const seen: string[] = []
+    let offset = 0
+    const clock = () => ({
+      now: new Date(Date.UTC(2026, 9, 9, 10) + offset * 1000).toISOString(),
+      offset_seconds: offset,
+    })
+    const guarded = (name: string, reply: (route: Route) => Promise<void> | void) => (route: Route) => {
+      if (route.request().headers()['x-admin-token'] !== KEY) return apiError(route, 403, 'forbidden')
+      seen.push(name)
+      return reply(route)
+    }
     await mockApi(page, {
-      me: CANDIDATE,
       handlers: {
-        'GET /candidate/invitations/summary': (route) =>
-          json(route, {
-            awaiting: 0,
-            accepted: 0,
-            archived: 0,
-            outcome_prompts: 0,
-            strikes: { count: 0, limit: 2 },
-            visibility: { state: 'visible', pause_reason: null, auto_paused_until: null },
-          }),
-        'POST /demo/invitation': (route) => {
-          calls += 1
-          return json(route, { sent: true })
-        },
+        'GET /demo/accounts': (route) => json(route, []),
+        'GET /demo/clock': guarded('clock', (route) => json(route, clock())),
+        'POST /demo/clock/advance': guarded('advance', (route) => {
+          offset += route.request().postDataJSON().hours * 3600
+          return json(route, clock())
+        }),
+        'POST /demo/reset': guarded('reset', (route) => json(route, { reset_at: clock().now })),
       },
     })
-    await page.goto('/candidate')
-    await expect(page.getByRole('heading', { level: 1, name: 'Обзор' })).toBeVisible()
-    await expect.poll(() => calls).toBe(1)
-    await page.reload()
-    await expect(page.getByRole('heading', { level: 1, name: 'Обзор' })).toBeVisible()
-    await page.goto('/candidate/category')
-    await expect(page.getByRole('heading', { level: 1, name: 'Категория и тесты' })).toBeVisible()
-    expect(calls).toBe(1)
+    await page.goto('/demo')
+    await page.getByRole('button', { name: 'Для ведущего' }).click()
+
+    // Неверный ключ отклоняется сразу — по запросу часов, а не при первом действии.
+    await page.getByLabel('Ключ ведущего').fill('wrong')
+    await page.getByRole('button', { name: 'Применить ключ' }).click()
+    await expect(page.getByText('Ключ не подошёл')).toBeVisible()
+    expect(seen).toEqual([])
+
+    await page.getByLabel('Ключ ведущего').fill(KEY)
+    await page.getByRole('button', { name: 'Применить ключ' }).click()
+    await expect(page.getByText(/Время сервиса:\s+9\s+окт/)).toBeVisible()
+    await expect(page.getByText('Ключ не подошёл')).toHaveCount(0)
+
+    await page.getByRole('button', { name: '+7 дней' }).click()
+    await expect(page.getByText(/Время сервиса:\s+16\s+окт/)).toBeVisible()
+
+    await page.getByRole('button', { name: 'Сбросить демо-данные' }).click()
+    const dialog = page.getByRole('alertdialog', { name: 'Сбросить демо-данные?' })
+    await dialog.getByRole('button', { name: 'Сбросить' }).click()
+    await expect(dialog).toBeHidden()
+    expect(seen).toContain('advance')
+    expect(seen).toContain('reset')
   })
 })
 

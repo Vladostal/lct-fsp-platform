@@ -7,10 +7,12 @@ export type ContributionBarsProps = {
   className?: string
 }
 
+const NO_PENALTY = 'без штрафа'
+
 /**
  * Вклады в оценку (E §3.3). Строка: подпись (до двух строк), полоса на треке fill (заливка brand-600,
  * длина points / max_points), справа mono «{points} из {max_points}». Отрицательный вклад (давность):
- * полосы нет, значение «−0,8». Строка `fsp` с нулём не рисуется (кандидат без истории ФСП не штрафуется).
+ * полосы нет, значение «−0,8» либо «без штрафа». Строка `fsp` с нулём не рисуется (кандидат без истории ФСП не штрафуется).
  * Раскладка зависит от ширины контейнера: в узком полоса уходит под подпись.
  */
 export function ContributionBars({ items, className }: ContributionBarsProps) {
@@ -22,7 +24,8 @@ export function ContributionBars({ items, className }: ContributionBarsProps) {
       {/* Одна сетка на все строки (subgrid): полосы и числа выровнены по общим колонкам. */}
       <dl className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-3 @md:grid-cols-[minmax(0,5fr)_minmax(0,4fr)_auto]">
         {rows.map((item) => {
-          const negative = item.points < 0
+          // Вклад-штраф (давность): максимум — ноль. Полосы у него нет; без штрафа пишем словами, а не «0 из 0».
+          const penaltyOnly = item.max_points <= 0
           const share = item.max_points > 0 ? Math.min(1, Math.max(0, item.points / item.max_points)) : 0
           return (
             <div
@@ -31,11 +34,13 @@ export function ContributionBars({ items, className }: ContributionBarsProps) {
             >
               <dt className="type-sm min-w-0 text-ink">{item.label}</dt>
               <dd className="num type-sm justify-self-end text-ink @md:order-3">
-                {negative
-                  ? formatDecimal(item.points)
+                {penaltyOnly
+                  ? item.points < 0
+                    ? formatDecimal(item.points)
+                    : NO_PENALTY
                   : `${formatDecimal(item.points)} из ${formatDecimal(item.max_points)}`}
               </dd>
-              {negative ? (
+              {penaltyOnly ? (
                 <span className="hidden @md:order-2 @md:block" aria-hidden="true" />
               ) : (
                 <span

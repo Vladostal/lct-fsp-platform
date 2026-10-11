@@ -112,7 +112,7 @@ web (nginx + SPA) ──/api──▶ api (FastAPI) ──▶ db (PostgreSQL 18)
 | Разбор текста | правила и словари (`textparse`), pymorphy3, rapidfuzz; языковая модель не используется |
 | PDF | pypdf и pdfplumber (чтение резюме), WeasyPrint (PDF-профиль) |
 | Фронт | React 19, TypeScript, Vite, TanStack Router и Query, Tailwind 4, клиент из OpenAPI (`@hey-api/openapi-ts`) |
-| Качество | ruff, mypy, import-linter, pytest, biome, Playwright (тесты вёрстки), GitHub Actions |
+| Качество | ruff, mypy, import-linter, pytest, biome, Playwright (вёрстка на перехвате запросов и сквозные на стенде) |
 
 ### Структура репозитория
 
@@ -127,7 +127,7 @@ backend/app/
   scripts/     # init (схема, банк, сид), export_openapi
   wiring.py    # единственное место подключения модулей (строки «модуль:атрибут», ленивая загрузка)
 backend/tests/ # зеркалит модули; своя база на каждый запуск pytest
-frontend/      # src/features/<домен>, src/routes, src/client (генерируется), tests/layout
+frontend/      # src/features/<домен>, src/routes, src/client (генерируется), tests/layout, tests/e2e
 docs/          # api/openapi.json, fsp-registry-openapi.json, validation/*/report.json
 infra/nginx/   # шаблон конфигурации nginx
 compose.yml, compose.dev.yml, Makefile, README.md
@@ -145,6 +145,10 @@ compose.yml, compose.dev.yml, Makefile, README.md
 - Тексты ошибок: клиент берёт свой по `code` (`frontend/src/content/errors.ts`), `message` сервера — запасной,
   но он обязан быть человеческим текстом, а не кодом.
 - Время берётся из `core.clock` (`now(db)` — время сервиса), SQL-функции времени в доменном коде запрещены.
+- Кого работодатель не видит вовсе, решает одна функция — `matching.evidence.blocked_for`: демо-работодатель видит
+  только демо-кандидатов, а кандидат из списка «не показывать компаниям» скрыт от домена почты работодателя.
+- Демо-сценарий привязан ко времени: приглашения `anna` и `ivan` живут 5–6 дней. Устаревший и никем не занятый
+  сценарий пересоздаёт фоновая задача `demo.service.refresh_scenario` (`DEMO_AUTO_RESTART`, по умолчанию включена).
 
 ### Отличия от первоначального плана
 
@@ -170,6 +174,10 @@ GigaChat и YandexGPT, Caddy. Модули называются иначе (`ide
   Оценка уровня — апостериорное распределение на сетке, наклон заданий один; сложность `b` — оценка автора.
 - **Правила грейда** (`engine/rules.py`): не подтвердил — тест на грейд ниже; подтвердил с запасом — на грейд выше;
   смена грейда раз в 90 дней; повтор того же грейда через 14 дней; не больше трёх сессий за 30 дней.
+- **Быстрый демо-тест** (только при `DEMO_MODE`, `POST /demo/assessment/quick-session`): 12 ответов из 14 подставлены.
+  Сессия помечена `demo_prefilled`, категория — `is_demo_result`. Подставленные ответы идут в зачёт только этой
+  сессии (`repo.window_items(include_prefilled=...)`): в результат обычного теста они не попадают никогда, паузу
+  «тот же грейд» такая сессия не даёт.
 - Доступен только Backend (junior, middle, senior); языковой модуль — только Python.
 - Валидация: `python -m app.eval.testing` → `docs/validation/testing/report.json`.
 
@@ -246,4 +254,5 @@ GigaChat и YandexGPT, Caddy. Модули называются иначе (`ide
 2. Вакансии с откликами и регулярные задания (желательная часть ТЗ).
 3. Сопроводительная документация и презентация в репозитории (`docs/**/*.md` исключены через `.gitignore`).
 4. Ручная разметка для валидации подбора и экспертная сверка сложности заданий.
-5. Миграции Alembic, адаптер настоящего Keycloak для ФСП ID, сквозные тесты Playwright (`tests/e2e`).
+5. Миграции Alembic, адаптер настоящего Keycloak для ФСП ID.
+6. Демо-приглашение живому кандидату от демо-компании и экран списка «не показывать компаниям» (есть только API).

@@ -11,6 +11,7 @@ import {
   PageHeader,
   StatusBadge,
 } from '@/components/app'
+import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -190,6 +191,7 @@ export function CategoryScreen({ catalog }: { catalog: Catalog | null }) {
               Тест от {formatDate(level.tested_at)} · подтверждено {formatAgo(level.last_evidence_at)}
             </p>
             {lastWeak ? <p className="type-sm min-w-0">{ASSESSMENT.category.kept}</p> : null}
+            {s.category.is_demo_result ? <Alert variant="info">{ASSESSMENT.category.demo}</Alert> : null}
           </>
         ) : (
           <EmptyState

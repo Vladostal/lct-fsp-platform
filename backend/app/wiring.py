@@ -88,6 +88,7 @@ PERIODIC: tuple[tuple[int, str], ...] = (
     (60, "app.modules.assessment.service:close_expired_sessions"),
     (3600, "app.modules.profile.service:purge_resume_results"),
     (600, "app.modules.demo.service:purge_clones"),
+    (600, "app.modules.demo.service:refresh_scenario"),
 )
 
 #: Обработчики удаления аккаунта `(db, user_id)`: вызываются до каскадного удаления строки `app_user`.
@@ -112,6 +113,7 @@ REQUIRES: dict[str, str] = {
     "app.modules.demo:ROUTERS": "demo",
     "app.modules.demo:on_startup": "demo",
     "app.modules.demo.service:purge_clones": "demo",
+    "app.modules.demo.service:refresh_scenario": "demo",
     "app.seed:seed_if_empty": "demo",
     "app.fsp_mock.generator:seed_if_empty": "fsp_mock",
     FSP_MOCK_APP: "fsp_mock",

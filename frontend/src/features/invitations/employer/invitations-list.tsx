@@ -33,6 +33,9 @@ const FILTERS: { value: EmployerFilter; label: string }[] = [
   { value: 'bounced', label: 'Не доставлены' },
 ]
 
+/** Суточный лимит от этого значения и выше — служебный (демо-компания): в подписи его не показываем. */
+const DAILY_LIMIT_SHOWN_BELOW = 1000
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="surface-card flex min-w-0 flex-col gap-3" aria-label={title}>
@@ -61,7 +64,8 @@ function Quota() {
       <Progress value={q.limit > 0 ? (q.used / q.limit) * 100 : 0} aria-label="Занятые слоты" />
       <p className="type-sm text-ink-muted">
         {q.next_release_at ? `Ближайший освободится ${formatDateTime(q.next_release_at)}. ` : ''}За сутки отправлено{' '}
-        {q.daily_used} из {q.daily_limit}
+        {/* У демо-компании суточного лимита по сути нет (10 000): «0 из 10000» только путает. */}
+        {q.daily_limit >= DAILY_LIMIT_SHOWN_BELOW ? q.daily_used : `${q.daily_used} из ${q.daily_limit}`}
       </p>
     </Section>
   )
@@ -223,7 +227,9 @@ export function EmployerInvitationsList({
                     </TableCell>
                     <TableCell className="max-w-64 align-top">
                       <p className="line-clamp-2 [overflow-wrap:anywhere]">{inv.title}</p>
-                      {inv.need ? <p className="type-sm truncate text-ink-muted">{inv.need.title}</p> : null}
+                      {inv.need && inv.need.title !== inv.title ? (
+                        <p className="type-sm truncate text-ink-muted">{inv.need.title}</p>
+                      ) : null}
                     </TableCell>
                     <TableCell className="align-top">
                       <SalaryRange from={inv.salary_from} to={inv.salary_to} size="sm" />

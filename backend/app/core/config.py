@@ -104,6 +104,9 @@ class Settings(BaseSettings):
     #: `None` — «по умолчанию»: включено везде, кроме `APP_ENV=production` (Арх. 10.3); итог — свойство `demo`.
     demo_mode: bool | None = None
     demo_public_restart: bool = True
+    #: Самовосстановление сценария: устаревший (истекли приглашения `anna` или `ivan`) и никем не используемый
+    #: сценарий пересоздаётся фоновой задачей — стенд, оставленный на несколько дней, остаётся пригодным к показу.
+    demo_auto_restart: bool = True
     demo_clone_per_ip_per_hour: int = 6
     demo_clone_max: int = 40
     demo_clone_ttl_hours: int = 24

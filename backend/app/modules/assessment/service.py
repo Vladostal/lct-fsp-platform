@@ -249,7 +249,18 @@ def seed_session_in_progress(db: Session, candidate_id: UUID, grade_code: str, a
     return _seeding.seed_session_in_progress(db, candidate_id, grade_code, answered, now)
 
 
+def start_quick_session(db: Session, candidate_id: UUID, grade_code: str, answered: int, now: datetime) -> UUID:
+    """Быстрый демо-тест живого кандидата (модуль `demo`): право на старт — как у обычного теста."""
+    return _seeding.start_quick_session(db, candidate_id, grade_code, answered, now)
+
+
+def active_session_count(db: Session, now: datetime) -> int:
+    """Число идущих тестов, время которых ещё не вышло (перед демо-сдвигом часов сервиса)."""
+    return _sessions.active_count(db, now)
+
+
 __all__ = [
+    "active_session_count",
     "blueprint_for",
     "close_expired_sessions",
     "get_categories",
@@ -264,5 +275,6 @@ __all__ = [
     "seed_result",
     "seed_session_in_progress",
     "skill_evidence",
+    "start_quick_session",
     "survey_declared",
 ]

@@ -15,7 +15,7 @@ from datetime import date, datetime
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
 
@@ -89,6 +89,18 @@ def demo_user_ids(db: Session, keys: Collection[str] | None = None) -> list[UUID
             return []
         statement = statement.where(AppUser.demo_key.in_(wanted))
     return list(db.scalars(statement.order_by(AppUser.created_at, AppUser.id)))
+
+
+def last_activity(db: Session, user_ids: Collection[UUID]) -> datetime | None:
+    """Самая поздняя отметка активности сессий этих пользователей (реальное время); `None` — сессий нет.
+
+    `auth_session.last_seen_at` обновляется не чаще раза в час (`core.security`), поэтому «активен прямо сейчас»
+    по ней не узнать. Узнать можно обратное: отметка старше N часов означает, что активности не было N − 1 час.
+    """
+    ids = list(user_ids)
+    if not ids:
+        return None
+    return db.scalar(select(func.max(AuthSession.last_seen_at)).where(AuthSession.user_id.in_(ids)))
 
 
 def _lock_user(db: Session, user_id: UUID) -> AppUser | None:

@@ -97,6 +97,8 @@ class StateCategory(CategoryRef):
     assigned_at: datetime
     change_available_at: datetime
     level_session_id: str
+    #: Категория получена быстрым демо-тестом: работодатель видит чип «демо», обычный тест на этот грейд её заменит.
+    is_demo_result: bool = False
 
 
 class ActiveSessionBrief(BaseModel):

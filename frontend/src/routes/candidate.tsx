@@ -21,9 +21,9 @@ export const Route = createFileRoute('/candidate')({
 
 /** Неизвестный адрес под /candidate: 404 внутри каркаса кабинета. */
 function CandidateNotFound() {
-  const { me, catalog } = Route.useRouteContext()
+  const { me } = Route.useRouteContext()
   return (
-    <CabinetFrame me={me} features={catalog?.features ?? null}>
+    <CabinetFrame me={me}>
       <NotFound homeHref="/candidate" />
     </CabinetFrame>
   )

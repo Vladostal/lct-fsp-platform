@@ -837,6 +837,22 @@ export type ClientInfo = {
 };
 
 /**
+ * ClockAdvance
+ *
+ * Сдвиг часов вперёд; `force` — сдвинуть, даже если есть идущие тесты (их время выйдет).
+ */
+export type ClockAdvance = {
+    /**
+     * Force
+     */
+    force?: boolean;
+    /**
+     * Hours
+     */
+    hours: number;
+};
+
+/**
  * CompanyMetric
  *
  * Показатель компании числами «{yes} из {n}» (P1); показывается при `n >= METRIC_MIN_N`.
@@ -1352,6 +1368,22 @@ export type DemoAccount = {
      * Title
      */
     title: string;
+};
+
+/**
+ * DemoClock
+ *
+ * Часы сервиса: текущее время сервиса и накопленный демо-сдвиг.
+ */
+export type DemoClock = {
+    /**
+     * Now
+     */
+    now: string;
+    /**
+     * Offset Seconds
+     */
+    offset_seconds: number;
 };
 
 /**
@@ -4221,6 +4253,28 @@ export type PublicationConsentRequest = {
 };
 
 /**
+ * QuickSessionRequest
+ *
+ * Быстрый демо-тест: грейд, на который кандидат начинает тест.
+ */
+export type QuickSessionRequest = {
+    /**
+     * Grade Code
+     */
+    grade_code: string;
+};
+
+/**
+ * QuickSessionResult
+ */
+export type QuickSessionResult = {
+    /**
+     * Session Id
+     */
+    session_id: string;
+};
+
+/**
  * QuotaView
  *
  * Слоты и суточный лимит работодателя.
@@ -4330,6 +4384,16 @@ export type RelaxationHint = {
      * Value
      */
     value?: string | null;
+};
+
+/**
+ * ResetResult
+ */
+export type ResetResult = {
+    /**
+     * Reset At
+     */
+    reset_at: string;
 };
 
 /**
@@ -5009,6 +5073,10 @@ export type StateCategory = {
      */
     code: string;
     grade: Ref;
+    /**
+     * Is Demo Result
+     */
+    is_demo_result?: boolean;
     /**
      * Level Session Id
      */
@@ -7406,6 +7474,113 @@ export type DemoListAccountsResponses = {
 
 export type DemoListAccountsResponse = DemoListAccountsResponses[keyof DemoListAccountsResponses];
 
+export type DemoQuickSessionData = {
+    body: QuickSessionRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/demo/assessment/quick-session';
+};
+
+export type DemoQuickSessionErrors = {
+    /**
+     * Нет действующей сессии
+     */
+    401: ApiError;
+    /**
+     * Чужая роль или действие запрещено
+     */
+    403: ApiError;
+    /**
+     * Объекта нет или он чужой
+     */
+    404: ApiError;
+    /**
+     * Действие противоречит текущему состоянию
+     */
+    409: ApiError;
+    /**
+     * Ошибки полей или правил
+     */
+    422: ApiError;
+};
+
+export type DemoQuickSessionError = DemoQuickSessionErrors[keyof DemoQuickSessionErrors];
+
+export type DemoQuickSessionResponses = {
+    /**
+     * Successful Response
+     */
+    200: QuickSessionResult;
+};
+
+export type DemoQuickSessionResponse = DemoQuickSessionResponses[keyof DemoQuickSessionResponses];
+
+export type DemoClockStateData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/demo/clock';
+};
+
+export type DemoClockStateErrors = {
+    /**
+     * Чужая роль или действие запрещено
+     */
+    403: ApiError;
+    /**
+     * Объекта нет или он чужой
+     */
+    404: ApiError;
+};
+
+export type DemoClockStateError = DemoClockStateErrors[keyof DemoClockStateErrors];
+
+export type DemoClockStateResponses = {
+    /**
+     * Successful Response
+     */
+    200: DemoClock;
+};
+
+export type DemoClockStateResponse = DemoClockStateResponses[keyof DemoClockStateResponses];
+
+export type DemoAdvanceClockData = {
+    body: ClockAdvance;
+    path?: never;
+    query?: never;
+    url: '/api/v1/demo/clock/advance';
+};
+
+export type DemoAdvanceClockErrors = {
+    /**
+     * Чужая роль или действие запрещено
+     */
+    403: ApiError;
+    /**
+     * Объекта нет или он чужой
+     */
+    404: ApiError;
+    /**
+     * Действие противоречит текущему состоянию
+     */
+    409: ApiError;
+    /**
+     * Ошибки полей или правил
+     */
+    422: ApiError;
+};
+
+export type DemoAdvanceClockError = DemoAdvanceClockErrors[keyof DemoAdvanceClockErrors];
+
+export type DemoAdvanceClockResponses = {
+    /**
+     * Successful Response
+     */
+    200: DemoClock;
+};
+
+export type DemoAdvanceClockResponse = DemoAdvanceClockResponses[keyof DemoAdvanceClockResponses];
+
 export type DemoDemoLoginData = {
     body: DemoLoginRequest;
     path?: never;
@@ -7434,6 +7609,39 @@ export type DemoDemoLoginResponses = {
 };
 
 export type DemoDemoLoginResponse = DemoDemoLoginResponses[keyof DemoDemoLoginResponses];
+
+export type DemoResetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/demo/reset';
+};
+
+export type DemoResetErrors = {
+    /**
+     * Чужая роль или действие запрещено
+     */
+    403: ApiError;
+    /**
+     * Объекта нет или он чужой
+     */
+    404: ApiError;
+    /**
+     * Сервис временно недоступен
+     */
+    503: ApiError;
+};
+
+export type DemoResetError = DemoResetErrors[keyof DemoResetErrors];
+
+export type DemoResetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResetResult;
+};
+
+export type DemoResetResponse = DemoResetResponses[keyof DemoResetResponses];
 
 export type DemoRestartData = {
     body?: never;

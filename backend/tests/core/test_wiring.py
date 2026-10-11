@@ -47,7 +47,7 @@ def test_all_lists_are_lazy_strings_for_every_module():
     specs = [*wiring.ROUTERS, *wiring.INIT_STEPS, *wiring.DEMO_HOOKS.values(), *wiring.USER_CLEANUP]
     specs += [spec for _, spec in wiring.PERIODIC] + [*wiring.PUBLIC_LIMITS, wiring.FSP_MOCK_APP]
     assert all(isinstance(spec, str) and spec.count(":") == 1 for spec in specs)
-    assert [seconds for seconds, _ in wiring.PERIODIC] == [30, 60, 3600, 600]
+    assert [seconds for seconds, _ in wiring.PERIODIC] == [30, 60, 3600, 600, 600]
     assert set(wiring.REQUIRES) <= set(specs) | set(wiring.STARTUP)
 
 
@@ -272,7 +272,10 @@ def test_demo_routers_exist_only_in_demo_mode(monkeypatch, override_settings):
 
 def test_flags_switch_periodic_tasks_and_fsp_mock(override_settings):
     override_settings(demo_mode=True)
-    assert len(wiring.periodic_tasks()) == 4
+    assert [task.name for task in wiring.periodic_tasks()][3:] == [
+        "demo.service:purge_clones",
+        "demo.service:refresh_scenario",
+    ]
     override_settings(demo_mode=False)
     assert [task.name for task in wiring.periodic_tasks()] == [
         "contact.service:settle_all",

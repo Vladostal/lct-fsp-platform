@@ -5,7 +5,8 @@
 
 Правило демо-стенда (поправка рецензии R3-tz-compliance-1): работодатель с `app_user.is_demo = true` видит только
 кандидатов с `app_user.is_demo = true`. Правило применяется здесь, в единственной точке входа в пул, поэтому
-действует сразу на подборку, банк, карточку и чтение сохранённых версий.
+действует сразу на подборку, банк, карточку и чтение сохранённых версий. Там же (`blocked_for`) учитывается
+список кандидата «не показывать компаниям».
 """
 
 from __future__ import annotations
@@ -84,7 +85,7 @@ class Pool:
     levels: dict[UUID, LevelDTO] = field(default_factory=dict)
     profiles: dict[UUID, PoolProfile] = field(default_factory=dict)
     signals: dict[UUID, FspSignal] = field(default_factory=dict)
-    #: Кандидаты, которых этот работодатель не видит по правилу демо-стенда.
+    #: Кандидаты, которых этот работодатель не видит: правило демо-стенда и «не показывать компаниям».
     demo_blocked: set[UUID] = field(default_factory=set)
 
     def visible(self) -> list[CandidateFeatures]:
@@ -137,6 +138,19 @@ def blocked_for_demo(db: Session, employer_id: UUID | None, candidate_ids: Colle
     return {cid for cid in candidate_ids if not (cid in users and users[cid].is_demo)}
 
 
+def blocked_for(db: Session, employer_id: UUID | None, candidate_ids: Collection[UUID]) -> set[UUID]:
+    """Кого из кандидатов этот работодатель не видит вовсе — ни в подборке, ни в банке, ни в карточке.
+
+    Два правила: демо-стенд (`blocked_for_demo`) и список кандидата «не показывать компаниям» — домен почты
+    работодателя в `hidden_domains` (Арх. 10.4). Второе правило `contact` приравнивает к паузе показа при отправке
+    приглашения; здесь оно действует так же, иначе кандидат оставался бы в выдаче у тех, от кого он закрылся.
+    """
+    if employer_id is None or not candidate_ids:
+        return set()
+    ids = list(candidate_ids)
+    return blocked_for_demo(db, employer_id, ids) | profile.hidden_from_employer(db, employer_id, ids)
+
+
 def subjects_for(levels: Mapping[UUID, LevelDTO], profiles: Mapping[UUID, PoolProfile]) -> list[FspSubject]:
     return [
         FspSubject(
@@ -178,7 +192,7 @@ def load_pool(
     pool.levels = {item.candidate_id: item for item in levels}
     if not pool.levels:
         return pool
-    pool.demo_blocked = blocked_for_demo(db, employer_id, list(pool.levels))
+    pool.demo_blocked = blocked_for(db, employer_id, list(pool.levels))
     for cid in pool.demo_blocked:
         del pool.levels[cid]
     ids = list(pool.levels)

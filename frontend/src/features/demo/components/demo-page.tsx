@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import type { MeView } from '@/client'
 import { ErrorState, ExternalLink, PageHeader } from '@/components/app'
@@ -211,6 +211,7 @@ function HostBlock() {
   const clock = useDemoClock(Boolean(key), key)
   const advance = useAdvanceClock(key)
   const reset = useResetDemo(key)
+  const queryClient = useQueryClient()
 
   const bad = (e: unknown) => {
     if (hasStatus(e, 403) || hasStatus(e, 401)) {
@@ -219,6 +220,17 @@ function HostBlock() {
       write(HOST_KEY_STORAGE, null, 'session')
     } else setError(errorMessage(e))
   }
+
+  // Неверный ключ виден сразу, по запросу часов, а не только при первом действии.
+  const clockError = clock.error
+  useEffect(() => {
+    if (!clockError) return
+    if (hasStatus(clockError, 403) || hasStatus(clockError, 401)) {
+      setError(DEMO.hostBad)
+      setKey('')
+      write(HOST_KEY_STORAGE, null, 'session')
+    } else setError(errorMessage(clockError))
+  }, [clockError])
 
   const shift = (hours: number, force = false) => {
     setError(null)
@@ -264,6 +276,7 @@ function HostBlock() {
           onSubmit={(e) => {
             e.preventDefault()
             if (!draft.trim()) return
+            setError(null)
             write(HOST_KEY_STORAGE, draft.trim(), 'session')
             setKey(draft.trim())
             setDraft('')
@@ -330,6 +343,8 @@ function HostBlock() {
                   onSuccess: () => {
                     setConfirmReset(false)
                     toast.success(DEMO.resetDone)
+                    // Демо-аккаунты пересозданы: список и всё, что открыто под демо-сессией, устарело.
+                    void queryClient.invalidateQueries()
                   },
                   onError: (e) => {
                     setConfirmReset(false)

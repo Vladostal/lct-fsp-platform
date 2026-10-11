@@ -48,7 +48,7 @@ export function BlockerPanel({ code, message, params, needId }: BlockerPanelProp
       </Button>
     ) : (
       <Button asChild variant="primary">
-        <Link to="/employer/needs">К подборке</Link>
+        <Link to="/employer/search">К банку кандидатов</Link>
       </Button>
     )
   return (
