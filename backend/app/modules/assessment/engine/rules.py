@@ -32,6 +32,8 @@ class SessionFact:
     specialization: str
     started_at: datetime
     finished_at: datetime | None
+    #: Быстрый демо-тест: часть ответов подставлена сервисом. В лимит сессий входит, паузу «тот же грейд» не даёт.
+    prefilled: bool = False
 
 
 @dataclass(frozen=True)
@@ -83,6 +85,8 @@ def can_start(ctx: StartContext, grade: str, now: datetime, cfg: AssessmentConfi
     3. За 30 дней начато `MAX_SESSIONS_PER_30D` сессий → 409 `cooldown_active`, `reason = session_limit`.
     4. Последняя сессия на `g` закрыта меньше `RETRY_SAME_GRADE_DAYS` назад → `reason = retry_same_grade`.
        Не применяется, если категории нет и `g` — нижний грейд: иначе у кандидата не остаётся ни одного действия.
+       Быстрый демо-тест (`prefilled`) паузу не даёт: после него обычный тест на тот же грейд доступен сразу,
+       а его подставленные ответы в обычном тесте не учитываются.
     5а. Категории нет: разрешён `g = claimed_grade`; после первой закрытой сессии — любой `g ≤ claimed_grade`.
     5б. Категория на `G`, `g = G` — разрешено.
     5в. `g = G + 1`: `now ≥ change_available_at` или быстрый шаг — `verdict = confirmed_with_margin`,
@@ -109,7 +113,7 @@ def can_start(ctx: StartContext, grade: str, now: datetime, cfg: AssessmentConfi
     own = [s for s in ctx.sessions if s.specialization == ctx.specialization]
     closed = [s for s in own if s.finished_at is not None]
     lowest = ctx.category is None and grade == GRADES[0]
-    same = [s.finished_at for s in closed if s.grade == grade and s.finished_at is not None]
+    same = [s.finished_at for s in closed if s.grade == grade and s.finished_at is not None and not s.prefilled]
     if same and not lowest:
         available_at = max(same) + timedelta(days=cfg.retry_same_grade_days)
         if now < available_at:

@@ -24,7 +24,7 @@ from app.modules.assessment import blueprints, grading, labels, repo
 from app.modules.assessment.config import GRADES, get_config
 from app.modules.assessment.dto import TestItemView
 from app.modules.assessment.engine import assemble, rules
-from app.modules.assessment.engine.decide import checkpoint, decide, final_outcome
+from app.modules.assessment.engine.decide import CONFIRMING, checkpoint, decide, final_outcome
 from app.modules.assessment.engine.model import Posterior, estimate
 from app.modules.assessment.engine.skills import SkillAnswer, group_verdicts
 from app.modules.assessment.groups import TESTED_SPECIALIZATIONS
@@ -52,7 +52,7 @@ from app.shared.enums import (
 )
 
 #: Пометка сессии, часть ответов которой подставлена (быстрый демо-тест и сид, Арх. 13.5).
-FLAG_PREFILLED = "demo_prefilled"
+FLAG_PREFILLED = repo.PREFILLED_FLAG
 #: Пометка: языковой модуль не выдан, слоты `lang` ушли в группу `code` (Арх. 5.2).
 FLAG_NO_LANG = "lang_module_missing"
 #: Пометка задания: ответ дан быстрее `FAST_FACTOR` расчётного времени уровня — условие за это время не прочитать.
@@ -161,6 +161,7 @@ def start_context(db: Session, candidate_id: UUID) -> rules.StartContext:
                 specialization=row.specialization_code,
                 started_at=row.started_at,
                 finished_at=row.finished_at if row.status != SessionStatus.IN_PROGRESS.value else None,
+                prefilled=bool(row.flags.get(FLAG_PREFILLED)),
             )
             for row in rows
         ),
@@ -181,9 +182,15 @@ def start_error(decision: rules.StartDecision) -> ApiException:
     return ApiException(decision.status, code, labels.ERROR_MESSAGES.get(code), params=params or None)
 
 
-def window_posterior(db: Session, candidate_id: UUID, specialization: str, now: datetime) -> Posterior:
-    """Оценка уровня по всем учтённым ответам окна в специализации (Арх. 5.5)."""
-    return estimate(repo.responses(repo.window_items(db, candidate_id, specialization, now)))
+def window_posterior(
+    db: Session, candidate_id: UUID, specialization: str, now: datetime, *, include_prefilled: bool
+) -> Posterior:
+    """Оценка уровня по всем учтённым ответам окна в специализации (Арх. 5.5).
+
+    `include_prefilled` — учитывать ли подставленные ответы быстрого демо-теста (см. `repo.window_items`).
+    """
+    items = repo.window_items(db, candidate_id, specialization, now, include_prefilled=include_prefilled)
+    return estimate(repo.responses(items))
 
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -347,8 +354,13 @@ def create_session(
     return session
 
 
-def start_session(db: Session, candidate_id: UUID, grade: str, now: datetime) -> SessionRow:
-    """`POST /assessment/sessions`: проверить право (`can_start`, Арх. 5.7) и начать тест."""
+def start_session(
+    db: Session, candidate_id: UUID, grade: str, now: datetime, *, flags: Mapping[str, Any] | None = None
+) -> SessionRow:
+    """`POST /assessment/sessions`: проверить право (`can_start`, Арх. 5.7) и начать тест.
+
+    `flags` — пометки новой сессии (быстрый демо-тест передаёт `demo_prefilled`); право на старт от них не зависит.
+    """
     close_expired_for(db, candidate_id, now)
     ctx = start_context(db, candidate_id)
     decision = rules.can_start(ctx, grade, now)
@@ -358,7 +370,7 @@ def start_session(db: Session, candidate_id: UUID, grade: str, now: datetime) ->
     assert profile is not None and decision.kind is not None
     if not catalog.is_available(profile.specialization_code, grade):
         raise ApiException(422, "grade_unavailable", "Тест на этот грейд пока недоступен")
-    return create_session(db, profile, grade, decision.kind.value, now)
+    return create_session(db, profile, grade, decision.kind.value, now, flags=flags)
 
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -453,10 +465,12 @@ def submit_answer(
         current.answer = dict(answer)
     current.answered_at = now
     current.idempotency_key = idempotency_key
+    prefilled = bool(session.flags.get(FLAG_PREFILLED))
     current.client = dict(client) if client else None
     if current.shown_at is not None:
         current.time_spent_ms_server = max(0, int((now - current.shown_at).total_seconds() * 1000))
-        if current.status == ItemStatus.ANSWERED.value and _is_fast(db, current, cfg.fast_factor):
+        # В быстром демо-тесте ответы подставляет сервис: их «скорость» не признак утечки и в сводку банка не идёт.
+        if current.status == ItemStatus.ANSWERED.value and not prefilled and _is_fast(db, current, cfg.fast_factor):
             current.flags = [*current.flags, ITEM_FLAG_FAST]
     session.items_answered += 1
 
@@ -467,7 +481,7 @@ def submit_answer(
         return session
 
     db.flush()
-    post = window_posterior(db, candidate_id, session.specialization_code, now)
+    post = window_posterior(db, candidate_id, session.specialization_code, now, include_prefilled=prefilled)
     if checkpoint(decide(post, session.target_grade), session.stage):
         try:
             slots = assemble.assemble_ext(
@@ -545,8 +559,12 @@ def finalize(db: Session, session: SessionRow, now: datetime, *, by_time: bool) 
     session.finished_at = finished_at
     db.flush()
 
-    # Окно считается от момента закрытия: ответы просроченной сессии остаются её ответами.
-    counted = repo.window_items(db, session.candidate_id, session.specialization_code, finished_at)
+    # Окно считается от момента закрытия: ответы просроченной сессии остаются её ответами. Подставленные ответы
+    # быстрого демо-теста идут в зачёт только самой демо-сессии, в результат обычного теста — никогда.
+    prefilled = bool(session.flags.get(FLAG_PREFILLED))
+    counted = repo.window_items(
+        db, session.candidate_id, session.specialization_code, finished_at, include_prefilled=prefilled
+    )
     post = estimate(repo.responses(counted))
     decision = decide(post, session.target_grade)
     outcome = final_outcome(decision, has_not_shown=has_not_shown)
@@ -562,7 +580,6 @@ def finalize(db: Session, session: SessionRow, now: datetime, *, by_time: bool) 
     foreign = row is not None and row.specialization_code != session.specialization_code
     state = category_state(row, session.specialization_code)
     update = rules.apply_result(state, session.target_grade, outcome, post, finished_at)
-    prefilled = bool(session.flags.get(FLAG_PREFILLED))
     ref_grade = session.target_grade
     if update is not None:
         ref_grade = update.grade
@@ -575,8 +592,10 @@ def finalize(db: Session, session: SessionRow, now: datetime, *, by_time: bool) 
         elif update.change_kind is not None:
             row.is_demo_result = prefilled
         else:
-            # Обычный тест на тот же грейд снимает пометку демо-результата; подставленные ответы её сохраняют.
-            row.is_demo_result = bool(row.is_demo_result) and prefilled
+            # Пометку демо-результата снимает только обычный тест, который грейд подтвердил. Неудачная обычная
+            # попытка её не трогает: иначе категория, полученная подставленными ответами, стала бы «настоящей»,
+            # хотя кандидат её ни разу не подтвердил.
+            row.is_demo_result = bool(row.is_demo_result) and (prefilled or outcome not in CONFIRMING)
         row.specialization_code = session.specialization_code
         row.grade_code = update.grade
         # Тест заменяет и заявленную категорию другой специализации: строка становится подтверждённой.
@@ -655,6 +674,14 @@ def close_expired_for(db: Session, candidate_id: UUID, now: datetime) -> None:
     )
     for session in db.scalars(stmt):
         finalize(db, session, now, by_time=True)
+
+
+def active_count(db: Session, now: datetime) -> int:
+    """Число идущих тестов, время которых ещё не вышло: их закроет сдвиг часов сервиса."""
+    stmt = select(SessionRow.id).where(
+        SessionRow.status == SessionStatus.IN_PROGRESS.value, SessionRow.expires_at >= now
+    )
+    return len(db.scalars(stmt).all())
 
 
 def close_expired(db: Session, now: datetime) -> int:

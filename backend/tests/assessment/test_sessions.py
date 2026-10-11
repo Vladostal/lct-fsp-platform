@@ -377,6 +377,13 @@ def test_seed_session_in_progress_marks_demo_result(db: Session, make_user: Call
     done = play(db, nina, session, lambda n, item: False)
     assert done.outcome in ("confirmed", "confirmed_with_margin")
     assert service.get_category(db, nina.id).is_demo_result is True
+    # Обычный тест на тот же грейд доступен сразу. Неудачная попытка пометку демо не снимает, подтвердившая — снимает.
+    later = T0 + timedelta(hours=1)
+    weak = play(db, nina, sessions.start_session(db, nina.id, "middle", later), lambda n, item: False, now=later)
+    assert weak.outcome == "not_confirmed" and service.get_category(db, nina.id).is_demo_result is True
+    retry = later + timedelta(days=15)
+    strong = play(db, nina, sessions.start_session(db, nina.id, "middle", retry), lambda n, item: True, now=retry)
+    assert strong.outcome in ("confirmed", "confirmed_with_margin") and service.get_category(db, nina.id).is_demo_result is False
     # Быстрый демо-тест живого кандидата подчиняется can_start.
     user = candidate_ready("junior")
     service.seed_session_in_progress(db, user.id, "junior", 12, T0)

@@ -1,4 +1,5 @@
-"""Эндпоинты `/demo/*` (Арх. 9.10, 13.5): список демо-аккаунтов, вход «как…», перезапуск сценария.
+"""Эндпоинты `/demo/*` (Арх. 9.10, 13.5): демо-аккаунты, вход «как…», перезапуск сценария, быстрый демо-тест,
+часы сервиса и сброс демо-данных (последние два — только с `X-Admin-Token`).
 
 Без `DEMO_MODE` роутер отвечает 404 `feature_disabled` (зависимость `require_feature("demo")`; при выключенном
 флаге `app.wiring` его не подключает вовсе).
@@ -11,10 +12,20 @@ from fastapi import APIRouter, Depends, Request, Response
 from app.core import security
 from app.core.config import get_settings
 from app.core.db import TxRoute
-from app.core.deps import ClientIp, Db, Now, OptionalUser, is_admin, require_feature
+from app.core.deps import Admin, Candidate, ClientIp, Db, Now, OptionalUser, is_admin, require_feature
 from app.core.errors import ApiException, error_responses
 from app.modules.demo import service
-from app.modules.demo.dto import DemoAccount, DemoLoginRequest, DemoMe, RestartResult
+from app.modules.demo.dto import (
+    ClockAdvance,
+    DemoAccount,
+    DemoClock,
+    DemoLoginRequest,
+    DemoMe,
+    QuickSessionRequest,
+    QuickSessionResult,
+    ResetResult,
+    RestartResult,
+)
 from app.modules.identity import service as identity
 
 router = APIRouter(route_class=TxRoute, dependencies=[Depends(require_feature("demo"))])
@@ -71,3 +82,55 @@ def restart(request: Request, db: Db, now: Now, user: OptionalUser, ip: ClientIp
     db.commit()
     service.restart_scenario()
     return RestartResult(restarted_at=now)
+
+
+@router.post(
+    "/demo/assessment/quick-session",
+    response_model=QuickSessionResult,
+    responses=error_responses(401, 403, 404, 409, 422),
+    summary="Быстрый демо-тест: 12 ответов из 14 подставлены",
+)
+def quick_session(body: QuickSessionRequest, user: Candidate, db: Db, now: Now) -> QuickSessionResult:
+    """Начать тест, в котором кандидат отвечает только на последние задания; результат помечается как демо.
+
+    Право на старт — как у обычного теста. 409: `session_active`, `cooldown_active`, `survey_required`,
+    `claim_required`; 422: `grade_not_allowed`, `grade_unavailable`.
+    """
+    return QuickSessionResult(session_id=service.quick_session(db, user.id, body.grade_code, now))
+
+
+@router.get(
+    "/demo/clock",
+    response_model=DemoClock,
+    responses=error_responses(403, 404),
+    summary="Часы сервиса: время и демо-сдвиг",
+)
+def clock_state(_: Admin, db: Db) -> DemoClock:
+    return service.clock_state(db)
+
+
+@router.post(
+    "/demo/clock/advance",
+    response_model=DemoClock,
+    responses=error_responses(403, 404, 409, 422),
+    summary="Сдвинуть время сервиса вперёд",
+)
+def advance_clock(body: ClockAdvance, _: Admin, db: Db) -> DemoClock:
+    """Показ истечения сроков: приглашения, паузы теста. Только вперёд; 409 `sessions_in_progress` — идут тесты,
+    их время выйдет (повтор с `force = true` сдвигает всё равно). Сессии входа сдвиг не затрагивает.
+    """
+    return service.advance_clock(db, body.hours, force=body.force)
+
+
+@router.post(
+    "/demo/reset",
+    response_model=ResetResult,
+    responses=error_responses(403, 404, 503),
+    summary="Сбросить демо-данные",
+)
+def reset(_: Admin, db: Db, now: Now) -> ResetResult:
+    """Удалить все демо-аккаунты с их данными и создать сид заново. Живых пользователей не трогает."""
+    # Сид пишет в своих транзакциях: свою сначала фиксируем (как при перезапуске сценария).
+    db.commit()
+    service.reset_all()
+    return ResetResult(reset_at=now)

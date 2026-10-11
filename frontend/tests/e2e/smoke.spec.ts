@@ -5,7 +5,7 @@
  * Тесты только читают состояние демо-аккаунтов: порядок запуска и повторные прогоны ничего не ломают.
  * Сессии готовит `tests/auth.setup.ts`.
  */
-import { expect, test } from '@playwright/test'
+import { expect, type Page, test } from '@playwright/test'
 import { authFile } from '../utils/demo-accounts'
 
 type ShortlistItem = {
@@ -160,6 +160,55 @@ test.describe('кандидат с приглашением', () => {
   })
 })
 
+/** Ширина документа на телефоне: шире экрана — значит, что-то не переносится и страница уезжает вбок. */
+async function expectFitsPhone(page: Page, path: string) {
+  await page.goto(path)
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  await page.waitForLoadState('networkidle')
+  const width = await page.evaluate(() => document.documentElement.scrollWidth)
+  expect(width, `${path}: ширина документа`).toBeLessThanOrEqual(PHONE.width)
+}
+
+const PHONE = { width: 375, height: 812 }
+
+test.describe('телефон 375 px: кабинет кандидата', () => {
+  test.use({ storageState: authFile('anna'), viewport: PHONE })
+
+  test('страницы с живыми данными не шире экрана', async ({ page }) => {
+    // Профиль — с «ориентиром рынка»: строка с вилкой однажды растягивала страницу до 437 px.
+    for (const path of [
+      '/candidate',
+      '/candidate/profile',
+      '/candidate/category',
+      '/candidate/invitations',
+      '/candidate/settings/privacy',
+      '/candidate/settings/fsp',
+    ]) {
+      await expectFitsPhone(page, path)
+    }
+    await page.goto('/candidate/profile')
+    await expect(page.getByTestId('salary-hint')).toContainText('Ориентир рынка')
+  })
+})
+
+test.describe('телефон 375 px: кабинет работодателя', () => {
+  test.use({ storageState: authFile('orbita'), viewport: PHONE })
+
+  test('страницы с живыми данными не шире экрана', async ({ page }) => {
+    const needs = await (await page.request.get('/api/v1/employer/needs')).json()
+    for (const path of [
+      '/employer/needs',
+      `/employer/needs/${needs[0].id}`,
+      '/employer/search',
+      '/employer/invitations',
+      '/employer/company',
+      '/employer/needs/new',
+    ]) {
+      await expectFitsPhone(page, path)
+    }
+  })
+})
+
 test.describe('без входа', () => {
   test('страница «Как это работает» показывает числа отчётов валидации', async ({ page }) => {
     await page.goto('/how-it-works')
@@ -167,6 +216,20 @@ test.describe('без входа', () => {
     await expect(page.getByText('Точность первой десятки: наш порядок')).toBeVisible()
     const summary = await (await page.request.get('/api/v1/validation/summary')).json()
     expect(summary.matching.p10_ours).toBeGreaterThan(summary.matching.p10_declared)
+  })
+
+  test('блок ведущего: неверный ключ виден сразу, часы и сброс без ключа закрыты', async ({ page }) => {
+    await page.goto('/demo')
+    await page.getByRole('button', { name: 'Для ведущего' }).click()
+    await page.getByLabel('Ключ ведущего').fill('not-the-key')
+    await page.getByRole('button', { name: 'Применить ключ' }).click()
+    await expect(page.getByText('Ключ не подошёл')).toBeVisible()
+    await expect(page.getByRole('button', { name: '+1 день' })).toHaveCount(0)
+
+    for (const path of ['/api/v1/demo/clock/advance', '/api/v1/demo/reset']) {
+      const reply = await page.request.post(path, { data: { hours: 24 } })
+      expect(reply.status(), path).toBe(403)
+    }
   })
 
   test('кабинет без сессии уводит на вход', async ({ page }) => {

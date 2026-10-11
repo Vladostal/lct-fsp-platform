@@ -20,6 +20,7 @@ from app.modules.matching.dto import ShortlistQuery, ShortlistRefinement
 from app.modules.matching.models import ExposureEvent, Need, ShortlistItem, ShortlistSnapshot
 from app.modules.matching.schemas import ShortlistSnapshotView, SnapshotDiffView
 from app.modules.profile.dto import PrivacySettingsDTO
+from app.modules.profile.models import PrivacySettings
 from app.shared.enums import CategoryBasis, VisibilityState, WorkFormat
 
 API = "/api/v1"
@@ -583,6 +584,29 @@ def test_demo_employer_sees_only_demo_candidates(
     real_employer = make_user("employer")
     real = login_as(real_employer, client=None)
     assert real.get(f"{API}/employer/candidates").json()["total"] == 2
+
+
+def test_hidden_domain_hides_candidate_from_that_employer(
+    world: Any, db: Session, make_user: Callable[..., Any], login_as: Callable[..., TestClient]
+) -> None:
+    """«Не показывать компаниям» (Арх. 10.4): работодатель со скрытым доменом почты не видит кандидата нигде."""
+    closed_for = make_user("employer", email="hr@hidden-corp.example")
+    shy = world.add(theta=2.5, test={"python": True, "postgresql": True})
+    plain = world.add(theta=1.0, test={"python": True})
+    db.add(PrivacySettings(user_id=shy.id, hidden_domains=["hidden-corp.example"], updated_at=clock.now(db)))
+    db.flush()
+    api = login_as(closed_for)
+    need_id = make_need(db, world, closed_for.id)
+    view = api.post(f"{API}/employer/needs/{need_id}/shortlists").json()
+    assert [row["candidate_id"] for row in view["items"]] == [str(plain.id)]
+    bank = api.get(f"{API}/employer/candidates").json()
+    assert [row["candidate_id"] for row in bank["items"]] == [str(plain.id)] and bank["total"] == 1
+    assert api.get(f"{API}/employer/candidates/{shy.id}").status_code == 404
+    assert shy.public_code not in api.get(f"{API}/employer/shortlists/{view['id']}").text
+
+    other = login_as(make_user("employer", email="hr@open-corp.example"), client=None)
+    assert other.get(f"{API}/employer/candidates").json()["total"] == 2
+    assert other.get(f"{API}/employer/candidates/{shy.id}").status_code == 200
 
 
 def test_pdf_requires_disclosure(api: TestClient, world: Any, db: Session, employer: Any) -> None:

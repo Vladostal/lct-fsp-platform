@@ -236,7 +236,10 @@ def actions(db: Session, candidate_id: UUID, now: datetime) -> list[NextAction]:
     if ctx.specialization is None or sessions.declared_allowed(ctx.specialization):
         # Теста по специализации нет: действий с тестом тоже нет, грейд заявляется (`put_claim`).
         return []
-    post = sessions.window_posterior(db, candidate_id, ctx.specialization, now)
+    # Подставленные ответы быстрого демо-теста учитываются, только пока действующая категория получена им же.
+    category = repo.category(db, candidate_id)
+    demo_category = bool(category is not None and category.is_demo_result)
+    post = sessions.window_posterior(db, candidate_id, ctx.specialization, now, include_prefilled=demo_category)
     result = []
     for action in rules.next_actions(ctx, now, post.p_ge):
         open_now = action.available and catalog.is_available(ctx.specialization, action.grade)
@@ -286,6 +289,7 @@ def state_view(db: Session, candidate_id: UUID, now: datetime) -> AssessmentStat
                 assigned_at=category.assigned_at,
                 change_available_at=category.change_available_at,
                 level_session_id=str(category.level_session_id) if category.level_session_id else None,
+                is_demo_result=bool(category.is_demo_result),
             )
             if category
             else None

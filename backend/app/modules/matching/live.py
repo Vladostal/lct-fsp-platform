@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 from app.core import clock
 from app.modules.fsp import service as fsp
 from app.modules.fsp.dto import FspSignal, FspSubject
-from app.modules.matching.evidence import blocked_for_demo
+from app.modules.matching.evidence import blocked_for
 from app.modules.matching.explain import MatchExplanation, ReadRules, apply_read_rules
 from app.modules.profile import service as profile
 from app.modules.profile.dto import PoolProfile
@@ -83,7 +83,7 @@ def load_live(
     ids = list(specializations)
     if not ids:
         return Live()
-    live = Live(blocked=blocked_for_demo(db, employer_id, ids))
+    live = Live(blocked=blocked_for(db, employer_id, ids))
     live.profiles = profile.pool_view(db, ids, now)
     present = [cid for cid in ids if cid in live.profiles and cid not in live.blocked]
     if not present:

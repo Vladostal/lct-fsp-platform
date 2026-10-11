@@ -34,6 +34,9 @@ log = logging.getLogger("app.assessment")
 
 #: Статусы заданий, ответы на которые учитываются в оценке (Арх. 5.5): отвечено, пропущено, показано без ответа.
 COUNTED: tuple[str, ...] = (ItemStatus.ANSWERED.value, ItemStatus.SKIPPED.value, ItemStatus.UNREACHED.value)
+
+#: Пометка сессии, часть ответов которой подставлена сервисом (быстрый демо-тест и сид, Арх. 13.5).
+PREFILLED_FLAG = "demo_prefilled"
 #: Семейства, из которых собираются формы: `suspect` продолжает выдаваться, `quarantined` и `retired` — нет.
 SERVED_STATUSES: tuple[str, ...] = (FamilyStatus.ACTIVE.value, FamilyStatus.SUSPECT.value)
 
@@ -115,8 +118,15 @@ def sessions(db: Session, candidate_id: UUID) -> list[SessionRow]:
     return list(db.scalars(stmt))
 
 
-def window_items(db: Session, candidate_id: UUID, specialization: str, now: datetime) -> list[SessionItemRow]:
-    """Учтённые ответы кандидата в специализации за `EVIDENCE_WINDOW_DAYS`, включая текущую сессию (Арх. 5.5)."""
+def window_items(
+    db: Session, candidate_id: UUID, specialization: str, now: datetime, *, include_prefilled: bool
+) -> list[SessionItemRow]:
+    """Учтённые ответы кандидата в специализации за `EVIDENCE_WINDOW_DAYS`, включая текущую сессию (Арх. 5.5).
+
+    `include_prefilled = False` — без сессий с подставленными ответами (быстрый демо-тест): так считается всё,
+    что относится к обычному тесту. Иначе двенадцать «верных» ответов, которых кандидат не давал, перешли бы
+    в результат его следующего настоящего теста. Сама демо-сессия считается со своими подставленными ответами.
+    """
     since = now - timedelta(days=get_config().evidence_window_days)
     stmt = (
         select(SessionItemRow)
@@ -129,6 +139,8 @@ def window_items(db: Session, candidate_id: UUID, specialization: str, now: date
         )
         .order_by(SessionRow.started_at, SessionItemRow.position)
     )
+    if not include_prefilled:
+        stmt = stmt.where(~SessionRow.flags.contains({PREFILLED_FLAG: True}))
     return list(db.scalars(stmt))
 
 

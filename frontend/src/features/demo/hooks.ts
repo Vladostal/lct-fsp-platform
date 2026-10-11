@@ -26,7 +26,7 @@ export function useRestartScenario() {
 export function useDemoClock(enabled: boolean, hostKey: string) {
   return useQuery({
     queryKey: ['demo', 'clock', hostKey],
-    queryFn: ({ signal }) => api.get<DemoClock>('/demo/clock', { signal }),
+    queryFn: ({ signal }) => api.get<DemoClock>('/demo/clock', { signal, headers: { 'X-Admin-Token': hostKey } }),
     enabled,
     retry: false,
   })
@@ -41,6 +41,7 @@ export function useAdvanceClock(hostKey: string) {
 
 export function useResetDemo(hostKey: string) {
   return useMutation({
-    mutationFn: () => api.post('/demo/reset', undefined, { headers: { 'X-Admin-Token': hostKey } }),
+    mutationFn: () =>
+      api.post<{ reset_at: string }>('/demo/reset', undefined, { headers: { 'X-Admin-Token': hostKey } }),
   })
 }

@@ -7,9 +7,9 @@ export const Route = createFileRoute('/candidate/_cabinet')({
 })
 
 function CandidateCabinet() {
-  const { me, catalog } = Route.useRouteContext()
+  const { me } = Route.useRouteContext()
   return (
-    <CabinetFrame me={me} features={catalog?.features ?? null}>
+    <CabinetFrame me={me}>
       <Outlet />
     </CabinetFrame>
   )

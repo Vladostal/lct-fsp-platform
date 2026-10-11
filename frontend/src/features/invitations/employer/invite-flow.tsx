@@ -604,7 +604,7 @@ function ResultActions({ needId, invitationId }: { needId?: string | null; invit
             К подборке
           </Link>
         ) : (
-          <Link to="/employer/needs">К подборке</Link>
+          <Link to="/employer/search">К банку кандидатов</Link>
         )}
       </Button>
       {invitationId ? (
