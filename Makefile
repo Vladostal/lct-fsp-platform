@@ -6,7 +6,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 .PHONY: help venv up down dev-db dev-db-down dev-init dev-api init-env test test-db-clean lint snapshot openapi client \
-        bank bank-check seed demo-reset eval-testing eval-matching eval-contact eval docs-pdf versions e2e
+        bank bank-check seed demo-reset eval-testing eval-matching eval-contact eval e2e
 
 # uv: из PATH либо из окружения в корне проекта (python3 -m venv .venv && .venv/bin/pip install uv).
 UV ?= $(shell command -v uv 2>/dev/null || echo $(CURDIR)/.venv/bin/uv)
@@ -161,20 +161,6 @@ openapi: $(VENV)/bin/python ## Выгрузить docs/api/openapi.json без �
 
 client: ## Сгенерировать клиент фронтенда из docs/api/openapi.json (запускает сборочный пакет)
 	cd frontend && npm run client
-
-# Скрипты сборки документации принадлежат сборочному пакету (docs/submission). PDF собирается в образе api:
-# там установлены системные библиотеки WeasyPrint.
-DOCS_PDF_SCRIPT ?= docs/submission/build_docs.py
-VERSIONS_SCRIPT ?= docs/submission/build_versions.py
-
-docs-pdf: ## PDF сопроводительной документации в docs/submission/ (WeasyPrint, в контейнере)
-	@test -f $(DOCS_PDF_SCRIPT) || { echo "нет $(DOCS_PDF_SCRIPT): скрипт сборки документации ещё не написан"; exit 1; }
-	$(COMPOSE) run --rm --no-deps --user "$$(id -u):$$(id -g)" -v "$(CURDIR)":/srv/repo -w /srv/repo \
-	  -e PYTHONPATH=/srv/backend api python $(DOCS_PDF_SCRIPT) $(ARGS)
-
-versions: $(VENV)/bin/python ## Таблица библиотек из uv.lock и package-lock.json
-	@test -f $(VERSIONS_SCRIPT) || { echo "нет $(VERSIONS_SCRIPT): скрипт таблицы версий ещё не написан"; exit 1; }
-	$(VENV)/bin/python $(VERSIONS_SCRIPT) $(ARGS)
 
 # --- данные и валидация --------------------------------------------------------------------------------------------------
 
