@@ -7,11 +7,11 @@
     <meta name="description" content="Подбор ИТ-специалистов по грейду — подтверждённому тестом или заявленному с пометкой: работодатель приходит к кандидату с вилкой." />
     <script>
       // Тема до первой отрисовки: выбор из localStorage («fsp-theme»), иначе системная. Логика та же, что в src/lib/theme.ts.
-      ;(function () {
-        var t = null
+      ;(() => {
+        let t = null
         try {
           t = localStorage.getItem('fsp-theme')
-        } catch (e) {}
+        } catch {}
         if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
         document.documentElement.setAttribute('data-theme', t)
       })()
