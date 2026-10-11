@@ -12,8 +12,8 @@ import httpx  # noqa: E402
 import qalib as q  # noqa: E402
 
 A = "API"
-SRC_AUTH = "CLAUDE.md §1: регистрация по email с подтверждением; OpenAPI /auth/*"
-SRC_PROF = "CLAUDE.md §1 «Кандидат: профиль и резюме»; OpenAPI /candidate/profile"
+SRC_AUTH = "ТЗ: регистрация по email с подтверждением; OpenAPI /auth/*"
+SRC_PROF = "ТЗ «Кандидат: профиль и резюме»; OpenAPI /candidate/profile"
 SIGN = {"password": q.PASSWORD, "role": "candidate", "consent_processing": True, "consent_version": "processing-1", "is_adult": True}
 
 
@@ -235,7 +235,7 @@ def profile() -> None:
     after_state = c.get("/assessment/state")[1]
     q.rec("PROF-09", "После теста: большой стаж и 20 заявленных навыков не дают категорию", A + "+DB", "категории нет, как и до правки профиля",
           {"before": before["category"], "after": after_state["category"], "outcome": q.session_db(sid)["outcome"]},
-          before["category"] is None and after_state["category"] is None, source="CLAUDE.md §1: категория только из теста")  # fmt: skip
+          before["category"] is None and after_state["category"] is None, source="ТЗ: категория только из теста")  # fmt: skip
 
 
 def pdf() -> None:
@@ -323,7 +323,7 @@ def pdf() -> None:
     stored = q.sql("select count(*) from information_schema.columns where column_name ilike '%resume%' and data_type in ('bytea')")
     q.rec("PDF-07", "Файл резюме: хранение и доступ других пользователей", A + "+DB", "файл не хранится; адреса скачивания нет",
           {"paths": resume_paths, "bytea_columns": stored}, resume_paths == ["/api/v1/candidate/profile/resume"] and stored in ("0", ""),
-          source="CLAUDE.md §4.4: файл и текст не сохраняются")  # fmt: skip
+          source="README «Импорт и PDF»: файл и текст не сохраняются")  # fmt: skip
 
 
 def survey() -> None:

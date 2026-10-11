@@ -16,7 +16,7 @@ import qalib as q  # noqa: E402
 
 A = "API+DB"
 SRC_INV = "README «Контакт»; catalog.limits (слоты, сроки); OpenAPI POST /employer/invitations"
-SRC_PRIV = "CLAUDE.md §1: контакты только после принятия; README «Контакт»"
+SRC_PRIV = "ТЗ: контакты только после принятия; README «Контакт»"
 MARK = {"phone": "+79995550101", "telegram": "@qa_priv_marker", "link": "https://example.com/qa-priv-marker", "about": "МАРКЕР-О-СЕБЕ-777"}
 
 
@@ -375,7 +375,7 @@ def priv() -> None:
           {"keys": sorted(it_view.keys()), "has_answer": any(k in it_view for k in ("answer", "correct", "key", "explanation", "misconceptions", "b", "a")),
            "option_keys": sorted({k for o in (it_view.get("options") or []) for k in o})},
           not any(k in it_view for k in ("answer", "correct", "key", "explanation", "misconceptions", "solution")) and all(set(o) <= {"id", "text", "code"} for o in (it_view.get("options") or [])),
-          source="CLAUDE.md §4.1; schemas.TestItemView", note=f"ключ в базе: {str(key)[:40]}")  # fmt: skip
+          source="schemas.TestItemView", note=f"ключ в базе: {str(key)[:40]}")  # fmt: skip
     err = [cand.get(f"/assessment/sessions/{sid}")[1], e2.get(f"/employer/candidates/{cand.id}/contacts")[1], anon.get("/candidate/profile")[1]]
     q.rec("PRIV-04", "Тексты ошибок доступа не содержат закрытых полей", A, "только code и message", err,
           all(set(x) <= {"code", "message", "params"} for x in err) and not any(MARK["phone"] in json.dumps(x) for x in err), source=SRC_PRIV)  # fmt: skip

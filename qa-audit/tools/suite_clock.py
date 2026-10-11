@@ -193,7 +193,7 @@ def main() -> None:
     q.rec("PUB-03", "Подтверждённый Middle получает слабый результат на повторной попытке", A, "грейд автоматически не понижается: категория остаётся backend:middle",
           {"retake": again[0], "outcome": q.session_db(again[1]["id"])["outcome"] if again[0] == 201 else None, "category": (st3["category"] or {}).get("code"),
            "verdict": q.sql(f"select verdict from assessment_category where candidate_id='{pub3.id}'"), "level": (st3.get("level") or {}).get("label")},
-          again[0] == 201 and (st3["category"] or {}).get("code") == "backend:middle", source="CLAUDE.md §1: грейд не понижается принудительно",
+          again[0] == 201 and (st3["category"] or {}).get("code") == "backend:middle", source="ТЗ: грейд не понижается принудительно",
           note="вердикт категории после слабой попытки — см. фактическое значение; уровень считается по всем ответам за 180 дней")  # fmt: skip
 
     # ---------- граница 90 дней для смены грейда вниз ----------

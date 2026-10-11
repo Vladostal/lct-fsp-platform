@@ -120,7 +120,7 @@ def demo() -> None:
 
 
 def pub() -> None:
-    src = "CLAUDE.md §1; README «Тестирование», «Контакт»; POST /candidate/consents/publication, /candidate/visibility"
+    src = "ТЗ; README «Тестирование», «Контакт»; POST /candidate/consents/publication, /candidate/visibility"
     c = q.candidate("pub", "middle")
     sid, item = q.start(c, "middle")
     q.run_test(c, sid, item, lambda n, r: "right")
@@ -257,7 +257,7 @@ def find() -> None:
 
 
 def employer() -> None:
-    src = "OpenAPI CompanyUpdate, NeedCreate; CLAUDE.md §1 «Работодатель»"
+    src = "OpenAPI CompanyUpdate, NeedCreate; ТЗ «Работодатель»"
     e = q.signup("emp", "employer")
     blocked = e.post("/employer/needs", q.NEED)
     good = {"name": "ООО Проверка", "sphere": "Финтех", "description": "Платёжные сервисы для малого бизнеса, команда 40 человек, работаем удалённо.",
@@ -359,7 +359,7 @@ def employer() -> None:
     other = q.employer("emp2")
     x = {"get": other.get(f"/employer/needs/{nid}")[0], "put": other.put(f"/employer/needs/{nid}", q.NEED)[0], "archive": other.post(f"/employer/needs/{nid}/archive")[0],
          "shortlist": other.post(f"/employer/needs/{nid}/shortlists")[0], "snapshot": other.get(f"/employer/shortlists/{s1['id']}")[0]}  # fmt: skip
-    q.rec("NEED-11", "Чужая потребность и версия подборки по ID", A, "404 на чтение и изменение", x, all(v == 404 for v in x.values()), source="CLAUDE.md §1: роли и доступ")
+    q.rec("NEED-11", "Чужая потребность и версия подборки по ID", A, "404 на чтение и изменение", x, all(v == 404 for v in x.values()), source="ТЗ: роли и доступ")
 
 
 def codes_of(items: list) -> list[str]:
@@ -412,7 +412,7 @@ def match() -> None:
     anna_strength = {c["code"]: c["points"] for c in anna_card["strength"]["contributions"]}
     q.rec("MATCH-06", "Нет истории ФСП — нет штрафа; есть достижения — есть вклад", A, "у кандидата без ФСП вклад ФСП отсутствует/0 и нейтральный текст; у Анны — положительный",
           {"без ФСП": strength, "fsp_mode": card["fsp"]["mode"], "текст": card["fsp"]["neutral_text"], "Анна": anna_strength},
-          strength.get("fsp", 0) == 0 and card["fsp"]["mode"] == "none" and bool(card["fsp"]["neutral_text"]) and anna_strength.get("fsp", 0) > 0, source="CLAUDE.md §1: кандидат без истории ФСП")  # fmt: skip
+          strength.get("fsp", 0) == 0 and card["fsp"]["mode"] == "none" and bool(card["fsp"]["neutral_text"]) and anna_strength.get("fsp", 0) > 0, source="ТЗ: кандидат без истории ФСП")  # fmt: skip
     again = e.get(f"/employer/shortlists/{snap['id']}")[1]
     q.rec("MATCH-07", "Порядок сохранённой версии стабилен при повторном чтении", A, "тот же порядок кандидатов", len(again["items"]),
           [i["candidate_id"] for i in again["items"]] == [i["candidate_id"] for i in snap["items"]], source=src)  # fmt: skip

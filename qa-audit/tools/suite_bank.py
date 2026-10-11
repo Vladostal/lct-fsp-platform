@@ -11,7 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 import qalib as q  # noqa: E402
 
-SRC = "CLAUDE.md §4.1; README «Тестирование»"
+SRC = "README «Тестирование»"
 
 
 def variants(prefix: str) -> list[dict]:

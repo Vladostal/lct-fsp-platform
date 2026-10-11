@@ -79,7 +79,3 @@ Thumbs.db
 .fleet/
 *.swp
 *.swo
-
-# Локальные настройки ИИ-инструментов
-.claude/
-CLAUDE.local.md
