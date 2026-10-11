@@ -1,9 +1,18 @@
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { SlidersHorizontal } from 'lucide-react'
+import { EyeOff, Hash, Layers, RotateCcw, Search, SlidersHorizontal, Trophy, UsersRound } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import type { Catalog } from '@/client'
-import { EmptyState, ErrorState, PageHeader, TagInput, type TagValue } from '@/components/app'
+import {
+  CountChip,
+  EmptyState,
+  ErrorState,
+  IconTile,
+  PageHeader,
+  SoftPill,
+  TagInput,
+  type TagValue,
+} from '@/components/app'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -21,6 +30,7 @@ import { usePairStates } from '../hooks'
 import type { BankSearch } from '../schemas'
 import { CandidateSheet } from './candidate-sheet'
 import { MatchCardCompact } from './match-card-compact'
+import { specLook } from './visuals'
 
 const B = MATCHING.bank
 const ANY = '__any'
@@ -88,7 +98,10 @@ function Filters({ search, catalog, setSearch }: Omit<Props, 'renderInvite'>) {
       }}
     >
       <div className="flex min-w-0 flex-col gap-1.5">
-        <Label htmlFor="b-cat">{B.category}</Label>
+        <Label htmlFor="b-cat" className="flex items-center gap-1.5">
+          <Layers aria-hidden="true" className="size-4 text-ink-muted" />
+          {B.category}
+        </Label>
         <Select
           value={search.category ?? ANY}
           onValueChange={(v) =>
@@ -164,12 +177,18 @@ function Filters({ search, catalog, setSearch }: Omit<Props, 'renderInvite'>) {
       </div>
       <div className="flex min-w-0 flex-col gap-1">
         <Label className="tap-target flex min-w-0 items-center justify-between gap-3 font-normal">
-          <span className="min-w-0">{B.fsp}</span>
+          <span className="flex min-w-0 items-center gap-2">
+            <Trophy aria-hidden="true" className="size-4 shrink-0 text-fsp-red" />
+            <span className="min-w-0">{B.fsp}</span>
+          </span>
           <Switch checked={Boolean(search.fsp)} onCheckedChange={(on) => setSearch({ fsp: on || undefined })} />
         </Label>
       </div>
       <div className="flex min-w-0 flex-col gap-1.5">
-        <Label htmlFor="b-code">{B.code}</Label>
+        <Label htmlFor="b-code" className="flex items-center gap-1.5">
+          <Hash aria-hidden="true" className="size-4 text-ink-muted" />
+          {B.code}
+        </Label>
         <div className="flex min-w-0 gap-2">
           <Input
             id="b-code"
@@ -179,6 +198,7 @@ function Filters({ search, catalog, setSearch }: Omit<Props, 'renderInvite'>) {
             onChange={(e) => setCode(e.target.value)}
           />
           <Button type="submit" variant="secondary">
+            <Search aria-hidden="true" />
             Найти
           </Button>
         </div>
@@ -200,6 +220,7 @@ function Filters({ search, catalog, setSearch }: Omit<Props, 'renderInvite'>) {
           })
         }}
       >
+        <RotateCcw aria-hidden="true" />
         {B.reset}
       </Button>
     </form>
@@ -305,15 +326,28 @@ export function BankScreen({ search, catalog, setSearch, renderInvite }: Props) 
       )
     return (
       <div className="flex min-w-0 flex-col gap-5">
-        <p className="type-sm text-ink-muted">
-          {B.found} <span className="num font-medium text-ink">{first?.total ?? items.length}</span>. {B.order}
-          {first?.hidden_by_fsp ? ` ${B.hiddenByFsp(first.hidden_by_fsp)}` : ''}
-        </p>
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <SoftPill tone="brand" icon={UsersRound} className="font-medium">
+            {B.found} <span className="num font-semibold">{first?.total ?? items.length}</span>
+          </SoftPill>
+          {first?.hidden_by_fsp ? (
+            <CountChip icon={EyeOff} value={first.hidden_by_fsp} label={B.hiddenByFspLabel} />
+          ) : null}
+          <p className="type-caption min-w-0 text-ink-muted">{B.order}</p>
+        </div>
         {grouped.map(({ s, rows }) => (
           <section key={s?.category.code ?? 'all'} className="flex min-w-0 flex-col gap-3">
             {s ? (
-              <h2 className="type-h3 sticky top-16 z-10 border-b border-line bg-canvas py-2">
-                {s.category.title} · <span className="num">{s.count}</span>
+              <h2 className="sticky top-16 z-10 flex min-w-0 items-center gap-2.5 bg-canvas py-2">
+                <IconTile
+                  icon={specLook(s.category.specialization.code).Icon}
+                  tone={specLook(s.category.specialization.code).tone}
+                  size="xs"
+                />
+                <span className="num type-h3 min-w-0 truncate">{s.category.title}</span>
+                <span className="num rounded-full bg-brand-50 px-2 text-xs leading-6 font-semibold text-brand-700">
+                  {s.count}
+                </span>
               </h2>
             ) : null}
             <ul className="flex min-w-0 flex-col gap-3">
@@ -353,7 +387,6 @@ export function BankScreen({ search, catalog, setSearch, renderInvite }: Props) 
     <div className="flex min-w-0 flex-col gap-6">
       <PageHeader
         title={B.title}
-        description={B.description}
         actions={
           !wide ? (
             <Button type="button" variant="secondary" onClick={() => setFiltersOpen(true)}>
@@ -365,7 +398,19 @@ export function BankScreen({ search, catalog, setSearch, renderInvite }: Props) 
       />
       <div className={wide ? 'grid min-w-0 grid-cols-[280px_minmax(0,1fr)] gap-6' : 'min-w-0'}>
         {wide ? (
-          <aside aria-label={B.filters} className="sticky top-20 h-fit min-w-0 self-start">
+          <aside
+            aria-label={B.filters}
+            className="surface-row sticky top-20 flex h-fit min-w-0 flex-col gap-4 self-start p-4"
+          >
+            <p className="type-h3 flex min-w-0 items-center gap-2.5">
+              <IconTile icon={SlidersHorizontal} tone="soft" size="sm" />
+              {B.filters}
+              {count > 0 ? (
+                <span className="num rounded-full bg-brand-600 px-2 text-xs leading-5 font-semibold text-on-brand">
+                  {count}
+                </span>
+              ) : null}
+            </p>
             <Filters search={search} catalog={catalog} setSearch={setSearch} />
           </aside>
         ) : (

@@ -1,5 +1,23 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
+import {
+  BadgeCheck,
+  CalendarClock,
+  CalendarDays,
+  CircleDashed,
+  Download,
+  FileText,
+  Hourglass,
+  Inbox,
+  Lock,
+  type LucideIcon,
+  MailX,
+  PencilLine,
+  Rocket,
+  TrendingUp,
+  Trophy,
+  UserRoundPen,
+} from 'lucide-react'
 import type { FspLinkView } from '@/client'
 import {
   assessmentGetStateOptions,
@@ -9,10 +27,25 @@ import {
   profileGetConsentsOptions,
   profileGetProfileOptions,
 } from '@/client/@tanstack/react-query.gen'
-import { CandidateCategoryChip, CopyButton, ErrorState, LevelScale, SalaryRange, Section } from '@/components/app'
+import {
+  CandidateCategoryChip,
+  CopyButton,
+  EmptyState,
+  ErrorState,
+  FormatPill,
+  GoChevron,
+  IconTile,
+  LevelScale,
+  SalaryRange,
+  Section,
+  SoftPill,
+  StatusBadge,
+  type TileTone,
+  type Tone,
+} from '@/components/app'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { CATEGORY_DECLARED, WORK_FORMAT_LABELS } from '@/content/common'
+import { CATEGORY_DECLARED, VISIBILITY_LABELS, visibilityTitle } from '@/content/common'
 import { hasTest, isDeclared } from '@/lib/category'
 import { formatDate } from '@/lib/format'
 import { catalogQuery, invitationSummaryQuery, polling } from '@/lib/query'
@@ -23,22 +56,25 @@ import { PauseBanner } from './pause-banner'
 
 function BlockSkeleton() {
   return (
-    <div className="flex flex-col gap-2" aria-busy="true">
+    <div className="surface-card flex flex-col gap-3" aria-busy="true">
       <Skeleton className="h-6 w-2/3" />
-      <Skeleton className="h-10 w-full" />
+      <Skeleton className="h-16 w-full" />
     </div>
   )
 }
 
-function fspRow(fsp: FspLinkView | undefined): { text: string; to: '/candidate/settings/fsp' } {
-  const to = '/candidate/settings/fsp' as const
-  if (!fsp || fsp.status === 'not_linked') return { text: 'Привязать ФСП ID', to }
-  if (fsp.history_status === 'sync_pending') return { text: 'ФСП ID привязан, получаем данные', to }
-  if (fsp.history_status === 'sync_failed') return { text: 'ФСП ID привязан, данные не получены', to }
-  if (fsp.history_status === 'no_history') return { text: 'ФСП ID привязан, истории нет', to }
+type FspNote = { title: string; note?: string; tone: Tone }
+
+/** Строка ФСП: без истории и до получения данных — нейтрально, без штрафного тона. */
+function fspRow(fsp: FspLinkView | undefined): FspNote {
+  if (!fsp || fsp.status === 'not_linked') return { title: 'Привязать ФСП ID', tone: 'neutral' }
+  const title = 'ФСП ID привязан'
+  if (fsp.history_status === 'sync_pending') return { title, note: 'получаем данные', tone: 'neutral' }
+  if (fsp.history_status === 'sync_failed') return { title, note: 'данные не получены', tone: 'warning' }
+  if (fsp.history_status === 'no_history') return { title, note: 'истории нет', tone: 'neutral' }
   if (fsp.signal && fsp.signal.counted > 0)
-    return { text: `ФСП ID привязан, зачтено результатов: ${fsp.signal.counted}`, to }
-  return { text: 'ФСП ID привязан', to }
+    return { title, note: `зачтено результатов: ${fsp.signal.counted}`, tone: 'success' }
+  return { title, tone: 'neutral' }
 }
 
 function StatusCard() {
@@ -75,7 +111,7 @@ function StatusCard() {
   let text = ''
   let action: React.ReactNode = null
   if (vis.state === 'not_ready') {
-    text = 'Категория не присвоена. Профиль не виден работодателям'
+    text = VISIBILITY_LABELS.not_ready
     action = next ? (
       <Button asChild variant="primary">
         <Link to="/candidate/test/new" search={{ grade: next.grade.code }}>
@@ -83,14 +119,16 @@ function StatusCard() {
         </Link>
       </Button>
     ) : waiting?.available_at ? (
-      <p className="type-sm text-ink-muted">Следующая попытка — с {formatDate(waiting.available_at)}</p>
+      <SoftPill tone="warning" icon={CalendarClock}>
+        <span className="num">Следующая попытка — с {formatDate(waiting.available_at)}</span>
+      </SoftPill>
     ) : noTest ? (
       <Button asChild variant="primary">
         <Link to="/candidate/category">Заявить грейд</Link>
       </Button>
     ) : null
   } else if (vis.state === 'unpublished') {
-    text = declared ? 'Грейд заявлен, профиль не опубликован' : 'Категория присвоена, профиль не опубликован'
+    text = VISIBILITY_LABELS.unpublished
     action = category?.level_session_id ? (
       <Button asChild variant="primary">
         <Link to="/candidate/test/$sessionId/result" params={{ sessionId: category.level_session_id }} hash="publish">
@@ -105,11 +143,11 @@ function StatusCard() {
       </Button>
     ) : null
   } else if (vis.state === 'visible') {
-    text = 'Профиль виден работодателям'
+    text = VISIBILITY_LABELS.visible
   } else if (vis.pause_reason === 'auto_silence') {
-    text = `Профиль скрыт до ${vis.auto_paused_until ? formatDate(vis.auto_paused_until) : 'окончания паузы'}`
+    text = `${VISIBILITY_LABELS.paused} до ${vis.auto_paused_until ? formatDate(vis.auto_paused_until) : 'окончания паузы'}`
   } else {
-    text = 'Вы приостановили показ профиля'
+    text = VISIBILITY_LABELS.paused
     action = (
       <Button variant="primary" loading={show.pending} onClick={show.run}>
         Возобновить показ
@@ -117,38 +155,67 @@ function StatusCard() {
     )
   }
 
+  const tile: { icon: LucideIcon; tone: TileTone } = !category
+    ? { icon: CircleDashed, tone: 'dashed' }
+    : declared
+      ? { icon: PencilLine, tone: 'dashed' }
+      : { icon: BadgeCheck, tone: 'solid' }
+
   return (
-    <div className="surface-card flex min-w-0 flex-col gap-4 animate-rise-in">
-      <div className="flex min-w-0 flex-wrap items-center gap-3">
-        {category ? <CandidateCategoryChip category={category} size="lg" /> : null}
+    <div className="accent-card surface-card grid min-w-0 animate-rise-in gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:items-center lg:gap-8">
+      <div className="flex min-w-0 flex-col gap-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <IconTile icon={tile.icon} tone={tile.tone} size="xl" />
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            {category ? (
+              <CandidateCategoryChip category={category} size="lg" />
+            ) : (
+              <p className="type-h2 min-w-0 text-ink [overflow-wrap:anywhere]">Категория не присвоена</p>
+            )}
+          </div>
+        </div>
+        {declared ? (
+          <p className="type-sm min-w-0 text-ink-muted">
+            {CATEGORY_DECLARED.line}.{' '}
+            <Link to="/candidate/category" className="text-link">
+              Изменить
+            </Link>
+          </p>
+        ) : null}
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <StatusBadge status={vis.state} label={text} title={visibilityTitle(vis.state)} live />
+          {profile.data ? (
+            <span className="inline-flex h-8 min-w-0 items-center gap-0.5 rounded-full bg-fill pr-0.5 pl-3">
+              <span className="sr-only">Код кандидата: </span>
+              <span className="num text-sm font-medium text-ink">{profile.data.public_code}</span>
+              <CopyButton value={profile.data.public_code} label="Скопировать код" className="rounded-full" />
+            </span>
+          ) : null}
+        </div>
+        {action ? <div className="flex min-w-0 flex-wrap items-center gap-2 max-[479px]:*:w-full">{action}</div> : null}
       </div>
-      {declared ? (
-        <p className="type-sm min-w-0 text-ink-muted">
-          {CATEGORY_DECLARED.line}.{' '}
-          <Link to="/candidate/category" className="text-link">
-            Изменить
-          </Link>
-        </p>
+      {level ? (
+        <div className="surface-row min-w-0 p-4">
+          <LevelScale level={level} size="md" ownGrade={category?.grade.code} animate className="min-w-0" />
+        </div>
       ) : null}
-      {level ? <LevelScale level={level} size="sm" className="w-full max-w-sm" /> : null}
-      <p className="type-body text-ink [overflow-wrap:anywhere]">{text}</p>
-      {profile.data ? (
-        <p className="type-sm flex min-w-0 items-center gap-2 text-ink-muted">
-          <span className="num text-ink">{profile.data.public_code}</span>
-          <CopyButton value={profile.data.public_code} label="Скопировать код" />
-        </p>
-      ) : null}
-      {action}
     </div>
   )
 }
 
 function Funnel({ fsp }: { fsp: FspLinkView | undefined }) {
   const funnel = useQuery({ ...contactCandidateFunnelOptions(), ...polling })
+  const summary = useQuery({ ...invitationSummaryQuery, ...polling })
   if (funnel.isPending) return <BlockSkeleton />
   if (funnel.isError)
     return <ErrorState compact headingLevel={3} error={funnel.error} onRetry={() => void funnel.refetch()} />
-  return <FunnelCard funnel={funnel.data} fspLinked={fsp?.status === 'linked'} />
+  return (
+    <FunnelCard
+      funnel={funnel.data}
+      fspLinked={fsp?.status === 'linked'}
+      hasAwaiting={(summary.data?.awaiting ?? 0) > 0}
+    />
+  )
 }
 
 function Awaiting() {
@@ -161,11 +228,20 @@ function Awaiting() {
   if (list.isError)
     return <ErrorState compact headingLevel={3} error={list.error} onRetry={() => void list.refetch()} />
   if (list.data.items.length === 0)
-    return <p className="type-body text-ink-muted">Пока нет приглашений. Работодатели сами находят вашу категорию.</p>
+    return (
+      <div className="surface-card flex h-full min-w-0 items-center justify-center">
+        <EmptyState
+          compact
+          headingLevel={3}
+          icon={Inbox}
+          text="Пока нет приглашений. Работодатели сами находят вашу категорию."
+        />
+      </div>
+    )
   return (
-    <div className="flex min-w-0 flex-col gap-3">
-      {list.data.items.map((item) => (
-        <InvitationCard key={item.id} item={item} />
+    <div className="flex h-full min-w-0 flex-col gap-3">
+      {list.data.items.map((item, index) => (
+        <InvitationCard key={item.id} item={item} index={index} />
       ))}
       <Button asChild variant="secondary" size="sm" className="self-start">
         <Link to="/candidate/invitations">Все приглашения{summary.data ? ` (${summary.data.awaiting})` : ''}</Link>
@@ -179,43 +255,79 @@ function NotDelivered() {
   const items = funnel.data?.not_delivered_items ?? []
   if (!funnel.data || funnel.data.not_delivered < 1 || items.length === 0) return null
   return (
-    <Section title="Не доставлено">
-      <ul className="flex min-w-0 flex-col gap-2">
-        {items.slice(0, 5).map((item) => (
-          <li key={`${item.at}-${item.salary_from}`} className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-            <SalaryRange from={item.salary_from} to={item.salary_to} size="sm" />
-            <span className="type-sm text-ink-muted">
-              {WORK_FORMAT_LABELS[item.work_format]} · {formatDate(item.at)}
-            </span>
-          </li>
-        ))}
-      </ul>
-      <p className="type-sm text-ink-muted">
-        Вилка этих предложений начиналась ниже вашего минимума. Компании не названы.
-      </p>
+    <Section title="Не доставлено" icon={MailX}>
+      <div className="surface-card flex min-w-0 flex-col gap-4">
+        <ul className="flex min-w-0 flex-col gap-3">
+          {items.slice(0, 5).map((item) => (
+            <li key={`${item.at}-${item.salary_from}`} className="flex min-w-0 items-center gap-3">
+              <IconTile icon={MailX} tone="dashed" size="sm" />
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                <SoftPill>
+                  <SalaryRange from={item.salary_from} to={item.salary_to} size="sm" />
+                </SoftPill>
+                <FormatPill format={item.work_format} />
+                <span className="num type-sm inline-flex items-center gap-1.5 text-ink-muted">
+                  <CalendarDays aria-hidden="true" className="size-3.5" />
+                  {formatDate(item.at)}
+                </span>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <p className="type-sm flex min-w-0 items-start gap-2 text-ink-muted">
+          <Lock aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+          Вилка этих предложений начиналась ниже вашего минимума. Компании не названы.
+        </p>
+      </div>
     </Section>
+  )
+}
+
+const ACTION_CARD =
+  'lift-card surface-row flex h-full min-h-16 min-w-0 items-center gap-3 p-4 focus-visible:outline-2 focus-visible:outline-offset-2'
+
+function ActionBody({ title, note, tone = 'neutral' }: { title: string; note?: string; tone?: Tone }) {
+  return (
+    <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
+      <span className="type-body min-w-0 font-medium text-ink [overflow-wrap:anywhere]">{title}</span>
+      {note ? (
+        <SoftPill size="sm" tone={tone}>
+          <span className="num">{note}</span>
+        </SoftPill>
+      ) : null}
+    </span>
   )
 }
 
 function Strengthen({ fsp }: { fsp: FspLinkView | undefined }) {
   const row = fspRow(fsp)
-  const cls = 'type-body flex min-h-11 min-w-0 items-center py-2 text-ink hover:text-brand-700'
   return (
-    <Section title="Усилить профиль">
-      <ul className="flex min-w-0 flex-col divide-y divide-line">
-        <li>
-          <Link to={row.to} className={cls}>
-            <span className="min-w-0 [overflow-wrap:anywhere]">{row.text}</span>
+    <Section title="Усилить профиль" icon={TrendingUp} iconTone="brand">
+      <ul className="grid min-w-0 gap-3 md:grid-cols-3 lg:gap-4">
+        <li className="min-w-0">
+          <Link to="/candidate/settings/fsp" className={ACTION_CARD}>
+            <IconTile icon={Trophy} tone="accent" size="lg" />
+            <ActionBody {...row} />
+            <GoChevron />
           </Link>
         </li>
-        <li>
-          <Link to="/candidate/profile" className={cls}>
-            <span className="min-w-0">Дополнить стек и раздел «О себе»</span>
+        <li className="min-w-0">
+          <Link to="/candidate/profile" className={ACTION_CARD}>
+            <IconTile icon={UserRoundPen} tone="brand" size="lg" />
+            <ActionBody title="Дополнить стек и раздел «О себе»" />
+            <GoChevron />
           </Link>
         </li>
-        <li>
-          <a href="/api/v1/candidate/profile/pdf" className={cls}>
-            <span className="min-w-0">Скачать PDF-профиль</span>
+        <li className="min-w-0">
+          <a href="/api/v1/candidate/profile/pdf" className={ACTION_CARD}>
+            <IconTile icon={FileText} tone="deep" size="lg" />
+            <ActionBody title="Скачать PDF-профиль" />
+            <span
+              aria-hidden="true"
+              className="go-chip hidden size-7 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-700 sm:flex"
+            >
+              <Download className="size-4" />
+            </span>
           </a>
         </li>
       </ul>
@@ -227,18 +339,38 @@ function Strengthen({ fsp }: { fsp: FspLinkView | undefined }) {
 export function CandidateOverview() {
   const summary = useQuery({ ...invitationSummaryQuery, ...polling })
   const fsp = useQuery(fspGetLinkOptions())
+  const funnel = useQuery({ ...contactCandidateFunnelOptions(), ...polling })
   return (
-    <div className="flex min-w-0 flex-col gap-8">
+    <div className="flex min-w-0 flex-col gap-6 md:gap-8">
       {summary.data ? <PauseBanner visibility={summary.data.visibility} /> : null}
       <section aria-label="Ваша категория">
         <StatusCard />
       </section>
-      <Section title="Спрос на ваш профиль">
-        <Funnel fsp={fsp.data} />
-      </Section>
-      <Section title="Приглашения, ждущие ответа">
-        <Awaiting />
-      </Section>
+      <div className="grid min-w-0 gap-6 lg:grid-cols-2 lg:gap-4">
+        <Section
+          title="Спрос на ваш профиль"
+          icon={Rocket}
+          iconTone="brand"
+          className="[&>div:last-child]:flex-1"
+          action={
+            funnel.data ? (
+              <SoftPill size="sm" icon={CalendarDays}>
+                <span className="num">{funnel.data.window_days} дней</span>
+              </SoftPill>
+            ) : undefined
+          }
+        >
+          <Funnel fsp={fsp.data} />
+        </Section>
+        <Section
+          title="Приглашения, ждущие ответа"
+          icon={Hourglass}
+          iconTone="warning"
+          className="[&>div:last-child]:flex-1"
+        >
+          <Awaiting />
+        </Section>
+      </div>
       <NotDelivered />
       <Strengthen fsp={fsp.data} />
     </div>

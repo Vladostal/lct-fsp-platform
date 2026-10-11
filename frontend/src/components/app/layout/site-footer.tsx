@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { LEGAL_DOCS } from '@/content/common'
+import { ThemeSwitch } from '../theme-switch'
 
 export type SiteFooterProps = {
   /** Показывать ссылку «Демо-доступ» (`features.demo`). */
@@ -19,7 +20,14 @@ export function SiteFooter({ demo = false }: SiteFooterProps) {
           alt="ФСП — Федерация спортивного программирования России"
           width={256}
           height={32}
-          className="h-6 w-auto max-w-full self-start"
+          className="only-light h-6 w-auto max-w-full self-start"
+        />
+        <img
+          src="/logo_head_dark.svg"
+          alt="ФСП — Федерация спортивного программирования России"
+          width={256}
+          height={32}
+          className="only-dark h-6 w-auto max-w-full self-start"
         />
         <nav aria-label="Документы и справка" className="min-w-0">
           <ul className="flex flex-wrap gap-x-6">
@@ -44,6 +52,7 @@ export function SiteFooter({ demo = false }: SiteFooterProps) {
             ))}
           </ul>
         </nav>
+        <ThemeSwitch className="-ml-2.5 md:ml-0" />
       </div>
     </footer>
   )

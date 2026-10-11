@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
+import { Download, FileText } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import type { Catalog } from '@/client'
-import { ErrorState, PageHeader, PageSkeleton } from '@/components/app'
+import { ErrorState, IconTile, PageHeader, PageSkeleton } from '@/components/app'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { API_PREFIX } from '@/lib/config'
 import { candidateProfileQuery, conditionsQuery } from '../api'
 import { PROFILE } from '../content'
@@ -93,22 +93,24 @@ export function ProfileCabinet({ userId, catalog, category }: ScreenProps) {
     )
   }
   return (
-    <div className="mx-auto flex w-full max-w-[880px] min-w-0 flex-col gap-6">
-      <PageHeader title={PROFILE.cabinet.title} description={PROFILE.cabinet.description} />
-      <Card>
-        <CardHeader>
-          <CardTitle>{PROFILE.cabinet.pdfCard}</CardTitle>
-        </CardHeader>
-        <p className="type-body mb-3 text-ink-muted">{PROFILE.cabinet.pdfText}</p>
-        <Button variant="secondary" className="self-start" loading={pdfBusy} onClick={openPdf}>
+    <div className="mx-auto flex w-full max-w-3xl min-w-0 flex-col gap-6">
+      <PageHeader title={PROFILE.cabinet.title} />
+      <div className="accent-card surface-card flex min-w-0 animate-rise-in flex-wrap items-center gap-x-4 gap-y-3">
+        <IconTile icon={FileText} tone="solid" size="xl" />
+        <div className="flex min-w-0 flex-1 basis-40 flex-col">
+          <h2 className="type-h2 min-w-0">{PROFILE.cabinet.pdfCard}</h2>
+          <p className="type-sm min-w-0 text-ink-muted">{PROFILE.cabinet.pdfText}</p>
+        </div>
+        <Button variant="secondary" loading={pdfBusy} onClick={openPdf}>
+          <Download aria-hidden="true" />
           {PROFILE.cabinet.pdfDownload}
         </Button>
         {pdfError ? (
-          <Alert variant="warning" className="mt-3">
+          <Alert variant="warning" className="basis-full">
             <AlertDescription>{pdfError}</AlertDescription>
           </Alert>
         ) : null}
-      </Card>
+      </div>
       <ProfileForm
         mode="cabinet"
         profile={profile.data}

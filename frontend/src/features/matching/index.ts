@@ -2,6 +2,7 @@
  * Публичный экспорт домена `matching` (Арх. 11.1, план F50): карточки для соседних пакетов.
  * `MatchCardDetailed` используют F10 (обзор кандидата) и P6 (контрольный пример).
  */
+export { cardQuery } from './api'
 export { BankScreen } from './components/bank-screen'
 export { CandidateSheet } from './components/candidate-sheet'
 export { CandidateView, type CandidateViewProps, type InviteRenderProps } from './components/candidate-view'

@@ -16,7 +16,7 @@ export const Route = createFileRoute('/candidate/_cabinet/settings/fsp')({
 function Screen() {
   const { result, reason } = Route.useSearch()
   return (
-    <div className="mx-auto flex w-full max-w-[880px] min-w-0 flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-5xl min-w-0 flex-col gap-6">
       <SettingsTabs />
       <PageHeader title={FSP.title} description={FSP.description} />
       <FspBlock result={result} reason={reason} />

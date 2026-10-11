@@ -15,7 +15,7 @@ const dialogContentClassName =
   'fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[calc(100dvh-32px)] w-full max-w-[520px] flex-col rounded-t-xl bg-surface text-ink shadow-pop duration-(--dur-base) data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0 md:top-1/2 md:bottom-auto md:-translate-y-1/2 md:rounded-xl md:data-[state=open]:zoom-in-[0.98]'
 
 const dialogOverlayClassName =
-  'fixed inset-0 z-50 bg-ink/50 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0'
+  'fixed inset-0 z-50 bg-black/50 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0'
 
 function Dialog(props: React.ComponentProps<typeof DialogPrimitive.Root>) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />

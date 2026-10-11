@@ -1,8 +1,21 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
+import {
+  CalendarClock,
+  ChevronsDown,
+  ChevronsUp,
+  ClipboardList,
+  FileText,
+  Hourglass,
+  ListChecks,
+  type LucideIcon,
+  PencilLine,
+  ShieldCheck,
+  Timer,
+} from 'lucide-react'
 import { useState } from 'react'
 import type { Catalog, TestBlueprintView } from '@/client'
-import { ErrorState, PageHeader, StickyActionBar } from '@/components/app'
+import { ErrorState, IconTile, PageHeader, SoftPill, StickyActionBar } from '@/components/app'
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -16,6 +29,10 @@ import { cn } from '@/lib/utils'
 import { blueprintsQuery, putClaim, surveyQuery } from '../api'
 import { ASSESSMENT } from '../content'
 import { blueprintLine } from './briefing-parts'
+import { gradeIcon, RuleList } from './parts'
+
+/** Значки правил грейда — по порядку строк `ASSESSMENT.grade.ruleItems`. */
+const GRADE_RULE_ICONS: readonly LucideIcon[] = [ShieldCheck, ChevronsDown, ChevronsUp, CalendarClock]
 
 const BAND_GRADE: Record<string, string> = { lt1: 'junior', '1_2': 'junior', '2_4': 'middle', '4_plus': 'senior' }
 
@@ -140,44 +157,68 @@ function GradePickerBody({
         }}
         className="gap-3"
       >
-        {grades.map((grade) => {
+        {grades.map((grade, index) => {
           const bp = byGrade.get(grade.code)
           const ok = usable(grade.code)
+          const active = selected === grade.code
           return (
             <Label
               key={grade.code}
               className={cn(
-                'flex min-w-0 cursor-pointer items-start gap-3 rounded-md hover:bg-fill p-4 font-normal',
-                selected === grade.code && 'bg-brand-50 hover:bg-brand-50',
-                !ok && 'cursor-not-allowed opacity-60',
+                'surface-row flex min-w-0 cursor-pointer items-start gap-3 p-4 font-normal',
+                active ? 'accent-card border-brand-600' : ok && 'lift-card',
+                !ok && 'cursor-not-allowed border-dashed border-line-strong',
               )}
             >
-              <RadioGroupItem value={grade.code} disabled={!ok} className="mt-0.5" />
-              <span className="flex min-w-0 flex-1 flex-col gap-1">
+              <RadioGroupItem value={grade.code} disabled={!ok} className="mt-3" />
+              <IconTile icon={gradeIcon(index)} tone={!ok ? 'neutral' : active ? 'solid' : 'brand'} size="lg" />
+              <span className="flex min-w-0 flex-1 flex-col gap-1.5">
                 <span className="flex min-w-0 flex-wrap items-center gap-2">
-                  <span className="type-h3 min-w-0">{grade.title}</span>
-                  {selected === grade.code && source ? (
-                    <span className="type-sm text-ink-muted">
+                  <span className={cn('type-h3 min-w-0', !ok && 'text-ink-muted')}>{grade.title}</span>
+                  {active && source ? (
+                    <SoftPill tone="brand" size="sm" icon={source === 'resume' ? FileText : ClipboardList}>
                       {source === 'resume' ? ASSESSMENT.grade.fromResume : ASSESSMENT.grade.fromSurvey}
-                    </span>
+                    </SoftPill>
                   ) : null}
                 </span>
                 <span className="type-sm min-w-0 break-words text-ink-muted">{grade.description}</span>
                 {declared ? (
-                  <span className="type-caption text-ink-muted">{ASSESSMENT.grade.declared.option}</span>
+                  <span className="type-caption flex min-w-0 items-center gap-1.5 text-ink-muted">
+                    <PencilLine aria-hidden="true" className="size-3.5 shrink-0" />
+                    <span className="min-w-0">{ASSESSMENT.grade.declared.option}</span>
+                  </span>
                 ) : ok && bp ? (
-                  <span className="font-numeric tabular-nums type-caption min-w-0 break-words text-ink">
-                    {blueprintLine(bp)}
+                  <span className="flex min-w-0 flex-wrap items-center gap-2" title={blueprintLine(bp)}>
+                    <SoftPill size="sm" icon={ListChecks}>
+                      <span className="num">{ASSESSMENT.grade.items(bp.items_min, bp.items_max)}</span>
+                    </SoftPill>
+                    <SoftPill size="sm" icon={Timer}>
+                      <span className="num">{ASSESSMENT.grade.minutes(bp.time_limit_min, bp.time_limit_max_min)}</span>
+                    </SoftPill>
+                    <span className="sr-only">{blueprintLine(bp)}</span>
                   </span>
                 ) : (
-                  <span className="type-caption text-ink-muted">{ASSESSMENT.grade.notReady}</span>
+                  <SoftPill size="sm" icon={Hourglass} className="self-start">
+                    {ASSESSMENT.grade.notReady}
+                  </SoftPill>
                 )}
               </span>
             </Label>
           )
         })}
       </RadioGroup>
-      {declared ? null : <p className="type-sm min-w-0 text-ink-muted">{ASSESSMENT.grade.rules(days)}</p>}
+      {declared ? null : (
+        <section className="surface-card min-w-0" aria-label={ASSESSMENT.grade.rulesTitle}>
+          <RuleList
+            columns={2}
+            items={ASSESSMENT.grade.ruleItems(days).map((text, i) => ({
+              icon: GRADE_RULE_ICONS[i] ?? ShieldCheck,
+              tone: i === 0 ? 'success' : 'soft',
+              text,
+            }))}
+          />
+        </section>
+      )}
       {error ? <Alert variant="destructive">{error}</Alert> : null}
       <StickyActionBar
         note={selected ? undefined : ASSESSMENT.grade.pick}

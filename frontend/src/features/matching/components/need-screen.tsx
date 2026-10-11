@@ -1,23 +1,46 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { Ellipsis } from 'lucide-react'
+import {
+  ArrowRight,
+  CircleCheckBig,
+  CircleX,
+  Clock,
+  Ellipsis,
+  Eye,
+  FileText,
+  Lightbulb,
+  ListChecks,
+  MailX,
+  MapPin,
+  MessageSquareQuote,
+  Pencil,
+  Send,
+  Sparkles,
+  Star,
+  UsersRound,
+} from 'lucide-react'
 import { useState } from 'react'
 import type { Catalog, NeedView } from '@/client'
 import {
   CategoryChip,
+  DashedNote,
   EmptyState,
   ErrorState,
-  FunnelStrip,
+  FunnelBars,
+  IconTile,
+  LegendList,
+  MiniBar,
   NotFound,
   PageHeader,
   PageSkeleton,
   SalaryRange,
-  Section,
+  SoftPill,
 } from '@/components/app'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { hasStatus } from '@/lib/api'
+import { formatMoney } from '@/lib/format'
 import { polling } from '@/lib/query'
 import { insightsQuery, needQuery } from '../api'
 import { MATCHING } from '../content'
@@ -26,6 +49,7 @@ import { ArchiveDialog } from './archive-dialog'
 import { CandidateSheet } from './candidate-sheet'
 import { NeedBlueprint } from './need-blueprint'
 import { ShortlistTab } from './shortlist-tab'
+import { FormatPills, PANEL, PanelHead, specLook } from './visuals'
 
 const S = MATCHING.shortlist
 const FORMATS = MATCHING.form.formats_
@@ -65,21 +89,27 @@ export function NeedScreen({ needId, search, catalog, setSearch, renderInvite }:
   }
   const need = query.data
   const archived = need.status === 'archived'
+  const look = specLook(need.target.specialization.code)
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <PageHeader
-        title={need.title}
+        documentTitle={need.title}
+        title={
+          <span className="flex min-w-0 items-start gap-3">
+            <IconTile icon={look.Icon} tone={archived ? 'neutral' : look.tone} size="lg" className="mt-0.5" />
+            <span className="min-w-0 [overflow-wrap:anywhere]">{need.title}</span>
+          </span>
+        }
         breadcrumbs={[{ label: S.crumbs, href: '/employer/needs' }, { label: need.title }]}
         meta={
-          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
-            <CategoryChip title={need.target.title} />
-            <SalaryRange from={need.salary_from} to={need.salary_to} size="sm" />
-            {need.work_formats.map((f) => (
-              <span key={f} className="type-sm rounded-full bg-fill px-3 py-1">
-                {FORMATS[f]}
-              </span>
-            ))}
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <CategoryChip title={need.target.title} className="mr-1" />
+            <SoftPill tone="success">
+              <SalaryRange from={need.salary_from} to={need.salary_to} size="sm" className="text-success" />
+            </SoftPill>
+            <FormatPills formats={need.work_formats} />
+            {need.city ? <SoftPill icon={MapPin}>{need.city}</SoftPill> : null}
           </div>
         }
         actions={
@@ -87,6 +117,7 @@ export function NeedScreen({ needId, search, catalog, setSearch, renderInvite }:
             <div className="flex items-center gap-2">
               <Button asChild variant="ghost">
                 <Link to="/employer/needs/$needId/edit" params={{ needId }}>
+                  <Pencil aria-hidden="true" />
                   {MATCHING.needs.edit}
                 </Link>
               </Button>
@@ -159,101 +190,190 @@ function InvitationsTab({ need }: { need: NeedView }) {
     )
   if (q.isError) return <ErrorState error={q.error} onRetry={() => q.refetch()} compact />
   const f = q.data.funnel
-  const cells: [string, number | undefined][] = [
-    ['Доставлено', f.delivered],
-    ['Не доставлено', f.not_delivered],
-    ['Просмотрено', f.viewed],
-    ['Принято', f.accepted],
-    ['Отклонено', f.declined],
-    ['Истекло', f.expired],
-  ]
+  const delivered = f.delivered ?? 0
+  const viewed = f.viewed ?? 0
+  const accepted = f.accepted ?? 0
+  const declined = f.declined ?? 0
+  const expired = f.expired ?? 0
+  const notDelivered = f.not_delivered ?? 0
+  // По убыванию, как в общей сводке приглашений.
+  const reasons = [...q.data.reasons].sort((x, y) => y.count - x.count)
+  const reasonsMax = Math.max(1, ...reasons.map((r) => r.count))
+  const statedMax = Math.max(
+    1,
+    ...q.data.stated_salary.map((s) => s.count),
+    ...q.data.stated_formats.map((s) => s.count),
+  )
+  const stated = q.data.stated_salary.length > 0 || q.data.stated_formats.length > 0
   return (
-    <div className="flex min-w-0 flex-col gap-6">
-      <FunnelStrip steps={cells.map(([label, n]) => ({ label, value: n ?? 0 }))} />
-      <Section title="Причины отказов">
-        {q.data.reasons.length > 0 ? (
-          <ul className="flex min-w-0 flex-col gap-1">
-            {q.data.reasons.map((r) => (
-              <li key={r.reason_code} className="type-body min-w-0 break-words">
-                {r.reason_label} — <span className="num">{r.count}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="type-sm text-ink-muted">Отказов пока нет</p>
-        )}
-      </Section>
-      {q.data.stated_salary.length > 0 || q.data.stated_formats.length > 0 ? (
-        <Section title="Условия, которые назвали кандидаты">
-          <ul className="flex min-w-0 flex-col gap-1">
-            {q.data.stated_salary.map((s) => (
-              <li key={`s${s.value}`} className="type-body num">
-                от {s.value.toLocaleString('ru-RU')} ₽ — {s.count}
-              </li>
-            ))}
-            {q.data.stated_formats.map((s) => (
-              <li key={`f${s.value}`} className="type-body">
-                {FORMATS[s.value]} — <span className="num">{s.count}</span>
-              </li>
-            ))}
-          </ul>
-        </Section>
-      ) : null}
+    <div className="flex min-w-0 flex-col gap-4">
+      <div className="grid min-w-0 gap-3 lg:grid-cols-2 lg:gap-4">
+        <section className={PANEL} aria-labelledby="ni-funnel">
+          <PanelHead id="ni-funnel" icon={Send} title="Воронка" />
+          {delivered + notDelivered > 0 ? (
+            <FunnelBars
+              label="Воронка приглашений"
+              conversionLabel="конверсия"
+              steps={[
+                {
+                  key: 'delivered',
+                  label: 'Доставлено',
+                  value: delivered,
+                  icon: Send,
+                  tone: 'soft',
+                  color: 'brandSoft',
+                },
+                { key: 'viewed', label: 'Просмотрено', value: viewed, icon: Eye, tone: 'brand', color: 'brand' },
+                {
+                  key: 'accepted',
+                  label: 'Принято',
+                  value: accepted,
+                  icon: CircleCheckBig,
+                  tone: 'success',
+                  color: 'success',
+                },
+              ]}
+            />
+          ) : (
+            <DashedNote icon={Send}>Приглашений пока нет</DashedNote>
+          )}
+        </section>
+        <section className={PANEL} aria-labelledby="ni-out">
+          <PanelHead id="ni-out" icon={UsersRound} title="Исходы" />
+          <LegendList
+            items={[
+              { key: 'accepted', label: 'Принято', value: accepted, icon: CircleCheckBig, tone: 'success' },
+              { key: 'declined', label: 'Отклонено', value: declined, icon: CircleX, tone: 'danger' },
+              { key: 'expired', label: 'Истекло', value: expired, icon: Clock, tone: 'warning' },
+              { key: 'not_delivered', label: 'Не доставлено', value: notDelivered, icon: MailX, tone: 'dashed' },
+            ]}
+          />
+        </section>
+        <section className={PANEL} aria-labelledby="ni-reasons">
+          <PanelHead id="ni-reasons" icon={CircleX} tone="danger" title="Причины отказов" />
+          {reasons.length > 0 ? (
+            <ul className="flex min-w-0 flex-col gap-3">
+              {reasons.map((r, i) => (
+                <li key={r.reason_code} className="min-w-0">
+                  <MiniBar label={r.reason_label} value={r.count} max={reasonsMax} color="danger" index={i} />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <DashedNote icon={CircleCheckBig}>Отказов пока нет</DashedNote>
+          )}
+        </section>
+        {stated ? (
+          <section className={PANEL} aria-labelledby="ni-stated">
+            <PanelHead id="ni-stated" icon={MessageSquareQuote} title="Условия, которые назвали кандидаты" />
+            <ul className="flex min-w-0 flex-col gap-3">
+              {q.data.stated_salary.map((s, i) => (
+                <li key={`s${s.value}`} className="min-w-0">
+                  <MiniBar
+                    label={`от ${formatMoney(s.value)}`}
+                    value={s.count}
+                    max={statedMax}
+                    color="success"
+                    index={i}
+                  />
+                </li>
+              ))}
+              {q.data.stated_formats.map((s, i) => (
+                <li key={`f${s.value}`} className="min-w-0">
+                  <MiniBar
+                    label={FORMATS[s.value]}
+                    value={s.count}
+                    max={statedMax}
+                    index={q.data.stated_salary.length + i}
+                  />
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+      </div>
       {q.data.hints.length > 0 ? (
-        <Section title="Подсказки">
-          <ul className="flex min-w-0 flex-col divide-y divide-line">
+        <section className="flex min-w-0 flex-col gap-2" aria-label="Подсказки">
+          <ul className="flex min-w-0 flex-col gap-2">
             {q.data.hints.slice(0, 3).map((h) => (
-              <li key={`${h.code}${h.value}`} className="type-sm min-w-0 break-words py-2">
-                {h.text}
+              <li
+                key={`${h.code}${h.value}`}
+                className="surface-row type-sm flex min-w-0 items-center gap-3 p-3 break-words md:px-4"
+              >
+                <IconTile icon={Lightbulb} tone="warning" size="sm" />
+                <span className="min-w-0">{h.text}</span>
               </li>
             ))}
           </ul>
-        </Section>
+        </section>
       ) : null}
       {q.data.salary_note ? <p className="type-sm text-ink-muted">{q.data.salary_note}</p> : null}
-      <EmptyLink />
+      <Button asChild variant="secondary" className="self-start max-[479px]:w-full">
+        <Link to="/employer/invitations">
+          Все приглашения
+          <ArrowRight aria-hidden="true" />
+        </Link>
+      </Button>
     </div>
   )
 }
 
-function EmptyLink() {
+function SkillChips({ skills, tone }: { skills: { code: string; title: string }[]; tone: 'brand' | 'neutral' }) {
+  if (skills.length === 0) return <span className="type-sm text-ink-muted">—</span>
   return (
-    <p className="type-sm">
-      <Link to="/employer/invitations" className="text-link">
-        Все приглашения
-      </Link>
-    </p>
+    <ul className="flex min-w-0 flex-wrap gap-1.5">
+      {skills.map((s) => (
+        <li key={s.code} className="min-w-0 max-w-full">
+          <SoftPill tone={tone} className="h-auto min-h-7 shrink py-0.5 font-medium">
+            <span className="min-w-0 break-words">{s.title}</span>
+          </SoftPill>
+        </li>
+      ))}
+    </ul>
   )
 }
 
 function DescriptionTab({ need }: { need: NeedView }) {
-  const rows: [string, React.ReactNode][] = [
-    ['Категория', need.target.title],
-    ['Обязательные навыки', need.must_skills.map((s) => s.title).join(', ') || '—'],
-    ['Желательные навыки', need.nice_skills.map((s) => s.title).join(', ') || '—'],
-    ['Формат работы', need.work_formats.map((f) => FORMATS[f]).join(', ')],
-    ['Город', need.city ?? '—'],
-    ['Вилка', <SalaryRange key="s" from={need.salary_from} to={need.salary_to} size="sm" />],
-    ['О команде', need.team_description],
-  ]
   return (
-    <div className="flex min-w-0 flex-col gap-6">
-      <dl className="grid min-w-0 grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-[200px_minmax(0,1fr)]">
-        {rows.map(([k, v]) => (
-          <div key={k} className="contents">
-            <dt className="type-sm text-ink-muted">{k}</dt>
-            <dd className="type-body min-w-0 whitespace-pre-line break-words">{v}</dd>
-          </div>
-        ))}
-      </dl>
-      <Section title={MATCHING.form.blueprint}>
+    <div className="flex min-w-0 flex-col gap-4">
+      <div className="grid min-w-0 gap-3 lg:grid-cols-2 lg:gap-4">
+        <section className={PANEL} aria-labelledby="nd-skills">
+          <PanelHead id="nd-skills" icon={ListChecks} title="Навыки" />
+          <dl className="flex min-w-0 flex-col gap-4">
+            <div className="flex min-w-0 flex-col gap-2">
+              <dt className="type-eyebrow flex items-center gap-1.5">
+                <Star aria-hidden="true" className="size-3.5 text-brand-700" />
+                Обязательные навыки
+              </dt>
+              <dd className="min-w-0">
+                <SkillChips skills={need.must_skills} tone="brand" />
+              </dd>
+            </div>
+            <div className="flex min-w-0 flex-col gap-2">
+              <dt className="type-eyebrow flex items-center gap-1.5">
+                <Sparkles aria-hidden="true" className="size-3.5" />
+                Желательные навыки
+              </dt>
+              <dd className="min-w-0">
+                <SkillChips skills={need.nice_skills} tone="neutral" />
+              </dd>
+            </div>
+          </dl>
+        </section>
+        <section className={PANEL} aria-labelledby="nd-team">
+          <PanelHead id="nd-team" icon={UsersRound} title="О команде" />
+          <p className="type-body max-w-[80ch] min-w-0 whitespace-pre-line break-words">{need.team_description}</p>
+        </section>
+      </div>
+      <section className={PANEL} aria-labelledby="nd-blueprint">
+        <PanelHead id="nd-blueprint" icon={FileText} title={MATCHING.form.blueprint} />
         <NeedBlueprint
           specialization={need.target.specialization.code}
           grade={need.target.grade.code}
           must={need.must_skills.map((s) => s.code)}
           nice={need.nice_skills.map((s) => s.code)}
         />
-      </Section>
+      </section>
       {!need.latest_snapshot ? <EmptyState compact text="Подборка ещё не сформирована." /> : null}
     </div>
   )

@@ -1,57 +1,72 @@
 import { Link } from '@tanstack/react-router'
-import { Clock } from 'lucide-react'
+import { CalendarDays, TimerOff } from 'lucide-react'
 import type { InvitationCandidateBrief } from '@/client'
-import { SalaryRange, StatusBadge } from '@/components/app'
-import { WORK_FORMAT_LABELS } from '@/content/common'
-import { formatDate, formatDeadline, formatRemaining } from '@/lib/format'
-import { msUntil } from '@/lib/time'
+import { DeadlinePill, GoChevron, SoftPill, StatusBadge } from '@/components/app'
+import { formatDate } from '@/lib/format'
+import { cn } from '@/lib/utils'
+import { CompanyTile, candidateStatusCode, OfferPills } from './parts'
 
-export type InvitationCardProps = { item: InvitationCandidateBrief }
+export type InvitationCardProps = { item: InvitationCandidateBrief; index?: number }
 
-/** Карточка входящего приглашения: целиком ссылка на C9. */
-export function InvitationCard({ item }: InvitationCardProps) {
+/** Карточка входящего приглашения: целиком ссылка на C9. Плитка компании, условия плашками, статус и срок. */
+export function InvitationCard({ item, index = 0 }: InvitationCardProps) {
   const waiting = item.status === 'sent' || item.status === 'viewed'
-  const soon = waiting && msUntil(item.expires_at) < 24 * 3600_000 && formatRemaining(item.expires_at) !== null
+  const live = waiting || item.status === 'accepted'
   return (
     <Link
       to="/candidate/invitations/$invitationId"
       params={{ invitationId: item.id }}
-      className="surface-card flex min-w-0 flex-col gap-2 transition-colors hover:bg-fill focus-visible:outline-2 focus-visible:outline-offset-2"
+      style={{ '--i': index } as React.CSSProperties}
+      className={cn(
+        'lift-card surface-row stagger flex h-full min-w-0 animate-rise-in flex-col gap-4 p-4 focus-visible:outline-2 focus-visible:outline-offset-2 md:p-5',
+        live && 'accent-card',
+      )}
     >
-      <div className="flex min-w-0 items-start justify-between gap-3">
-        <div className="min-w-0">
+      <div className="flex min-w-0 items-start gap-3">
+        <CompanyTile name={item.company_name} status={item.status} />
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <p className="type-eyebrow flex min-w-0 items-center gap-2 text-ink-muted">
             <span className="truncate">{item.company_name}</span>
+            {item.is_new ? (
+              <SoftPill tone="solid" size="sm" className="h-5 px-2 text-xs tracking-normal normal-case">
+                новое
+              </SoftPill>
+            ) : null}
           </p>
           <h3 className="type-h3 line-clamp-2 [overflow-wrap:anywhere] text-ink">{item.title}</h3>
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-1">
-          <StatusBadge status={item.status} label={item.status_label} size="sm" />
-        </div>
+        <GoChevron className="mt-1" />
       </div>
-      <SalaryRange from={item.salary_from} to={item.salary_to} size="md" />
-      <p className="type-sm text-ink-muted [overflow-wrap:anywhere]">
-        {[
-          WORK_FORMAT_LABELS[item.work_format],
-          item.city,
-          item.is_demo ? 'демо' : null,
-          item.below_my_min ? 'ниже вашего минимума' : null,
-        ]
-          .filter(Boolean)
-          .join(' · ')}
-      </p>
-      {waiting ? (
-        <p className={`type-sm flex items-center gap-1.5 ${soon ? 'text-warning' : 'text-ink-muted'}`}>
-          {soon ? <Clock className="size-4 shrink-0" aria-hidden="true" /> : null}
-          <span className="min-w-0">{formatDeadline(item.expires_at)}</span>
-        </p>
-      ) : item.status === 'expired' && item.strikes ? (
-        <p className="type-sm text-ink-muted">
-          Срок истёк {formatDate(item.expires_at)} · пропущено {item.strikes.count} из {item.strikes.limit}
-        </p>
-      ) : (
-        <p className="type-sm text-ink-muted">Обновлено {formatDate(item.updated_at)}</p>
-      )}
+      <OfferPills offer={item} />
+      <div className="mt-auto flex min-w-0 flex-wrap items-center gap-2 border-t border-line pt-3">
+        <StatusBadge status={candidateStatusCode(item.status)} label={item.status_label} size="sm" />
+        {waiting ? (
+          <DeadlinePill until={item.expires_at} size="sm" />
+        ) : item.status === 'expired' && item.strikes ? (
+          <>
+            <span className="type-sm inline-flex items-center gap-1.5 text-ink-muted">
+              <CalendarDays aria-hidden="true" className="size-3.5" />
+              <span className="num">
+                <span className="sr-only">Срок истёк </span>
+                {formatDate(item.expires_at)}
+              </span>
+            </span>
+            <SoftPill tone="warning" size="sm" icon={TimerOff}>
+              <span className="num">
+                пропущено {item.strikes.count} из {item.strikes.limit}
+              </span>
+            </SoftPill>
+          </>
+        ) : (
+          <span className="type-sm inline-flex items-center gap-1.5 text-ink-muted">
+            <CalendarDays aria-hidden="true" className="size-3.5" />
+            <span className="num">
+              <span className="sr-only">Обновлено </span>
+              {formatDate(item.updated_at)}
+            </span>
+          </span>
+        )}
+      </div>
     </Link>
   )
 }

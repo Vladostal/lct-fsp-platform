@@ -50,6 +50,12 @@ export const COMMON = {
   },
 } as const
 
+/** Переключатель темы оформления. */
+export const THEME = {
+  label: 'Тема оформления',
+  options: { system: 'Системная', light: 'Светлая', dark: 'Тёмная' },
+} as const
+
 export const ROLE_LABELS: Record<Role, string> = {
   candidate: 'ИТ-специалист',
   employer: 'Работодатель',
@@ -123,11 +129,26 @@ export const STRENGTH_SUMMARY = {
   declaredOf: 'из 60 (стаж и навыки)',
 } as const
 
+/** Единый словарь видимости профиля: чип в шапке, обзор и «Приватность» называют состояние одинаково. */
 export const VISIBILITY_LABELS: Record<VisibilityState, string> = {
-  visible: 'Профиль виден',
-  paused: 'Профиль скрыт',
-  unpublished: 'Не опубликован',
-  not_ready: 'Нет категории',
+  visible: 'Виден работодателям',
+  paused: 'Показ приостановлен',
+  unpublished: 'Не виден работодателям',
+  not_ready: 'Не виден работодателям',
+}
+
+/** Причина состояния видимости — в подсказке (title) рядом с подписью. */
+export const VISIBILITY_REASONS: Record<VisibilityState, string | null> = {
+  visible: null,
+  paused: null,
+  unpublished: 'не опубликован',
+  not_ready: 'нет категории',
+}
+
+/** Подсказка чипа видимости: подпись и причина вторым словом. */
+export function visibilityTitle(state: VisibilityState): string | undefined {
+  const reason = VISIBILITY_REASONS[state]
+  return reason ? `${VISIBILITY_LABELS[state]} · ${reason}` : undefined
 }
 
 export const INVITATION_STATUS_LABELS: Record<Role, Partial<Record<InvitationStatus, string>>> = {

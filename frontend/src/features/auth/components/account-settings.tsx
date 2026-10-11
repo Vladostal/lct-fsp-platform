@@ -1,9 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { LogOut, Trash2 } from 'lucide-react'
+import { FlaskConical, KeyRound, LogOut, type LucideIcon, Mail, Trash2, UserRound } from 'lucide-react'
+import type * as React from 'react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import type { MeView } from '@/client'
-import { DemoChip, PageHeader, PasswordInput } from '@/components/app'
+import { IconTile, PageHeader, PasswordInput, SoftPill, type TileTone } from '@/components/app'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   AlertDialog,
@@ -18,7 +19,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { ROLE_LABELS } from '@/content/common'
+import { COMMON, ROLE_LABELS } from '@/content/common'
 import { applyFieldErrors, hasCode } from '@/lib/api'
 import { AUTH, deleteDialogDelay, REREGISTER_COOLDOWN_DAYS_DEFAULT } from '../content'
 import { useChangePassword, useDeleteAccount, useLogout } from '../hooks'
@@ -34,6 +35,31 @@ export type AccountSettingsProps = {
   me: MeView
   /** Срок карантина адреса после удаления, дней (из `catalog.limits`, если сервер его отдаёт). */
   reregisterCooldownDays?: number
+  /** Вкладки настроек над заголовком (кабинет кандидата). */
+  tabs?: React.ReactNode
+}
+
+/** Заголовок карточки: плитка со значком и название — как на соседних экранах настроек. */
+function HeadTitle({
+  icon,
+  tone = 'brand',
+  children,
+}: {
+  icon: LucideIcon
+  tone?: TileTone
+  children: React.ReactNode
+}) {
+  return (
+    <div className="flex min-w-0 items-center gap-3">
+      <IconTile icon={icon} tone={tone} />
+      <CardTitle className="min-w-0 [overflow-wrap:anywhere]">{children}</CardTitle>
+    </div>
+  )
+}
+
+/** Пометка у недоступного действия демо-аккаунта. */
+function DemoPill() {
+  return <SoftPill icon={FlaskConical}>{AUTH.account.demoReadonly}</SoftPill>
 }
 
 /**
@@ -44,13 +70,15 @@ export type AccountSettingsProps = {
 export function AccountSettings({
   me,
   reregisterCooldownDays = REREGISTER_COOLDOWN_DAYS_DEFAULT,
+  tabs,
 }: AccountSettingsProps) {
   const A = AUTH.account
   const logout = useLogout()
   const [deleteOpen, setDeleteOpen] = useState(false)
 
   return (
-    <div className="mx-auto flex w-full max-w-[880px] min-w-0 flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-5xl min-w-0 flex-col gap-6">
+      {tabs}
       <PageHeader title={A.title} description={A.description} />
 
       {me.is_demo ? (
@@ -61,19 +89,23 @@ export function AccountSettings({
 
       <Card>
         <CardHeader>
-          <CardTitle>{A.emailCard}</CardTitle>
+          <HeadTitle icon={Mail}>{A.emailCard}</HeadTitle>
           <CardDescription>{A.emailNote}</CardDescription>
         </CardHeader>
-        <dl className="grid min-w-0 gap-x-8 gap-y-4 sm:grid-cols-[minmax(0,1fr)_auto]">
-          <div className="flex min-w-0 flex-col gap-1">
-            <dt className="type-sm text-ink-muted">{A.emailLabel}</dt>
-            <dd className="type-body font-medium text-ink [overflow-wrap:anywhere]">{me.email}</dd>
+        <dl className="flex min-w-0 flex-wrap gap-2">
+          <div className="min-w-0 max-w-full">
+            <dt className="sr-only">{A.emailLabel}</dt>
+            <dd className="min-w-0">
+              <SoftPill tone="brand" icon={Mail} title={me.email} className="shrink">
+                <span className="min-w-0 truncate font-medium">{me.email}</span>
+              </SoftPill>
+            </dd>
           </div>
-          <div className="flex min-w-0 flex-col gap-1">
-            <dt className="type-sm text-ink-muted">{A.roleLabel}</dt>
-            <dd className="type-body flex flex-wrap items-center gap-2 font-medium text-ink">
-              {ROLE_LABELS[me.role]}
-              {me.is_demo ? <DemoChip /> : null}
+          <div className="min-w-0">
+            <dt className="sr-only">{A.roleLabel}</dt>
+            <dd className="flex min-w-0 flex-wrap items-center gap-2">
+              <SoftPill icon={UserRound}>{ROLE_LABELS[me.role]}</SoftPill>
+              {me.is_demo ? <SoftPill icon={FlaskConical}>{COMMON.demoChip}</SoftPill> : null}
             </dd>
           </div>
         </dl>
@@ -83,7 +115,9 @@ export function AccountSettings({
 
       <Card>
         <CardHeader>
-          <CardTitle>{A.logoutCard}</CardTitle>
+          <HeadTitle icon={LogOut} tone="neutral">
+            {A.logoutCard}
+          </HeadTitle>
           <CardDescription>{A.logoutText}</CardDescription>
         </CardHeader>
         <div className="flex">
@@ -94,9 +128,11 @@ export function AccountSettings({
         </div>
       </Card>
 
-      <Card>
+      <Card className="border border-danger/30">
         <CardHeader>
-          <CardTitle>{A.deleteCard}</CardTitle>
+          <HeadTitle icon={Trash2} tone="danger">
+            {A.deleteCard}
+          </HeadTitle>
           <CardDescription>{A.deleteText}</CardDescription>
         </CardHeader>
         <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
@@ -113,7 +149,7 @@ export function AccountSettings({
             <Trash2 aria-hidden="true" className="max-[479px]:hidden" />
             {A.deleteAction}
           </Button>
-          {me.is_demo ? <span className="type-sm text-ink-muted">{A.demoReadonly}</span> : null}
+          {me.is_demo ? <DemoPill /> : null}
         </div>
       </Card>
 
@@ -148,7 +184,7 @@ function ChangePasswordCard({ disabled }: { disabled: boolean }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{A.passwordCard}</CardTitle>
+        <HeadTitle icon={KeyRound}>{A.passwordCard}</HeadTitle>
         <CardDescription>{A.passwordNote}</CardDescription>
       </CardHeader>
       <Form {...form}>
@@ -198,7 +234,7 @@ function ChangePasswordCard({ disabled }: { disabled: boolean }) {
             >
               {A.passwordSubmit}
             </Button>
-            {disabled ? <span className="type-sm text-ink-muted">{A.demoReadonly}</span> : null}
+            {disabled ? <DemoPill /> : null}
           </div>
         </form>
       </Form>

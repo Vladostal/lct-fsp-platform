@@ -28,11 +28,13 @@ export function CheckEmailPanel({ email }: { email: string }) {
       title={AUTH.checkEmail.title}
       icon={MailCheck}
       description={
-        <p>
-          {AUTH.checkEmail.textBefore}{' '}
-          <strong className="font-medium text-ink [overflow-wrap:anywhere]">{email}</strong>.{' '}
-          {AUTH.checkEmail.textAfter}
-        </p>
+        <div className="flex min-w-0 flex-col items-start gap-3">
+          <p>{AUTH.checkEmail.textBefore}</p>
+          <strong className="type-body max-w-full rounded-md bg-brand-50 px-3 py-2 font-medium text-brand-700 [overflow-wrap:anywhere]">
+            {email}
+          </strong>
+          <p>{AUTH.checkEmail.textAfter}</p>
+        </div>
       }
     >
       <MailboxHint />

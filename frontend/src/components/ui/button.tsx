@@ -18,11 +18,11 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: 'bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-900',
+        primary: 'bg-brand-600 text-on-brand hover:bg-brand-700 active:bg-brand-900 dark:hover:bg-brand-900',
         secondary: 'bg-fill text-ink hover:bg-line active:bg-line',
         ghost: 'text-ink-muted hover:bg-fill hover:text-ink active:bg-line',
         destructive: 'border-danger bg-surface text-danger hover:bg-danger-bg active:bg-danger-bg',
-        link: 'tap-target rounded-xs text-brand-700 underline decoration-1 underline-offset-3 hover:text-brand-600 hover:decoration-2 active:text-brand-900',
+        link: 'tap-target rounded-xs text-brand-700 underline decoration-1 underline-offset-3 hover:text-brand-600 hover:decoration-2 active:text-brand-900 dark:active:text-brand-700',
       },
       size: {
         md: 'tap-target h-10 gap-2 px-4 text-sm',

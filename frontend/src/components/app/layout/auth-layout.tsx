@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import type * as React from 'react'
 import { LEGAL_DOCS } from '@/content/common'
 import { AppLogo } from '../app-logo'
+import { ThemeSwitch } from '../theme-switch'
 import { SkipLink } from './skip-link'
 
 /** Каркас Auth (E §1.2): одна карточка 480 px по центру; логотип ведёт на лендинг. */
@@ -36,6 +37,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
             ))}
           </ul>
         </nav>
+        <ThemeSwitch className="mt-1 justify-center" />
       </footer>
     </div>
   )

@@ -14,41 +14,50 @@ export type StickyActionBarProps = {
   secondary?: React.ReactNode
   /** Подпись под основным действием: «Сохранено в 14:02», причина недоступности кнопки. */
   note?: React.ReactNode
-  /** Ширина содержимого панели: колонка мастера 720, колонка теста 880 или контейнер страницы. */
+  /** Устарело: панель сама берёт ширину и положение колонки, в которой стоит. */
   width?: 'wizard' | 'focus' | 'page'
   className?: string
 }
 
-const WIDTH: Record<NonNullable<StickyActionBarProps['width']>, string> = {
-  wizard: 'max-w-[720px]',
-  focus: 'max-w-[880px]',
-  page: 'max-w-[1340px]',
-}
+/** Зазор между панелью и нижним краем окна. */
+const GAP = 12
 
 /**
- * Липкая панель действий внизу экрана (E §4.4): слой 20, тень shadow-bar, отступ под безопасную зону.
- * Чтобы панель не закрывала последний блок и элемент в фокусе, компонент оставляет в потоке распорку своей
- * высоты и выставляет на <html> переменную --action-bar-space: её читают scroll-padding-bottom и сдвиг toast.
+ * Липкая панель действий внизу экрана (E §4.4) — один шаблон на все экраны: плавающая белая карточка с тенью
+ * шириной в контентную колонку. Колонку задаёт распорка в потоке: панель повторяет её левый край и ширину,
+ * поэтому в мастере, тесте и кабинете она стоит ровно под содержимым. Распорка же не даёт панели закрыть
+ * последний блок, а переменная --action-bar-space на <html> задаёт scroll-padding-bottom и сдвиг toast.
  */
-export function StickyActionBar({ children, secondary, note, width = 'wizard', className }: StickyActionBarProps) {
+export function StickyActionBar({ children, secondary, note, className }: StickyActionBarProps) {
   const barRef = useRef<HTMLDivElement>(null)
+  const spacerRef = useRef<HTMLDivElement>(null)
   const [height, setHeight] = useState(72)
+  const [box, setBox] = useState<{ left: number; width: number } | null>(null)
   const narrow = useNarrowActions()
 
   useLayoutEffect(() => {
     const bar = barRef.current
-    if (!bar) return
+    const spacer = spacerRef.current
+    if (!bar || !spacer) return
     const root = document.documentElement
     const update = () => {
       const next = Math.ceil(bar.getBoundingClientRect().height)
       setHeight(next)
-      root.style.setProperty('--action-bar-space', `${next + 24}px`)
+      root.style.setProperty('--action-bar-space', `${next + GAP + 24}px`)
+      const rect = spacer.getBoundingClientRect()
+      setBox((prev) =>
+        prev && prev.left === rect.left && prev.width === rect.width ? prev : { left: rect.left, width: rect.width },
+      )
     }
     update()
     const observer = new ResizeObserver(update)
     observer.observe(bar)
+    observer.observe(spacer)
+    observer.observe(root)
+    window.addEventListener('resize', update)
     return () => {
       observer.disconnect()
+      window.removeEventListener('resize', update)
       root.style.removeProperty('--action-bar-space')
     }
   }, [])
@@ -67,25 +76,20 @@ export function StickyActionBar({ children, secondary, note, width = 'wizard', c
 
   return (
     <>
-      <div aria-hidden="true" style={{ height: height + 24 }} />
+      <div ref={spacerRef} aria-hidden="true" className="w-full shrink-0" style={{ height: height + GAP * 2 }} />
       <div
         ref={barRef}
         data-slot="sticky-action-bar"
         data-sticky="bottom"
+        style={box ? { left: box.left, width: box.width } : undefined}
         className={cn(
-          'fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] shadow-bar',
+          'surface-row fixed bottom-[calc(12px+env(safe-area-inset-bottom))] z-20 flex min-h-16 min-w-0 gap-x-4 gap-y-3 px-4 py-3 shadow-(--shadow-pop)',
+          box ? null : 'inset-x-4',
+          narrow ? 'flex-col' : 'flex-row items-center',
           className,
         )}
       >
-        <div
-          className={cn(
-            'mx-auto flex min-h-[72px] w-full min-w-0 gap-x-4 gap-y-3 px-4 py-3 md:px-6',
-            narrow ? 'flex-col' : 'flex-row items-center',
-            WIDTH[width],
-          )}
-        >
-          {narrow ? [main, side] : [side, main]}
-        </div>
+        {narrow ? [main, side] : [side, main]}
       </div>
     </>
   )

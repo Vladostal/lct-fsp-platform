@@ -1,4 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
+import { Hourglass, RefreshCw, TriangleAlert } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import type { Catalog } from '@/client'
@@ -9,6 +10,7 @@ import { errorMessage, hasCode } from '@/lib/api'
 import { formatDate } from '@/lib/format'
 import { invalidateGuardData } from '@/lib/guards'
 import { msUntil } from '@/lib/time'
+import { cn } from '@/lib/utils'
 import { assessmentKeys, putClaim } from '../api'
 import { ASSESSMENT } from '../content'
 
@@ -67,7 +69,12 @@ export function DeclaredGradeForm({ catalog, specialization, current, replaces =
   return (
     <div className="flex min-w-0 flex-col gap-3" data-slot="declared-grade-form">
       {current ? null : <p className="type-sm min-w-0">{D.first(specialization)}</p>}
-      {replaces ? <p className="type-sm min-w-0 text-warning">{D.replaces}</p> : null}
+      {replaces ? (
+        <p className="type-sm flex min-w-0 items-start gap-2 text-warning">
+          <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+          <span className="min-w-0">{D.replaces}</span>
+        </p>
+      ) : null}
       <ToggleGroup
         type="single"
         value={selected}
@@ -85,12 +92,24 @@ export function DeclaredGradeForm({ catalog, specialization, current, replaces =
           </ToggleGroupItem>
         ))}
       </ToggleGroup>
-      <p className="type-caption min-w-0 text-ink-muted">
-        {locked && current
-          ? D.locked(formatDate(current.changeAvailableAt))
-          : changed
-            ? D.unlocked(days)
-            : D.free(days)}
+      <p
+        className={cn(
+          'type-sm flex w-fit min-w-0 max-w-full items-start gap-2 rounded-md px-3 py-1.5',
+          locked ? 'bg-warning-bg text-warning' : 'bg-fill text-ink',
+        )}
+      >
+        {locked ? (
+          <Hourglass aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+        ) : (
+          <RefreshCw aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-ink-muted" />
+        )}
+        <span className="min-w-0">
+          {locked && current
+            ? D.locked(formatDate(current.changeAvailableAt))
+            : changed
+              ? D.unlocked(days)
+              : D.free(days)}
+        </span>
       </p>
       {error ? <Alert variant="destructive">{error}</Alert> : null}
       <div>

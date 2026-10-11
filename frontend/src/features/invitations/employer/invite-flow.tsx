@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Eye, Hourglass, Lock, Send, UserRound } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type {
   CategoryRef,
@@ -22,7 +22,10 @@ import {
   CandidateCategoryChip,
   CategoryChip,
   ErrorState,
+  FormatLabel,
+  IconTile,
   SalaryRangeInput,
+  SoftPill,
   validateSalaryRange,
 } from '@/components/app'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -46,6 +49,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { WORK_FORMAT_LABELS } from '@/content/common'
 import { errorMessage, errorText, isApiError } from '@/lib/api'
 import { formatDate, formatDateTime, formatMoney, formatSalaryRange } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import { CONTACT_KIND_LABELS, InvitationPreview, tidy, useCatalogLimits } from '../shared'
 import { BlockerPanel } from './blocker-panel'
 import { useRefreshEmployerInvitations } from './hooks'
@@ -163,6 +167,8 @@ function Wizard({
 }) {
   const limits = useCatalogLimits()
   const refresh = useRefreshEmployerInvitations()
+  // Компания уже загружена родителем (тот же ключ): в предпросмотре — её настоящее название.
+  const companyName = useQuery(companyGetCompanyOptions()).data?.name?.trim() || 'Ваша компания'
   const key = draftKey(props.candidateId, props.needId)
   const [form, setForm] = useState<Form>(initial)
   const [step, setStep] = useState<1 | 2>(1)
@@ -312,13 +318,28 @@ function Wizard({
       <Button variant="ghost" size="sm" className="self-start" onClick={back}>
         <ArrowLeft aria-hidden="true" /> К карточке
       </Button>
-      <div className="flex min-w-0 flex-wrap items-center gap-2">
-        <span className="num type-sm text-ink-muted">{props.candidateCode}</span>
-        {props.category ? (
-          <CandidateCategoryChip category={props.category} />
-        ) : (
-          <CategoryChip title={props.categoryTitle} />
-        )}
+      <div className="accent-card surface-row flex min-w-0 items-center gap-3 p-3 md:p-4">
+        <IconTile icon={UserRound} tone="brand" />
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="num type-body font-medium text-ink">{props.candidateCode}</span>
+          {props.category ? (
+            <CandidateCategoryChip category={props.category} className="font-normal text-ink-muted" />
+          ) : (
+            <CategoryChip title={props.categoryTitle} className="font-normal text-ink-muted" />
+          )}
+        </div>
+        {/* Два шага мастера: пройденный и текущий залиты, результат заливает оба. */}
+        <span aria-hidden="true" className="flex shrink-0 items-center gap-1">
+          {[1, 2].map((n) => (
+            <span
+              key={n}
+              className={cn(
+                'h-1.5 w-8 rounded-full transition-colors',
+                result || step >= n ? 'bg-brand-600' : 'bg-line-strong',
+              )}
+            />
+          ))}
+        </span>
       </div>
       <h2 className="type-h2 text-ink">{stepTitle}</h2>
 
@@ -449,7 +470,7 @@ function Wizard({
                   <div key={f} className="flex min-h-11 min-w-0 items-center gap-3">
                     <RadioGroupItem id={`invite-format-${f}`} value={f} disabled={disabled} />
                     <Label htmlFor={`invite-format-${f}`} className="min-w-0">
-                      {WORK_FORMAT_LABELS[f]}
+                      <FormatLabel format={f} />
                       {unavailable ? (
                         <span className="type-sm text-ink-muted"> · кандидат не рассматривает</span>
                       ) : null}
@@ -529,15 +550,19 @@ function Wizard({
               Отмена
             </Button>
             <Button type="submit" variant="primary">
+              <Eye aria-hidden="true" />
               Проверить и отправить
             </Button>
           </div>
         </form>
       ) : (
         <div className="flex min-w-0 flex-col gap-4">
-          <h3 className="type-eyebrow">Так приглашение увидит кандидат</h3>
+          <h3 className="type-eyebrow flex items-center gap-1.5">
+            <Eye aria-hidden="true" className="size-3.5 text-brand-700" />
+            Так приглашение увидит кандидат
+          </h3>
           <InvitationPreview
-            companyName="Ваша компания"
+            companyName={companyName}
             title={form.title}
             salaryFrom={form.from ?? 0}
             salaryTo={form.to ?? 0}
@@ -547,9 +572,19 @@ function Wizard({
             contactMethod={{ kind: form.contactKind, value: form.contactValue }}
             message={form.message || null}
           />
-          <ul className="num type-sm flex min-w-0 flex-col gap-1 text-ink">
-            <li>Ответ не позже {formatDateTime(precheck.expires_at_preview)}</li>
-            <li>Условия после отправки не изменить</li>
+          <ul className="flex min-w-0 flex-wrap gap-2">
+            <li className="min-w-0 max-w-full">
+              <SoftPill tone="warning" icon={Hourglass} className="h-auto min-h-7 shrink py-0.5 [&>svg]:shrink-0">
+                <span className="min-w-0">
+                  Ответ не позже <span className="num">{formatDateTime(precheck.expires_at_preview)}</span>
+                </span>
+              </SoftPill>
+            </li>
+            <li className="min-w-0 max-w-full">
+              <SoftPill icon={Lock} className="h-auto min-h-7 shrink py-0.5 [&>svg]:shrink-0">
+                <span className="min-w-0">Условия после отправки не изменить</span>
+              </SoftPill>
+            </li>
           </ul>
           <Alert variant="warning">
             <AlertDescription>
@@ -570,6 +605,7 @@ function Wizard({
               Назад к условиям
             </Button>
             <Button variant="primary" loading={mutation.isPending} onClick={send}>
+              <Send aria-hidden="true" />
               {networkFailure ? 'Повторить' : 'Отправить приглашение'}
             </Button>
           </div>

@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link } from '@tanstack/react-router'
-import { CircleCheck, MailCheck, MailWarning } from 'lucide-react'
+import { CircleCheck, KeyRound, LockKeyhole, MailCheck, MailWarning } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { PasswordInput } from '@/components/app'
 import { Button } from '@/components/ui/button'
@@ -42,7 +42,7 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <AuthCard title={AUTH.forgot.title} description={AUTH.forgot.description} footer={backToLogin}>
+    <AuthCard title={AUTH.forgot.title} description={AUTH.forgot.description} icon={KeyRound} footer={backToLogin}>
       <Form {...form}>
         <form onSubmit={onSubmit} noValidate className="flex min-w-0 flex-col gap-5">
           <FormField
@@ -111,7 +111,7 @@ export function ResetPasswordForm({ token }: { token: string | undefined }) {
   )
 
   return (
-    <AuthCard title={AUTH.reset.title} description={AUTH.reset.description} footer={backToLogin}>
+    <AuthCard title={AUTH.reset.title} description={AUTH.reset.description} icon={LockKeyhole} footer={backToLogin}>
       <Form {...form}>
         <form onSubmit={onSubmit} noValidate className="flex min-w-0 flex-col gap-5">
           <FormField

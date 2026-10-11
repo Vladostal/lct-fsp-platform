@@ -21,7 +21,7 @@ const CSS = `
 .hf-glow{position:absolute;inset:0;filter:blur(36px);pointer-events:none;background:
   radial-gradient(55% 60% at 85% 8%,color-mix(in srgb,var(--color-brand-600) 30%,transparent),transparent 70%),
   radial-gradient(50% 55% at 8% 95%,color-mix(in srgb,var(--color-fsp-red) 18%,transparent),transparent 70%)}
-.hf-band{background-color:var(--color-brand-700);background-image:linear-gradient(115deg,var(--color-brand-600),var(--color-brand-900))}
+.hf-band{background-color:var(--color-brand-600);background-image:linear-gradient(115deg,var(--color-brand-600),var(--color-brand-900))}
 .hf-bar{background-image:linear-gradient(90deg,var(--color-brand-600),var(--color-brand-200))}
 @keyframes hf-a{0%{opacity:0;transform:translateY(8px)}6%,28%{opacity:1;transform:none}34%,100%{opacity:0;transform:translateY(-8px)}}
 @keyframes hf-b{0%,30%{opacity:0;transform:translateY(8px)}38%,61%{opacity:1;transform:none}67%,100%{opacity:0;transform:translateY(-8px)}}
@@ -34,7 +34,7 @@ const CSS = `
 const CANDIDATES = [
   { code: 'K-4821', strength: 92, tone: 'bg-brand-600' },
   { code: 'K-1307', strength: 74, tone: 'bg-brand-900' },
-  { code: 'K-9054', strength: 58, tone: 'bg-fsp-red' },
+  { code: 'K-9054', strength: 58, tone: 'bg-fsp-red dark:bg-brand-900' },
 ] as const
 
 const NEED_TAGS = ['Python', 'PostgreSQL', 'Удалённо'] as const
@@ -48,7 +48,7 @@ export function HeroFlow() {
       <div aria-hidden="true" className="hf-glow" />
       <div className="relative min-w-0 overflow-hidden rounded-lg bg-surface shadow-pop md:rounded-xl">
         {/* Шапка шага: подписи сменяются вместе со слоями */}
-        <div className="hf-band relative h-11 text-surface">
+        <div className="hf-band relative h-11 text-on-brand">
           <p aria-hidden="true" className={`hf-l1 type-sm font-medium ${BAND}`}>
             <Search className="size-4 shrink-0" />
             Работодатель описывает потребность
@@ -103,7 +103,7 @@ export function HeroFlow() {
                   }
                 >
                   <span
-                    className={`type-caption flex size-7 shrink-0 items-center justify-center rounded-full font-medium text-surface ${c.tone}`}
+                    className={`type-caption flex size-7 shrink-0 items-center justify-center rounded-full font-medium text-on-brand ${c.tone}`}
                   >
                     {i + 1}
                   </span>

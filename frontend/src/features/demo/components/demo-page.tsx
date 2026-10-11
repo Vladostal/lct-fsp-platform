@@ -1,9 +1,23 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
+import {
+  BarChart3,
+  Building2,
+  Clock,
+  History,
+  KeyRound,
+  LogIn,
+  Mail,
+  RotateCcw,
+  Trash2,
+  User,
+  Users,
+} from 'lucide-react'
+import type * as React from 'react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import type { MeView } from '@/client'
-import { ErrorState, ExternalLink, PageHeader } from '@/components/app'
+import { DashedNote, ErrorState, ExternalLink, GoChevron, IconTile, PageHeader, SoftPill } from '@/components/app'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   AlertDialog,
@@ -94,14 +108,17 @@ export function DemoPage({ me, expired }: Props) {
   }
 
   return (
-    <div className="mx-auto flex w-full min-w-0 max-w-[880px] flex-col gap-8">
+    <div className="page-container flex w-full min-w-0 flex-col gap-6 py-8 md:py-12">
       <PageHeader title={DEMO.title} description={DEMO.description} />
       {expired ? (
         <Alert variant="info">
           <AlertDescription>{DEMO.expired}</AlertDescription>
         </Alert>
       ) : null}
-      <p className="type-sm text-ink-muted">{DEMO.shared}</p>
+      <div className="brand-band surface-row flex min-w-0 items-start gap-3 p-4">
+        <IconTile icon={Users} tone="warning" />
+        <p className="type-sm min-w-0 self-center break-words text-ink">{DEMO.shared}</p>
+      </div>
 
       <section aria-labelledby="demo-accounts" className="flex min-w-0 flex-col gap-3">
         <h2 id="demo-accounts" className="type-eyebrow">
@@ -113,101 +130,159 @@ export function DemoPage({ me, expired }: Props) {
           </Alert>
         ) : null}
         {accounts.isPending ? (
-          <div className="flex flex-col gap-2" aria-busy="true">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">
             <span role="status" className="sr-only">
               Загружаем аккаунты…
             </span>
             {[0, 1, 2].map((n) => (
-              <Skeleton key={n} className="h-16 w-full" />
+              <Skeleton key={n} className="h-40 w-full" />
             ))}
           </div>
         ) : accounts.isError ? (
           <ErrorState error={accounts.error} onRetry={() => accounts.refetch()} compact />
         ) : accounts.data.length === 0 ? (
-          <p className="type-sm text-ink-muted">{DEMO.empty}</p>
+          <DashedNote icon={Users}>{DEMO.empty}</DashedNote>
         ) : (
-          <ul className="flex min-w-0 flex-col divide-y divide-line">
-            {accounts.data.map((a) => (
-              <li
-                key={a.key}
-                className="flex min-w-0 flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div className="min-w-0">
-                  <p className="type-h3 min-w-0 break-words">{a.title}</p>
-                  <p className="type-sm min-w-0 break-words text-ink-muted">
-                    {DEMO.roles[a.role] ?? a.role} · {a.state_label}
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="shrink-0"
-                  loading={login.isPending && login.variables === a.key}
-                  disabled={login.isPending}
-                  onClick={() => signIn(a.key)}
+          <ul className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4">
+            {accounts.data.map((a, index) => {
+              const employer = a.role === 'employer'
+              return (
+                <li
+                  key={a.key}
+                  style={{ '--i': index } as React.CSSProperties}
+                  className={`lift-card surface-row stagger flex min-w-0 animate-rise-in flex-col gap-3 p-4 ${employer ? 'accent-card' : ''}`}
                 >
-                  {DEMO.enter(a.title)}
-                </Button>
-              </li>
-            ))}
+                  <div className="flex min-w-0 items-center gap-3">
+                    <IconTile tone={employer ? 'ink' : 'brand'} size="lg">
+                      {a.title.trim().charAt(0).toUpperCase()}
+                    </IconTile>
+                    <div className="flex min-w-0 flex-col items-start gap-1">
+                      <p className="type-h3 min-w-0 break-words">{a.title}</p>
+                      <SoftPill size="sm" tone={employer ? 'solid' : 'brand'} icon={employer ? Building2 : User}>
+                        {DEMO.roles[a.role] ?? a.role}
+                      </SoftPill>
+                    </div>
+                  </div>
+                  <ul aria-label={DEMO.columns.state} className="flex min-w-0 flex-1 flex-wrap content-start gap-1.5">
+                    {stateParts(a.state_label).map((part) => (
+                      <li
+                        key={part}
+                        className="type-sm max-w-full min-w-0 rounded-md bg-fill px-2.5 py-1 break-words text-ink"
+                      >
+                        {part}
+                      </li>
+                    ))}
+                  </ul>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="w-full"
+                    loading={login.isPending && login.variables === a.key}
+                    disabled={login.isPending}
+                    onClick={() => signIn(a.key)}
+                  >
+                    <LogIn aria-hidden="true" />
+                    {DEMO.enter(a.title)}
+                  </Button>
+                </li>
+              )
+            })}
           </ul>
         )}
       </section>
 
-      {me?.is_demo ? (
-        <section aria-labelledby="demo-restart" className="flex min-w-0 flex-col gap-3">
-          <h2 id="demo-restart" className="type-eyebrow">
-            {DEMO.restart}
+      <div className="flex min-w-0 flex-col gap-3 lg:gap-4">
+        {me?.is_demo ? (
+          <section aria-labelledby="demo-restart" className="surface-row flex min-w-0 flex-col gap-3 p-4 md:p-5">
+            <div className="flex min-w-0 items-center gap-3">
+              <IconTile icon={RotateCcw} tone="warning" />
+              <h2 id="demo-restart" className="type-h3 min-w-0">
+                {DEMO.restart}
+              </h2>
+            </div>
+            <p className="type-sm min-w-0 break-words text-ink-muted">{DEMO.restartHint}</p>
+            <p className="flex min-w-0">
+              <SoftPill icon={History} className="h-auto min-h-7 shrink py-0.5">
+                <span className="num min-w-0">
+                  {lastRestart ? DEMO.lastRestart(formatDateTime(lastRestart)) : DEMO.neverRestarted}
+                </span>
+              </SoftPill>
+            </p>
+            {restartNote ? (
+              <Alert variant="warning">
+                <AlertDescription>{restartNote}</AlertDescription>
+              </Alert>
+            ) : null}
+            <Button
+              type="button"
+              variant="secondary"
+              className="self-start"
+              loading={restart.isPending}
+              onClick={doRestart}
+            >
+              <RotateCcw aria-hidden="true" />
+              {DEMO.restart}
+            </Button>
+          </section>
+        ) : null}
+
+        <section aria-labelledby="demo-links" className="flex min-w-0 flex-col gap-3">
+          <h2 id="demo-links" className="sr-only">
+            {DEMO.links}
           </h2>
-          <p className="type-sm text-ink-muted">{DEMO.restartHint}</p>
-          <p className="type-sm num">
-            {lastRestart ? DEMO.lastRestart(formatDateTime(lastRestart)) : DEMO.neverRestarted}
-          </p>
-          {restartNote ? (
-            <Alert variant="warning">
-              <AlertDescription>{restartNote}</AlertDescription>
-            </Alert>
-          ) : null}
-          <Button
-            type="button"
-            variant="secondary"
-            className="self-start"
-            loading={restart.isPending}
-            onClick={doRestart}
-          >
-            {DEMO.restart}
-          </Button>
-        </section>
-      ) : null}
-
-      <section aria-labelledby="demo-links" className="flex min-w-0 flex-col gap-2">
-        <h2 id="demo-links" className="type-eyebrow">
-          {DEMO.links}
-        </h2>
-        <ul className="flex min-w-0 flex-col gap-1">
-          {MAILPIT_PUBLIC_URL ? (
-            <li>
-              <ExternalLink href={MAILPIT_PUBLIC_URL}>{DEMO.mailbox}</ExternalLink>
+          <ul className="grid min-w-0 gap-3 sm:grid-cols-2 lg:gap-4">
+            {MAILPIT_PUBLIC_URL ? (
+              <li className="lift-card surface-row flex min-h-16 min-w-0 items-center gap-3 px-4 py-3">
+                <IconTile icon={Mail} tone="soft" />
+                <ExternalLink href={MAILPIT_PUBLIC_URL} className="tap-target min-w-0 flex-1">
+                  {DEMO.mailbox}
+                </ExternalLink>
+              </li>
+            ) : null}
+            <li className="lift-card surface-row relative flex min-h-16 min-w-0 items-center gap-3 px-4 py-3">
+              <IconTile icon={BarChart3} tone="soft" />
+              <a
+                className="type-body min-w-0 flex-1 font-medium break-words text-ink after:absolute after:inset-0 after:z-[1] hover:text-brand-700"
+                href="/how-it-works"
+              >
+                {DEMO.reports}
+              </a>
+              <GoChevron />
             </li>
-          ) : null}
-          <li>
-            <a className="text-link" href="/how-it-works">
-              {DEMO.reports}
-            </a>
-          </li>
-        </ul>
-      </section>
+          </ul>
+        </section>
+      </div>
 
-      <details className="group min-w-0">
-        <summary className="type-sm tap-target cursor-pointer list-none text-ink-muted hover:text-ink">
+      <details className="surface-row group min-w-0 px-4">
+        <summary className="type-sm flex min-h-14 cursor-pointer list-none items-center gap-3 font-medium text-ink-muted hover:text-ink">
+          <IconTile icon={KeyRound} tone="neutral" size="sm" />
           {DEMO.host}
         </summary>
-        <div className="pt-3">
+        <div className="pb-4">
           <HostBlock />
         </div>
       </details>
     </div>
   )
+}
+
+/** Строка состояния аккаунта приходит одной фразой: делим её по «; » и «: » на короткие плашки. */
+function stateParts(label: string): string[] {
+  const parts: string[] = []
+  let current = ''
+  let quoted = 0
+  for (let i = 0; i < label.length; i++) {
+    const ch = label[i]
+    if (ch === '«') quoted++
+    else if (ch === '»') quoted = Math.max(0, quoted - 1)
+    // Внутри кавычек «…» не режем: это цитата статуса целиком.
+    if ((ch === ';' || ch === ':') && quoted === 0 && label[i + 1] === ' ') {
+      parts.push(current)
+      current = ''
+    } else current += ch
+  }
+  parts.push(current)
+  return [...new Set(parts.map((x) => x.trim()).filter(Boolean))]
 }
 
 function HostBlock() {
@@ -293,8 +368,12 @@ function HostBlock() {
         </form>
       ) : (
         <>
-          <p className="type-sm num">
-            {DEMO.serverTime}: {clock.data ? formatDateTime(clock.data.now) : '—'}
+          <p className="flex min-w-0">
+            <SoftPill icon={Clock} tone="brand" className="h-auto min-h-7 shrink py-0.5">
+              <span className="num min-w-0">
+                {DEMO.serverTime}: {clock.data ? formatDateTime(clock.data.now) : '—'}
+              </span>
+            </SoftPill>
           </p>
           <div className="flex min-w-0 flex-wrap gap-2">
             <Button type="button" variant="secondary" loading={advance.isPending} onClick={() => shift(24)}>
@@ -304,6 +383,7 @@ function HostBlock() {
               {DEMO.plus7}
             </Button>
             <Button type="button" variant="ghost" onClick={() => setConfirmReset(true)}>
+              <Trash2 aria-hidden="true" />
               {DEMO.reset}
             </Button>
             <Button

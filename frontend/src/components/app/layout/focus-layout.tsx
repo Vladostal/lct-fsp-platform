@@ -19,13 +19,22 @@ export function FocusLayout({ children }: { children: React.ReactNode }) {
       <AppHeader
         width="focus"
         logo={
-          <img
-            src="/logo_mobile.svg"
-            alt={`ФСП · ${APP_NAME}`}
-            width={83}
-            height={28}
-            className="h-7 w-auto shrink-0"
-          />
+          <>
+            <img
+              src="/logo_mobile.svg"
+              alt={`ФСП · ${APP_NAME}`}
+              width={83}
+              height={28}
+              className="only-light h-7 w-auto shrink-0"
+            />
+            <img
+              src="/logo_mobile_dark.svg"
+              alt={`ФСП · ${APP_NAME}`}
+              width={83}
+              height={28}
+              className="only-dark h-7 w-auto shrink-0"
+            />
+          </>
         }
         actions={<div id={SLOT_ID} className="flex min-w-0 flex-1 items-center justify-end gap-4" />}
       />

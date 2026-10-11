@@ -66,6 +66,19 @@ for (const viewport of VIEWPORTS) {
   })
 }
 
+test.describe('витрина · тёмная тема', () => {
+  test.use({ viewport: { width: 1280, height: 800 } })
+
+  test('контраст и раскладка в тёмной теме', async ({ page }) => {
+    await page.addInitScript(() => window.localStorage.setItem('fsp-theme', 'dark'))
+    await mockApi(page)
+    await page.goto(SHOWCASE)
+    await expect(page.getByRole('heading', { level: 1, name: 'Витрина компонентов' })).toBeVisible()
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+    await expectCleanLayout(page, { focus: true })
+  })
+})
+
 test.describe('витрина · 320 (наименьшая ширина)', () => {
   test.use({ viewport: { width: MIN_VIEWPORT.width, height: MIN_VIEWPORT.height } })
 

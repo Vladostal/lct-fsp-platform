@@ -8,7 +8,16 @@ import {
   contactListEmployerInvitationsInfiniteOptions,
   matchingListNeedsOptions,
 } from '@/client/@tanstack/react-query.gen'
-import { CandidateCategoryChip, EmptyState, ErrorState, SalaryRange, StatusBadge } from '@/components/app'
+import {
+  CandidateCategoryChip,
+  EmptyState,
+  ErrorState,
+  IconTile,
+  SalaryRange,
+  SoftPill,
+  StatusBadge,
+  type TileTone,
+} from '@/components/app'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -18,7 +27,6 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { errorText } from '@/lib/api'
 import { candidateTitle, formatDate, formatDateTime, initials } from '@/lib/format'
 import { polling } from '@/lib/query'
-import { cn } from '@/lib/utils'
 import { DASHBOARD, LIST } from './content'
 import { InvitationsDashboard } from './invitations-dashboard'
 
@@ -66,30 +74,24 @@ function Summary() {
   )
 }
 
-const TILE_TONES: Record<InvitationStatus, string> = {
-  sent: 'bg-brand-100 text-brand-700',
-  viewed: 'bg-brand-100 text-brand-700',
-  accepted: 'bg-success-bg text-success',
-  declined: 'bg-danger-bg text-danger',
-  expired: 'bg-warning-bg text-warning',
+const TILE_TONES: Record<InvitationStatus, TileTone> = {
+  sent: 'brand',
+  viewed: 'brand',
+  accepted: 'success',
+  declined: 'danger',
+  expired: 'warning',
   // Не дошло до кандидата: пунктир без заливки, как в сводке.
-  bounced: 'border border-dashed border-line-strong bg-surface text-ink-muted',
-  withdrawn: 'bg-fill text-ink',
+  bounced: 'dashed',
+  withdrawn: 'neutral',
 }
 
 /** Плитка кандидата: инициалы, если имя раскрыто, иначе силуэт. Цвет повторяет тон статуса. */
 function CandidateTile({ inv }: { inv: InvitationEmployerBrief }) {
   const name = inv.candidate.display_name?.trim()
   return (
-    <span
-      aria-hidden="true"
-      className={cn(
-        'type-sm flex size-10 shrink-0 items-center justify-center rounded-lg font-semibold',
-        TILE_TONES[inv.status],
-      )}
-    >
-      {name ? initials(name) : <UserRound className="size-5" />}
-    </span>
+    <IconTile tone={TILE_TONES[inv.status]} icon={name ? undefined : UserRound}>
+      {name ? initials(name) : null}
+    </IconTile>
   )
 }
 
@@ -128,22 +130,19 @@ function StatusNote({ inv, withDate = false }: { inv: InvitationEmployerBrief; w
   )
 }
 
-/** Плашка статуса; отказ красный, недоставленное нейтральное — как в сводке. */
+/** Плашка статуса: тона общие (отказ красный, недоставленное нейтральное — как в сводке). */
 function StatusPill({ inv }: { inv: InvitationEmployerBrief }) {
-  return (
-    <StatusBadge
-      status={inv.status}
-      label={inv.status_label}
-      size="sm"
-      appearance="pill"
-      tone={inv.status === 'declined' ? 'danger' : inv.status === 'bounced' ? 'neutral' : undefined}
-      className="rounded-full"
-    />
-  )
+  return <StatusBadge status={inv.status} label={inv.status_label} size="sm" />
 }
 
 // Вилка нейтральная: зелёный на этом экране значит «принято».
-const SALARY_PILL = 'w-fit rounded-full bg-fill px-2.5 py-0.5 font-medium text-ink'
+function SalaryPill({ inv }: { inv: InvitationEmployerBrief }) {
+  return (
+    <SoftPill size="sm" className="w-fit">
+      <SalaryRange from={inv.salary_from} to={inv.salary_to} size="sm" />
+    </SoftPill>
+  )
+}
 
 /** E7. Список: итоги, фильтры и таблица (на узком экране — карточки). */
 export function EmployerInvitationsList({
@@ -268,7 +267,7 @@ export function EmployerInvitationsList({
                     <TableCell className="max-w-72 py-4">
                       <div className="flex min-w-0 flex-col items-start gap-1.5">
                         <p className="type-sm line-clamp-2 [overflow-wrap:anywhere] text-ink">{inv.title}</p>
-                        <SalaryRange from={inv.salary_from} to={inv.salary_to} size="sm" className={SALARY_PILL} />
+                        <SalaryPill inv={inv} />
                         {inv.need && inv.need.title !== inv.title ? (
                           <p className="type-caption max-w-full truncate text-ink-muted">{inv.need.title}</p>
                         ) : null}
@@ -309,7 +308,7 @@ export function EmployerInvitationsList({
                   </div>
                   <p className="type-sm line-clamp-2 [overflow-wrap:anywhere] text-ink">{inv.title}</p>
                   <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
-                    <SalaryRange from={inv.salary_from} to={inv.salary_to} size="sm" className={SALARY_PILL} />
+                    <SalaryPill inv={inv} />
                   </div>
                   <div className="mt-auto flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 border-t border-line pt-3">
                     <StatusPill inv={inv} />

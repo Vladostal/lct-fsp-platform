@@ -1,21 +1,38 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQueryClient } from '@tanstack/react-query'
 import { useBlocker, useNavigate } from '@tanstack/react-router'
-import { Lock } from 'lucide-react'
+import {
+  AtSign,
+  Briefcase,
+  Eye,
+  FileText,
+  FileUp,
+  Lock,
+  PencilLine,
+  SlidersHorizontal,
+  TriangleAlert,
+  UserRound,
+} from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { type FieldPath, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import type { CandidateProfileView, Catalog, ConditionsView, ResumeParseResult } from '@/client'
-import { Section, StickyActionBar, TagInput, type TagOption, type TagValue } from '@/components/app'
+import {
+  FormatChoice,
+  IconTile,
+  SoftPill,
+  StickyActionBar,
+  TagInput,
+  type TagOption,
+  type TagValue,
+} from '@/components/app'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Card, CardHeader, CardTitle } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Card } from '@/components/ui/card'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
-import { WORK_FORMAT_LABELS } from '@/content/common'
 import { applyFieldErrors, errorMessage } from '@/lib/api'
 import { formatTime } from '@/lib/format'
 import { invalidateGuardData } from '@/lib/guards'
@@ -32,6 +49,7 @@ import {
   toProfileUpdate,
   WORK_FORMATS,
 } from '../schemas'
+import { CardHead } from './card-head'
 import { MinSalarySelect } from './min-salary-select'
 import { ResumeDropzone, type ResumeStatus } from './resume-dropzone'
 
@@ -78,9 +96,15 @@ const toTags = (value: unknown, max: number): TagValue[] | null =>
 function FromResumeMark({ confidence }: { confidence?: Confidence }) {
   if (!confidence) return null
   return (
-    <span className="inline-flex flex-wrap items-center gap-1.5">
-      <span className="type-caption text-brand-600">{PROFILE.resume.chip}</span>
-      {confidence === 'low' ? <span className="type-caption text-warning">{PROFILE.resume.check}</span> : null}
+    <span className="inline-flex flex-wrap items-center gap-1.5 font-normal">
+      <SoftPill tone="brand" size="sm" icon={FileText} className="[&>svg]:size-3.5">
+        {PROFILE.resume.chip}
+      </SoftPill>
+      {confidence === 'low' ? (
+        <SoftPill tone="warning" size="sm" icon={TriangleAlert} className="[&>svg]:size-3.5">
+          {PROFILE.resume.check}
+        </SoftPill>
+      ) : null}
     </span>
   )
 }
@@ -327,12 +351,10 @@ export function ProfileForm({ mode, profile, conditions, catalog, userId, catego
     <div className="flex min-w-0 flex-col gap-6">
       {wizard || mode === 'cabinet' ? (
         <Card>
-          <CardHeader>
-            <CardTitle>{T.resume.title}</CardTitle>
-          </CardHeader>
+          <CardHead icon={FileUp} tone="soft" title={T.resume.title} />
           <ResumeDropzone status={resumeStatus} error={resumeError} fileName={resume?.fileName} onFile={onFile} />
           {resumeResult && resumeStatus === 'parsed' ? (
-            <div className="mt-3 flex min-w-0 flex-col gap-2">
+            <div className="flex min-w-0 flex-col gap-2">
               <Alert variant="success">
                 <AlertDescription>{T.resume.parsed(resumeResult.recognized, resumeResult.total)}</AlertDescription>
               </Alert>
@@ -349,37 +371,50 @@ export function ProfileForm({ mode, profile, conditions, catalog, userId, catego
 
       <Form {...form}>
         <form id="profile-form" onSubmit={onSubmit} noValidate className="flex min-w-0 flex-col gap-6">
-          <Card className="gap-8">
-            <Section title={T.sections.main}>
-              <div className="grid min-w-0 gap-4 sm:grid-cols-2">
-                {textField('last_name', { required: true, autoComplete: 'family-name', maxLength: 60 })}
-                {textField('first_name', { required: true, autoComplete: 'given-name', maxLength: 60 })}
-                {textField('middle_name', { autoComplete: 'additional-name', maxLength: 60 })}
-                {textField('city', { autoComplete: 'address-level2', maxLength: 80 })}
-              </div>
-            </Section>
-
-            <Section title={`${T.sections.contacts} · ${T.sections.contactsNote}`}>
-              <div className="grid min-w-0 gap-4 sm:grid-cols-2">
-                <div className="flex min-w-0 flex-col gap-1.5">
-                  <span className="type-sm font-medium text-ink">{T.fields.email}</span>
-                  <Input value={profile.email} readOnly aria-readonly="true" className="bg-fill" />
-                  <span className="type-caption text-ink-muted">{T.fields.emailNote}</span>
-                </div>
-                {textField('phone', { type: 'tel', inputMode: 'tel', autoComplete: 'tel' })}
-                {textField('telegram', { autoComplete: 'off' })}
-                {textField('link', { inputMode: 'url', autoComplete: 'url' })}
-              </div>
-            </Section>
+          <Card className="gap-5">
+            <CardHead icon={UserRound} title={T.sections.main} />
+            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+              {textField('last_name', { required: true, autoComplete: 'family-name', maxLength: 60 })}
+              {textField('first_name', { required: true, autoComplete: 'given-name', maxLength: 60 })}
+              {textField('middle_name', { autoComplete: 'additional-name', maxLength: 60 })}
+              {textField('city', { autoComplete: 'address-level2', maxLength: 80 })}
+            </div>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex flex-wrap items-baseline gap-2">
-                {T.sections.experience}
-                <span className="type-sm font-normal text-ink-muted">· {T.sections.declared}</span>
-              </CardTitle>
-            </CardHeader>
+          <Card className="gap-5">
+            <CardHead
+              icon={AtSign}
+              title={T.sections.contacts}
+              aside={
+                <SoftPill tone="success" icon={Lock} title={`${T.sections.contacts} ${T.sections.contactsNote}`}>
+                  {T.sections.contactsPill}
+                </SoftPill>
+              }
+            />
+            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+              <div className="flex min-w-0 flex-col gap-1.5">
+                <span className="type-sm font-medium text-ink">{T.fields.email}</span>
+                <Input
+                  value={profile.email}
+                  readOnly
+                  aria-readonly="true"
+                  aria-label={T.fields.email}
+                  className="bg-fill"
+                />
+                <span className="type-caption text-ink-muted">{T.fields.emailNote}</span>
+              </div>
+              {textField('phone', { type: 'tel', inputMode: 'tel', autoComplete: 'tel' })}
+              {textField('telegram', { autoComplete: 'off' })}
+              {textField('link', { inputMode: 'url', autoComplete: 'url' })}
+            </div>
+          </Card>
+
+          <Card className="gap-5">
+            <CardHead
+              icon={Briefcase}
+              title={T.sections.experience}
+              aside={<SoftPill icon={PencilLine}>{T.sections.declared}</SoftPill>}
+            />
             <div className="flex min-w-0 flex-col gap-4">
               <FormField
                 control={form.control}
@@ -425,13 +460,15 @@ export function ProfileForm({ mode, profile, conditions, catalog, userId, catego
             </div>
           </Card>
 
-          <Card id="conditions">
-            <CardHeader>
-              <CardTitle>{T.sections.conditions}</CardTitle>
-            </CardHeader>
-            <div className="flex min-w-0 flex-col gap-6">
-              <section className="flex min-w-0 flex-col gap-4" aria-labelledby="cond-visible">
-                <h3 id="cond-visible" className="type-h3">
+          <Card id="conditions" className="gap-5">
+            <CardHead icon={SlidersHorizontal} title={T.sections.conditions} />
+            <div className="grid min-w-0 gap-4 md:grid-cols-2">
+              <section
+                className="surface-row flex min-w-0 flex-col gap-4 rounded-lg p-4"
+                aria-labelledby="cond-visible"
+              >
+                <h3 id="cond-visible" className="type-h3 flex items-center gap-2.5">
+                  <IconTile icon={Eye} tone="brand" size="xs" />
                   {T.sections.visibleToEmployers}
                 </h3>
                 <FormField
@@ -443,26 +480,21 @@ export function ProfileForm({ mode, profile, conditions, catalog, userId, catego
                         <legend className="type-sm mb-1 font-medium text-ink">
                           {T.fields.work_formats} <span aria-hidden="true">*</span>
                         </legend>
-                        <div className="flex flex-wrap gap-x-6 gap-y-1">
+                        <div className="flex flex-wrap gap-2">
                           {WORK_FORMATS.map((format) => (
-                            <label
+                            <FormatChoice
                               key={format}
-                              htmlFor={`work-format-${format}`}
-                              className="type-body flex min-h-11 cursor-pointer items-center gap-2"
-                            >
-                              <Checkbox
-                                id={`work-format-${format}`}
-                                checked={field.value.includes(format)}
-                                onCheckedChange={(checked) =>
-                                  field.onChange(
-                                    checked
-                                      ? WORK_FORMATS.filter((f) => f === format || field.value.includes(f))
-                                      : field.value.filter((f) => f !== format),
-                                  )
-                                }
-                              />
-                              {WORK_FORMAT_LABELS[format]}
-                            </label>
+                              id={`work-format-${format}`}
+                              format={format}
+                              checked={field.value.includes(format)}
+                              onCheckedChange={(checked) =>
+                                field.onChange(
+                                  checked
+                                    ? WORK_FORMATS.filter((f) => f === format || field.value.includes(f))
+                                    : field.value.filter((f) => f !== format),
+                                )
+                              }
+                            />
                           ))}
                         </div>
                       </fieldset>
@@ -487,9 +519,9 @@ export function ProfileForm({ mode, profile, conditions, catalog, userId, catego
                 />
               </section>
 
-              <section className="flex min-w-0 flex-col gap-3 border-t border-line pt-5" aria-labelledby="cond-private">
-                <h3 id="cond-private" className="type-h3 flex items-center gap-2">
-                  <Lock className="size-4 text-ink-muted" aria-hidden="true" />
+              <section className="flex min-w-0 flex-col gap-4 rounded-lg bg-fill p-4" aria-labelledby="cond-private">
+                <h3 id="cond-private" className="type-h3 flex items-center gap-2.5">
+                  <IconTile icon={Lock} tone="ink" size="xs" />
                   {T.sections.visibleToNobody}
                 </h3>
                 <FormField

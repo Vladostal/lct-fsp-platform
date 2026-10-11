@@ -1,9 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
+import { Building2, User, UserPlus } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import type { Role } from '@/client'
-import { ConsentCheckbox, PasswordInput } from '@/components/app'
+import { ConsentCheckbox, IconTile, PasswordInput } from '@/components/app'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
@@ -18,6 +19,8 @@ import { rememberPendingEmail } from '../pending-email'
 import { type SignupValues, signupSchema } from '../schemas'
 import { AuthCard } from './auth-card'
 import { FormAlert } from './form-alert'
+
+const ROLE_ICON = { candidate: User, employer: Building2 } as const
 
 const FIELDS = ['role', 'email', 'password', 'consent_processing', 'is_adult'] as const
 
@@ -76,6 +79,7 @@ export function SignupForm({ initialRole }: { initialRole?: Role }) {
   return (
     <AuthCard
       title={AUTH.signup.title}
+      icon={UserPlus}
       description={AUTH.signup.description}
       footer={
         <>
@@ -100,11 +104,16 @@ export function SignupForm({ initialRole }: { initialRole?: Role }) {
                   value={field.value}
                   // Роль обязательна: повторное нажатие на выбранный вариант его не снимает.
                   onValueChange={(value) => value && field.onChange(value)}
-                  className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-2"
+                  className="grid grid-cols-2 items-stretch gap-2"
                 >
                   {(['candidate', 'employer'] as const).map((value) => (
-                    <ToggleGroupItem key={value} value={value} className="w-full justify-center gap-2">
-                      {ROLE_LABELS[value]}
+                    <ToggleGroupItem
+                      key={value}
+                      value={value}
+                      className="lift-card group/role relative h-auto w-full flex-col items-start justify-start gap-2.5 rounded-lg p-3 text-left whitespace-normal data-[state=on]:border-2 data-[state=on]:p-[11px] [&>svg:first-child]:absolute [&>svg:first-child]:top-3 [&>svg:first-child]:right-3"
+                    >
+                      <IconTile icon={ROLE_ICON[value]} tone={field.value === value ? 'solid' : 'neutral'} size="lg" />
+                      <span className="max-w-full min-w-0 break-words max-[359px]:text-sm">{ROLE_LABELS[value]}</span>
                     </ToggleGroupItem>
                   ))}
                 </ToggleGroup>

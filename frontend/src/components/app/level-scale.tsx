@@ -88,7 +88,7 @@ export function LevelScale({
             />
           ))}
           <span
-            className="absolute top-0.5 size-3 -translate-x-1/2 rounded-full border-2 border-brand-900 bg-white"
+            className="absolute top-0.5 size-3 -translate-x-1/2 rounded-full border-2 border-brand-900 bg-surface dark:border-brand-700"
             style={{ left: `clamp(6px, ${point}%, calc(100% - 6px))` }}
           />
         </div>

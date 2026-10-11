@@ -10,7 +10,7 @@ export const Route = createFileRoute('/candidate/_cabinet/')({
 function Screen() {
   return (
     <div className="flex min-w-0 flex-col gap-6">
-      <PageHeader title="Обзор" description="Статус профиля, спрос на вашу категорию и приглашения." />
+      <PageHeader title="Обзор" />
       <CandidateOverview />
     </div>
   )

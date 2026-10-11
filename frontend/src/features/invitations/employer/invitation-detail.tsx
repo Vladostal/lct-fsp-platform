@@ -1,14 +1,49 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { FileDown } from 'lucide-react'
-import { useState } from 'react'
-import type { WorkFormat } from '@/client'
 import {
+  ArrowRight,
+  Ban,
+  Banknote,
+  CircleCheckBig,
+  CircleX,
+  Clock,
+  Eye,
+  FileDown,
+  FileText,
+  FlaskConical,
+  History,
+  Hourglass,
+  Link2,
+  type LucideIcon,
+  MailX,
+  MessageSquareText,
+  Send,
+  Server,
+  Undo2,
+  UserRound,
+} from 'lucide-react'
+import { useState } from 'react'
+import type { InvitationEmployerView, WorkFormat } from '@/client'
+import {
+  companyGetCompanyOptions,
   contactGetEmployerInvitationOptions,
   contactWithdrawEmployerInvitationMutation,
   profileGetContactsOptions,
 } from '@/client/@tanstack/react-query.gen'
-import { CopyButton, ErrorState, PageHeader, RevealOnce, Section, StatusBadge } from '@/components/app'
+import {
+  CandidateCategoryChip,
+  CopyButton,
+  DeadlinePill,
+  ErrorState,
+  GoChevron,
+  IconTile,
+  PageHeader,
+  RevealOnce,
+  SalaryRange,
+  SoftPill,
+  StatusBadge,
+  type TileTone,
+} from '@/components/app'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   AlertDialog,
@@ -20,14 +55,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { WORK_FORMAT_LABELS } from '@/content/common'
 import { errorMessage, hasCode } from '@/lib/api'
 import { candidateTitle, formatDate, formatDateTime, formatMoney } from '@/lib/format'
 import { polling } from '@/lib/query'
-import { InvitationPreview, InvitationTimeline, tidy, useCatalogLimits } from '../shared'
+import { cn } from '@/lib/utils'
+import { InvitationPreview, tidy, useCatalogLimits } from '../shared'
 import { useRefreshEmployerInvitations } from './hooks'
 import { statusLine } from './status-line'
 
@@ -57,7 +92,7 @@ function Contacts({ candidateId, until }: { candidateId: string; until?: string 
     <RevealOnce storageKey={`contacts-revealed:${candidateId}`} className="flex min-w-0 flex-col gap-3 p-3 -m-3">
       <ul className="flex min-w-0 flex-col gap-2">
         {rows.map(([label, value]) => (
-          <li key={label} className="flex min-w-0 items-center justify-between gap-2">
+          <li key={label} className="flex min-w-0 items-center justify-between gap-2 rounded-md bg-fill py-1 pr-1 pl-3">
             <span className="type-sm shrink-0 text-ink-muted">{label}</span>
             <span className="flex min-w-0 items-center gap-1">
               <span className="type-body min-w-0 [overflow-wrap:anywhere] text-ink">{value}</span>
@@ -76,12 +111,107 @@ function Contacts({ candidateId, until }: { candidateId: string; until?: string 
   )
 }
 
+type Step = { key: string; label: string; at?: string | null; icon: LucideIcon; tone: TileTone; reached: boolean }
+
+const FINAL: Record<string, { icon: LucideIcon; tone: TileTone }> = {
+  accepted: { icon: CircleCheckBig, tone: 'success' },
+  declined: { icon: CircleX, tone: 'danger' },
+  expired: { icon: Clock, tone: 'warning' },
+  withdrawn: { icon: Undo2, tone: 'neutral' },
+}
+
+/** Три шага приглашения по его статусу: отправлено → просмотрено → исход. Недостигнутый шаг — пунктир. */
+function statusSteps(inv: InvitationEmployerView): Step[] {
+  const viewedAt = inv.timeline.find((e) => e.code === 'viewed')?.at
+  const bounced = inv.status === 'bounced'
+  const final = FINAL[inv.status]
+  const viewed = Boolean(viewedAt) || inv.status === 'viewed' || inv.status === 'accepted' || inv.status === 'declined'
+  return [
+    bounced
+      ? { key: 'sent', label: 'Не доставлено', at: inv.sent_at, icon: MailX, tone: 'dashed', reached: true }
+      : { key: 'sent', label: 'Отправлено', at: inv.sent_at, icon: Send, tone: 'solid', reached: true },
+    {
+      key: 'viewed',
+      label: 'Просмотрено',
+      at: viewedAt,
+      icon: Eye,
+      tone: viewed ? 'brand' : 'dashed',
+      reached: viewed,
+    },
+    final
+      ? { key: 'final', label: inv.status_label, at: inv.updated_at, icon: final.icon, tone: final.tone, reached: true }
+      : { key: 'final', label: 'Ответ', icon: Hourglass, tone: 'dashed', reached: false },
+  ]
+}
+
+function StatusSteps({ inv }: { inv: InvitationEmployerView }) {
+  const steps = statusSteps(inv)
+  return (
+    <ol aria-label="Этапы приглашения" className="flex min-w-0 items-start">
+      {steps.map((s, i) => (
+        <li
+          key={s.key}
+          aria-current={i === steps.findLastIndex((x) => x.reached) ? 'step' : undefined}
+          style={{ '--i': i } as React.CSSProperties}
+          className="stagger animate-rise-in relative flex min-w-0 flex-1 flex-col items-center gap-1.5 text-center"
+        >
+          {i > 0 ? (
+            <span
+              aria-hidden="true"
+              className={cn(
+                'absolute top-5 right-1/2 -z-0 mr-6 h-0.5 w-[calc(100%-3rem)] rounded-full',
+                s.reached ? 'bg-brand-600' : 'border-t-2 border-dashed border-line-strong',
+              )}
+            />
+          ) : null}
+          <IconTile icon={s.icon} tone={s.tone} className="relative rounded-full" />
+          <span
+            className={cn(
+              'type-sm min-w-0 [overflow-wrap:anywhere]',
+              s.reached ? 'font-medium text-ink' : 'text-ink-muted',
+            )}
+          >
+            {s.label}
+            {s.reached ? null : <span className="sr-only"> — ещё нет</span>}
+          </span>
+          {s.at ? (
+            <span className="num type-caption whitespace-normal text-ink-muted">{formatDateTime(s.at)}</span>
+          ) : null}
+        </li>
+      ))}
+    </ol>
+  )
+}
+
+function PanelTitle({
+  icon,
+  tone = 'soft',
+  children,
+}: {
+  icon: LucideIcon
+  tone?: TileTone
+  children: React.ReactNode
+}) {
+  return (
+    <h2 className="type-h3 flex min-w-0 items-center gap-3">
+      <IconTile icon={icon} tone={tone} size="sm" />
+      <span className="min-w-0">{children}</span>
+    </h2>
+  )
+}
+
+const PANEL = 'surface-row flex min-w-0 flex-col gap-4 p-4 md:p-5'
+const RELATED =
+  'lift-card surface-row group flex min-h-14 min-w-0 items-center gap-3 p-3 text-sm font-medium text-ink hover:text-brand-700'
+
 /** E7. Экран приглашения: срок, исход, действие по статусу. */
 export function EmployerInvitationDetail({ id }: { id: string }) {
   const query = useQuery({ ...contactGetEmployerInvitationOptions({ path: { invitation_id: id } }), ...polling })
   const withdraw = useMutation(contactWithdrawEmployerInvitationMutation())
   const refresh = useRefreshEmployerInvitations()
   const limits = useCatalogLimits()
+  // Название компании для предпросмотра: тот же запрос, что в мастере приглашения.
+  const company = useQuery(companyGetCompanyOptions())
   const [confirm, setConfirm] = useState(false)
 
   if (query.isPending)
@@ -119,16 +249,15 @@ export function EmployerInvitationDetail({ id }: { id: string }) {
       <PageHeader
         back={{ label: 'Приглашения', href: '/employer/invitations' }}
         eyebrow="Приглашение"
-        title={inv.title}
+        documentTitle={inv.title}
+        title={
+          <span className="flex min-w-0 items-start gap-3">
+            <IconTile icon={Send} tone="solid" size="lg" className="mt-0.5" />
+            <span className="min-w-0 [overflow-wrap:anywhere]">{inv.title}</span>
+          </span>
+        }
         meta={
           <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <Link
-              to="/employer/candidates/$candidateId"
-              params={{ candidateId: inv.candidate.candidate_id }}
-              className="type-body text-link num underline"
-            >
-              {name}
-            </Link>
             <StatusBadge
               status={inv.status}
               label={inv.status_label}
@@ -136,36 +265,68 @@ export function EmployerInvitationDetail({ id }: { id: string }) {
               tone={inv.status === 'declined' ? 'danger' : undefined}
               live
             />
-            {inv.is_demo ? <Badge variant="info">демо</Badge> : null}
-            <span className="type-sm text-ink-muted [overflow-wrap:anywhere]">{statusLine(inv)}</span>
+            <SoftPill tone="success">
+              <SalaryRange from={inv.salary_from} to={inv.salary_to} size="sm" className="text-success" />
+            </SoftPill>
+            {inv.is_demo ? <SoftPill icon={FlaskConical}>демо</SoftPill> : null}
+            {/* Срок — той же пилюлей, что у кандидата; «просмотрено» уже есть в шагах статуса. */}
+            {inv.status === 'sent' || inv.status === 'viewed' ? (
+              <DeadlinePill until={inv.expires_at} />
+            ) : (
+              <SoftPill icon={History} className="h-auto min-h-7 shrink py-0.5 [&>svg]:shrink-0">
+                <span className="min-w-0 [overflow-wrap:anywhere]">{statusLine(inv)}</span>
+              </SoftPill>
+            )}
           </div>
         }
       />
-      <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="flex min-w-0 flex-col gap-8">
-          <Section title="Статус" className="surface-card">
+      <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="flex min-w-0 flex-col gap-4">
+          <section className={cn(PANEL, 'accent-card')} aria-labelledby="inv-status">
+            <h2 id="inv-status" className="sr-only">
+              Статус
+            </h2>
+            <StatusSteps inv={inv} />
             {(inv.status === 'sent' || inv.status === 'viewed') && inv.can_withdraw ? (
-              <div>
+              <div className="relative flex justify-end border-t border-line pt-4">
                 <Button variant="secondary" onClick={() => setConfirm(true)}>
+                  <Ban aria-hidden="true" />
                   Отозвать
                 </Button>
               </div>
             ) : null}
             {inv.status === 'accepted' ? (
-              <Contacts candidateId={inv.candidate.candidate_id} until={inv.contact_sla_until} />
+              <div className="relative border-t border-line pt-4">
+                <Contacts candidateId={inv.candidate.candidate_id} until={inv.contact_sla_until} />
+              </div>
             ) : null}
             {inv.status === 'declined' ? (
-              <div className="flex min-w-0 flex-col gap-3">
-                <p className="type-body text-ink">Причина: {inv.decline?.reason_label ?? 'не указана'}</p>
-                {cond ? (
-                  <p className="type-body text-ink">
-                    {cond.kind === 'salary_from'
-                      ? `Готов(а) рассмотреть от ${formatMoney(Number(cond.value))}`
-                      : `Рассмотрит формат: ${WORK_FORMAT_LABELS[cond.value as WorkFormat]}`}
-                  </p>
-                ) : null}
+              <div className="relative flex min-w-0 flex-col gap-3 border-t border-line pt-4">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                  <SoftPill tone="danger" icon={CircleX} className="h-auto min-h-7 shrink py-0.5 [&>svg]:shrink-0">
+                    <span className="min-w-0 [overflow-wrap:anywhere]">
+                      Причина: {inv.decline?.reason_label ?? 'не указана'}
+                    </span>
+                  </SoftPill>
+                  {cond ? (
+                    <SoftPill
+                      tone="success"
+                      icon={cond.kind === 'salary_from' ? Banknote : undefined}
+                      className="h-auto min-h-7 shrink py-0.5 [&>svg]:shrink-0"
+                    >
+                      <span className="min-w-0 [overflow-wrap:anywhere]">
+                        {cond.kind === 'salary_from'
+                          ? `Готов(а) рассмотреть от ${formatMoney(Number(cond.value))}`
+                          : `Рассмотрит формат: ${WORK_FORMAT_LABELS[cond.value as WorkFormat]}`}
+                      </span>
+                    </SoftPill>
+                  ) : null}
+                </div>
                 {inv.decline?.comment ? (
-                  <p className="type-body [overflow-wrap:anywhere] text-ink-muted">{inv.decline.comment}</p>
+                  <p className="type-body flex min-w-0 items-start gap-2 rounded-md bg-fill p-3 [overflow-wrap:anywhere] text-ink-muted">
+                    <MessageSquareText className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                    <span className="min-w-0">{inv.decline.comment}</span>
+                  </p>
                 ) : null}
                 {inv.can_revise ? (
                   <div>
@@ -188,24 +349,30 @@ export function EmployerInvitationDetail({ id }: { id: string }) {
               </div>
             ) : null}
             {inv.status === 'expired' ? (
-              <p className="type-body text-ink">
+              <p className="type-body relative border-t border-line pt-4 text-ink">
                 Кандидат не ответил. Новое приглашение — с{' '}
                 {inv.pair_block_until ? formatDate(inv.pair_block_until) : 'позже'}
               </p>
             ) : null}
             {inv.status === 'bounced' ? (
-              <p className="type-body text-ink">
+              <p className="type-body relative border-t border-line pt-4 text-ink">
                 Условия не совпали с ожиданиями кандидата. Повтор — с{' '}
                 {inv.pair_block_until ? formatDate(inv.pair_block_until) : 'позже'}
               </p>
             ) : null}
             {inv.status === 'withdrawn' ? (
-              <p className="type-body text-ink">{tidy(`Вы отозвали приглашение ${formatDate(inv.updated_at)}.`)}</p>
+              <p className="type-body relative border-t border-line pt-4 text-ink">
+                {tidy(`Вы отозвали приглашение ${formatDate(inv.updated_at)}.`)}
+              </p>
             ) : null}
-          </Section>
-          <Section title="Что видит кандидат">
+          </section>
+          <section className={PANEL} aria-labelledby="inv-preview">
+            <div id="inv-preview">
+              <PanelTitle icon={Eye}>Что видит кандидат</PanelTitle>
+            </div>
             <InvitationPreview
-              companyName="Ваша компания"
+              companyName={company.data?.name?.trim() || 'Ваша компания'}
+              isDemo={inv.is_demo}
               title={inv.title}
               salaryFrom={inv.salary_from}
               salaryTo={inv.salary_to}
@@ -215,47 +382,67 @@ export function EmployerInvitationDetail({ id }: { id: string }) {
               contactMethod={inv.contact_method}
               message={inv.message}
             />
-          </Section>
+          </section>
         </div>
-        <aside className="flex min-w-0 flex-col gap-8">
-          <Section title="Ход приглашения">
-            <InvitationTimeline events={inv.timeline} />
-            <p className="type-caption text-ink-muted">Отправлено {formatDateTime(inv.sent_at)}</p>
-          </Section>
-          <Section
-            title="Связанное"
-            className="[&>div:last-child]:flex [&>div:last-child]:flex-col [&>div:last-child]:gap-2"
+        <aside className="flex min-w-0 flex-col gap-4">
+          <Link
+            to="/employer/candidates/$candidateId"
+            params={{ candidateId: inv.candidate.candidate_id }}
+            className={RELATED}
           >
+            <IconTile icon={inv.candidate.display_name?.trim() ? undefined : UserRound} tone="soft">
+              {inv.candidate.display_name
+                ?.trim()
+                .split(/\s+/)
+                .slice(0, 2)
+                .map((p) => p[0]?.toUpperCase())
+                .join('')}
+            </IconTile>
+            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span className="num type-body min-w-0 truncate font-medium">{name}</span>
+              <CandidateCategoryChip category={inv.candidate.category} className="font-normal text-ink-muted" />
+            </span>
+            <GoChevron />
+          </Link>
+          <section className="flex min-w-0 flex-col gap-2" aria-labelledby="inv-related">
+            <h2 id="inv-related" className="type-eyebrow flex items-center gap-1.5">
+              <Link2 aria-hidden="true" className="size-3.5" />
+              Связанное
+            </h2>
             {inv.need ? (
-              <Link
-                to="/employer/needs/$needId"
-                params={{ needId: inv.need.id }}
-                className="type-body text-link [overflow-wrap:anywhere] underline"
-              >
-                Потребность: {inv.need.title}
+              <Link to="/employer/needs/$needId" params={{ needId: inv.need.id }} className={RELATED}>
+                <IconTile icon={Server} tone="brand" size="sm" />
+                <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">Потребность: {inv.need.title}</span>
+                <GoChevron />
               </Link>
             ) : (
-              <p className="type-sm text-ink-muted">Из банка кандидатов, без потребности</p>
+              <p className="type-sm rounded-md border border-dashed border-line-strong p-3 text-ink-muted">
+                Из банка кандидатов, без потребности
+              </p>
             )}
             {inv.revises_id ? (
               <Link
                 to="/employer/invitations/$invitationId"
                 params={{ invitationId: inv.revises_id }}
-                className="type-body text-link underline"
+                className={RELATED}
               >
-                Исходное приглашение
+                <IconTile icon={FileText} tone="neutral" size="sm" />
+                <span className="min-w-0 flex-1">Исходное приглашение</span>
+                <GoChevron />
               </Link>
             ) : null}
             {inv.revision_id ? (
               <Link
                 to="/employer/invitations/$invitationId"
                 params={{ invitationId: inv.revision_id }}
-                className="type-body text-link underline"
+                className={RELATED}
               >
-                Пересмотренное приглашение
+                <IconTile icon={ArrowRight} tone="brand" size="sm" />
+                <span className="min-w-0 flex-1">Пересмотренное приглашение</span>
+                <GoChevron />
               </Link>
             ) : null}
-          </Section>
+          </section>
         </aside>
       </div>
       <AlertDialog open={confirm} onOpenChange={setConfirm}>

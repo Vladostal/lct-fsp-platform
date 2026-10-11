@@ -1,11 +1,22 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
+import { CircleCheckBig, CircleDashed, GitBranch, type LucideIcon, TrendingUp } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { BlueprintPreview } from '@/client'
+import { SoftPill, type Tone } from '@/components/app'
 import { previewBlueprint } from '../api'
 import { MATCHING } from '../content'
 
 const B = MATCHING.blueprint
+
+/** Связь требования с тестом: значок и тон вместо текста в ячейке. */
+const UNTESTED: { icon: LucideIcon; tone: Tone } = { icon: CircleDashed, tone: 'neutral' }
+const RELATION_LOOK: Record<string, { icon: LucideIcon; tone: Tone }> = {
+  direct: { icon: CircleCheckBig, tone: 'success' },
+  related: { icon: GitBranch, tone: 'brand' },
+  untested: UNTESTED,
+  above_grade: { icon: TrendingUp, tone: 'warning' },
+}
 
 type Props = {
   specialization?: string
@@ -55,7 +66,7 @@ export function CoverageTable({ data }: { data: BlueprintPreview }) {
       <div className="min-w-0 overflow-x-auto">
         <table className="type-sm w-full min-w-[420px] border-collapse text-left">
           <thead>
-            <tr className="border-b border-line text-ink-muted">
+            <tr className="type-eyebrow border-b border-line">
               <th scope="col" className="py-2 pr-3 font-medium">
                 {B.skill}
               </th>
@@ -68,13 +79,24 @@ export function CoverageTable({ data }: { data: BlueprintPreview }) {
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => (
-              <tr key={r.skill.code} className="border-b border-line align-top">
-                <td className="min-w-0 break-words py-2 pr-3 font-medium">{r.skill.title}</td>
-                <td className="py-2 pr-3">{r.priority === 'must' ? B.must : B.nice}</td>
-                <td className="min-w-0 py-2">{MATCHING.coverage[r.relation] ?? r.relation}</td>
-              </tr>
-            ))}
+            {rows.map((r) => {
+              const look = RELATION_LOOK[r.relation] ?? UNTESTED
+              return (
+                <tr key={r.skill.code} className="border-b border-line align-middle last:border-b-0">
+                  <td className="min-w-0 break-words py-2 pr-3 font-medium">{r.skill.title}</td>
+                  <td className="py-2 pr-3">
+                    <SoftPill tone={r.priority === 'must' ? 'brand' : 'neutral'} size="sm" className="text-xs">
+                      {r.priority === 'must' ? B.must : B.nice}
+                    </SoftPill>
+                  </td>
+                  <td className="min-w-0 py-2">
+                    <SoftPill tone={look.tone} icon={look.icon} size="sm" className="text-xs">
+                      {MATCHING.coverage[r.relation] ?? r.relation}
+                    </SoftPill>
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
