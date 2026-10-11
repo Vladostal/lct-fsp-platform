@@ -1677,6 +1677,27 @@
         "title": "ClientInfo",
         "type": "object"
       },
+      "ClockAdvance": {
+        "description": "Сдвиг часов вперёд; `force` — сдвинуть, даже если есть идущие тесты (их время выйдет).",
+        "properties": {
+          "force": {
+            "default": false,
+            "title": "Force",
+            "type": "boolean"
+          },
+          "hours": {
+            "maximum": 744.0,
+            "minimum": 1.0,
+            "title": "Hours",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "hours"
+        ],
+        "title": "ClockAdvance",
+        "type": "object"
+      },
       "CompanyMetric": {
         "description": "Показатель компании числами «{yes} из {n}» (P1); показывается при `n >= METRIC_MIN_N`.",
         "properties": {
@@ -2651,6 +2672,26 @@
           "state_label"
         ],
         "title": "DemoAccount",
+        "type": "object"
+      },
+      "DemoClock": {
+        "description": "Часы сервиса: текущее время сервиса и накопленный демо-сдвиг.",
+        "properties": {
+          "now": {
+            "format": "date-time",
+            "title": "Now",
+            "type": "string"
+          },
+          "offset_seconds": {
+            "title": "Offset Seconds",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "now",
+          "offset_seconds"
+        ],
+        "title": "DemoClock",
         "type": "object"
       },
       "DemoLoginRequest": {
@@ -7835,6 +7876,36 @@
         "title": "PublicationConsentRequest",
         "type": "object"
       },
+      "QuickSessionRequest": {
+        "description": "Быстрый демо-тест: грейд, на который кандидат начинает тест.",
+        "properties": {
+          "grade_code": {
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Grade Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "grade_code"
+        ],
+        "title": "QuickSessionRequest",
+        "type": "object"
+      },
+      "QuickSessionResult": {
+        "properties": {
+          "session_id": {
+            "format": "uuid",
+            "title": "Session Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "title": "QuickSessionResult",
+        "type": "object"
+      },
       "QuotaView": {
         "description": "Суточный лимит работодателя.",
         "properties": {
@@ -7975,6 +8046,20 @@
           "refinement"
         ],
         "title": "RelaxationHint",
+        "type": "object"
+      },
+      "ResetResult": {
+        "properties": {
+          "reset_at": {
+            "format": "date-time",
+            "title": "Reset At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reset_at"
+        ],
+        "title": "ResetResult",
         "type": "object"
       },
       "RestartResult": {
@@ -9099,6 +9184,11 @@
           },
           "grade": {
             "$ref": "#/components/schemas/Ref"
+          },
+          "is_demo_result": {
+            "default": false,
+            "title": "Is Demo Result",
+            "type": "boolean"
           },
           "level_session_id": {
             "anyOf": [
@@ -13403,6 +13493,201 @@
         ]
       }
     },
+    "/api/v1/demo/assessment/quick-session": {
+      "post": {
+        "description": "Начать тест, в котором кандидат отвечает только на последние задания; результат помечается как демо.\n\nПраво на старт — как у обычного теста. 409: `session_active`, `cooldown_active`, `survey_required`,\n`claim_required`; 422: `grade_not_allowed`, `grade_unavailable`.",
+        "operationId": "demo-quick_session",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuickSessionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuickSessionResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Нет действующей сессии"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Чужая роль или действие запрещено"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Объекта нет или он чужой"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Действие противоречит текущему состоянию"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Ошибки полей или правил"
+          }
+        },
+        "summary": "Быстрый демо-тест: 12 ответов из 14 подставлены",
+        "tags": [
+          "demo"
+        ]
+      }
+    },
+    "/api/v1/demo/clock": {
+      "get": {
+        "operationId": "demo-clock_state",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoClock"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Чужая роль или действие запрещено"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Объекта нет или он чужой"
+          }
+        },
+        "summary": "Часы сервиса: время и демо-сдвиг",
+        "tags": [
+          "demo"
+        ]
+      }
+    },
+    "/api/v1/demo/clock/advance": {
+      "post": {
+        "description": "Показ истечения сроков: приглашения, паузы теста. Только вперёд; 409 `sessions_in_progress` — идут тесты,\nих время выйдет (повтор с `force = true` сдвигает всё равно). Сессии входа сдвиг не затрагивает.",
+        "operationId": "demo-advance_clock",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClockAdvance"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoClock"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Чужая роль или действие запрещено"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Объекта нет или он чужой"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Действие противоречит текущему состоянию"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Ошибки полей или правил"
+          }
+        },
+        "summary": "Сдвинуть время сервиса вперёд",
+        "tags": [
+          "demo"
+        ]
+      }
+    },
     "/api/v1/demo/login": {
       "post": {
         "description": "Открывает сессию и ставит cookie; 404 — нет такого аккаунта (в том числе `nina`: клонов в сборке нет).",
@@ -13450,6 +13735,58 @@
           }
         },
         "summary": "Вход «как…» в именованный демо-аккаунт",
+        "tags": [
+          "demo"
+        ]
+      }
+    },
+    "/api/v1/demo/reset": {
+      "post": {
+        "description": "Удалить все демо-аккаунты с их данными и создать сид заново. Живых пользователей не трогает.",
+        "operationId": "demo-reset",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResetResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Чужая роль или действие запрещено"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Объекта нет или он чужой"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Сервис временно недоступен"
+          }
+        },
+        "summary": "Сбросить демо-данные",
         "tags": [
           "demo"
         ]

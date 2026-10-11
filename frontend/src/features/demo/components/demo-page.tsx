@@ -14,7 +14,7 @@ import {
   Users,
 } from 'lucide-react'
 import type * as React from 'react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import type { MeView } from '@/client'
 import { DashedNote, ErrorState, ExternalLink, GoChevron, IconTile, PageHeader, SoftPill } from '@/components/app'
@@ -288,12 +288,12 @@ function stateParts(label: string): string[] {
 function HostBlock() {
   const [key, setKey] = useState(() => read(HOST_KEY_STORAGE, 'session'))
   const [draft, setDraft] = useState('')
-  const [open, setOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmReset, setConfirmReset] = useState(false)
   const clock = useDemoClock(Boolean(key), key)
   const advance = useAdvanceClock(key)
   const reset = useResetDemo(key)
+  const queryClient = useQueryClient()
 
   const bad = (e: unknown) => {
     if (hasStatus(e, 403) || hasStatus(e, 401)) {
@@ -302,6 +302,17 @@ function HostBlock() {
       write(HOST_KEY_STORAGE, null, 'session')
     } else setError(errorMessage(e))
   }
+
+  // Неверный ключ виден сразу, по запросу часов, а не только при первом действии.
+  const clockError = clock.error
+  useEffect(() => {
+    if (!clockError) return
+    if (hasStatus(clockError, 403) || hasStatus(clockError, 401)) {
+      setError(DEMO.hostBad)
+      setKey('')
+      write(HOST_KEY_STORAGE, null, 'session')
+    } else setError(errorMessage(clockError))
+  }, [clockError])
 
   const shift = (hours: number, force = false) => {
     setError(null)
@@ -321,16 +332,6 @@ function HostBlock() {
     )
   }
 
-  if (!key && !open) {
-    return (
-      <p>
-        <Button type="button" variant="link" size="sm" onClick={() => setOpen(true)}>
-          {DEMO.host}
-        </Button>
-      </p>
-    )
-  }
-
   return (
     <section aria-labelledby="demo-host" className="flex min-w-0 flex-col gap-3">
       <h2 id="demo-host" className="type-h3">
@@ -347,6 +348,7 @@ function HostBlock() {
           onSubmit={(e) => {
             e.preventDefault()
             if (!draft.trim()) return
+            setError(null)
             write(HOST_KEY_STORAGE, draft.trim(), 'session')
             setKey(draft.trim())
             setDraft('')
@@ -418,6 +420,8 @@ function HostBlock() {
                   onSuccess: () => {
                     setConfirmReset(false)
                     toast.success(DEMO.resetDone)
+                    // Демо-аккаунты пересозданы: список и всё, что открыто под демо-сессией, устарело.
+                    void queryClient.invalidateQueries()
                   },
                   onError: (e) => {
                     setConfirmReset(false)

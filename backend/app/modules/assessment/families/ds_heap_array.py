@@ -70,6 +70,7 @@ def _heapify(values: list[int]) -> list[int]:
 
 def _run(level: int, values: list[int], ops: list[str], pops: int) -> list[int]:
     """Модель: массив кучи после операций. `ops` — «+x» (вставка) и «-» (извлечение)."""
+    heap: list[int]
     if level == 3:
         heap = _heapify(values)
         for _ in range(pops):

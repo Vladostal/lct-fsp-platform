@@ -8,6 +8,7 @@ import inspect
 import itertools
 import pkgutil
 import random
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -235,6 +236,18 @@ def test_can_start_row4_retry_same_grade() -> None:
     # С категорией пауза действует и на нижнем грейде.
     with_category = ctx(claimed="junior", category=cat("junior"), sessions=(closed("junior", 5),))
     assert can_start(with_category, "junior", NOW).reason == "retry_same_grade"
+
+
+def test_can_start_row4_quick_demo_test_gives_no_pause() -> None:
+    """Быстрый демо-тест не закрывает обычный тест на тот же грейд, но в лимит сессий за 30 дней входит."""
+    quick = replace(closed("middle", 0.01), prefilled=True)
+    with_demo_category = ctx(category=cat("middle", TestOutcome.CONFIRMED_WITH_MARGIN), sessions=(quick,))
+    assert can_start(with_demo_category, "middle", NOW).ok
+    # Обычная попытка после демо-теста паузу даёт, как всегда.
+    regular = ctx(category=cat("middle"), sessions=(quick, closed("middle", 0.005)))
+    assert can_start(regular, "middle", NOW).reason == "retry_same_grade"
+    three = tuple(replace(closed("middle", days), prefilled=True) for days in (3, 2, 1))
+    assert can_start(ctx(category=cat("middle"), sessions=three), "middle", NOW).reason == "session_limit"
 
 
 def test_can_start_row4_lowest_grade_without_category_has_no_pause() -> None:

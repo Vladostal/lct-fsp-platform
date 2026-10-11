@@ -38,9 +38,8 @@ const ITEMS = PLURALS.task
 /** Значки правил — по порядку строк `ASSESSMENT.briefing.rules`. */
 const RULE_ICONS: readonly LucideIcon[] = [StepForward, CircleHelp, AppWindow, TimerOff, MousePointerClick]
 
-// Быстрый демо-тест: маршрута `POST /demo/assessment/quick-session` в API сейчас нет (кнопка получала 404).
-// Вернуть true, когда маршрут появится.
-const QUICK_TEST_AVAILABLE = false
+// Быстрый тест доступен в демо-режиме; сервер помечает результат как демонстрационный.
+const QUICK_TEST_AVAILABLE = true
 
 export function Briefing({ catalog, grade }: { catalog: Catalog | null; grade?: string }) {
   const queryClient = useQueryClient()

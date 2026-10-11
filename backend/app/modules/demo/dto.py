@@ -8,7 +8,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.shared.enums import Role
 
@@ -38,3 +38,31 @@ class DemoMe(BaseModel):
 
 class RestartResult(BaseModel):
     restarted_at: datetime
+
+
+class QuickSessionRequest(BaseModel):
+    """Быстрый демо-тест: грейд, на который кандидат начинает тест."""
+
+    grade_code: str = Field(min_length=1, max_length=32)
+
+
+class QuickSessionResult(BaseModel):
+    session_id: UUID
+
+
+class DemoClock(BaseModel):
+    """Часы сервиса: текущее время сервиса и накопленный демо-сдвиг."""
+
+    now: datetime
+    offset_seconds: int
+
+
+class ClockAdvance(BaseModel):
+    """Сдвиг часов вперёд; `force` — сдвинуть, даже если есть идущие тесты (их время выйдет)."""
+
+    hours: int = Field(ge=1, le=24 * 31)
+    force: bool = False
+
+
+class ResetResult(BaseModel):
+    reset_at: datetime

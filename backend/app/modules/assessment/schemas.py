@@ -98,6 +98,8 @@ class StateCategory(CategoryRef):
     change_available_at: datetime
     #: Сессия, по которой определён уровень; `None` — грейд заявлен (`basis = declared`), теста не было.
     level_session_id: str | None = None
+    #: Признак быстрого демо-теста; полноценный тест заменяет результат.
+    is_demo_result: bool = False
 
 
 class ActiveSessionBrief(BaseModel):

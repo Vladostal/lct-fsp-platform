@@ -48,7 +48,7 @@ function Landing() {
     <>
       <section className="page-container grid items-center gap-10 pt-10 pb-4 md:pt-16 md:pb-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,440px)] lg:gap-16">
         <div className="flex min-w-0 flex-col gap-8">
-          <h1 data-page-title tabIndex={-1} className="type-display text-ink outline-none">
+          <h1 data-page-title tabIndex={-1} className="type-display leading-[1.25] text-ink outline-none">
             Платформа <span className="min-[360px]:whitespace-nowrap">ИТ-специалистов,</span> проверенных ФСП
           </h1>
           <div className="flex min-w-0 flex-col gap-3 min-[480px]:flex-row min-[480px]:flex-wrap">

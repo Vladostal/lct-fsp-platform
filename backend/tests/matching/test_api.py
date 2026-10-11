@@ -19,7 +19,9 @@ from app.modules.matching import constants as C
 from app.modules.matching.dto import ShortlistQuery, ShortlistRefinement
 from app.modules.matching.models import ExposureEvent, Need, ShortlistItem, ShortlistSnapshot
 from app.modules.matching.schemas import ShortlistSnapshotView, SnapshotDiffView
-from app.modules.profile.dto import PrivacySettingsDTO
+from app.modules.profile import service as profile
+from app.modules.profile.dto import PrivacyData, PrivacySettingsDTO
+from app.modules.profile.models import PrivacySettings
 from app.shared.enums import CategoryBasis, VisibilityState, WorkFormat
 
 API = "/api/v1"
@@ -174,9 +176,9 @@ def test_snapshot_create_order_and_dedup(api: TestClient, world: Any, db: Sessio
     assert view["funnel"] == {"category_total": 6, "available": 6, "format_ok": 5, "must_ok": 3, "shown": 5}
     empty_row = view["items"][4]
     assert empty_row["risk"].startswith("Нет данных по обязательным навыкам") and empty_row["fit_band"] == "partial"
-    assert view["items"][2]["fit_band"] == "partial"  # одними заявлениями не выше «частичного»
+    assert view["items"][3]["fit_band"] == "partial"  # одними заявлениями не выше «частичного»
     assert "pct" not in json.dumps(view["items"]) and view["version_no"] == 1 and view["is_latest"] is True
-    assert view["scorer_version"] == "match-3+fsp-signal-test+skills-test"
+    assert view["scorer_version"] == f"{C.SCORER_VERSION}+fsp-signal-test+skills-test"
     assert [row["relation"] for row in view["categories"]] == ["exact", "lower_with_margin", "higher"]
 
     again = api.post(f"{API}/employer/needs/{need_id}/shortlists")
@@ -362,6 +364,54 @@ def test_hidden_candidate_is_absent_everywhere(
         (row["candidate_id"], row["position"]) for row in first["items"]
     ]
     assert back["hidden_count"] == 0
+
+
+@pytest.mark.parametrize("disclosed", [False, True])
+def test_company_domain_hiding_applies_to_every_matching_view(
+    api: TestClient, world: Any, db: Session, employer: Any, disclosed: bool,
+    make_user: Callable[..., Any], make_client: Callable[..., TestClient], login_as: Callable[..., TestClient],
+) -> None:
+    domain = employer.email.rsplit("@", 1)[1]
+    hidden = world.add(test={"python": True, "postgresql": True})
+    visible = world.add(test={"python": True, "postgresql": True})
+    if disclosed:
+        hidden.disclosed[employer.id] = frozenset({"email"})
+    need_id = make_need(db, world, employer.id)
+    first = api.post(f"{API}/employer/needs/{need_id}/shortlists").json()
+    assert str(hidden.id) in {row["candidate_id"] for row in first["items"]}
+
+    profile.save_privacy(db, hidden.id, PrivacyData(hidden_domains=[domain]), clock.now(db))
+    bank = api.get(f"{API}/employer/candidates").json()
+    assert [row["candidate_id"] for row in bank["items"]] == [str(visible.id)]
+    stored = api.get(f"{API}/employer/shortlists/{first['id']}").json()
+    assert stored["hidden_count"] == 1
+    assert [row["candidate_id"] for row in stored["items"]] == [str(visible.id)]
+    for params in ({}, {"need_id": str(need_id)}, {"snapshot_id": first["id"]}):
+        assert api.get(f"{API}/employer/candidates/{hidden.id}", params=params).status_code == 404
+    assert api.get(f"{API}/employer/candidates/{visible.id}").status_code == 200
+    allowed_employer = make_user("employer", email="hr@allowed.example.com")
+    allowed_api = login_as(allowed_employer, client=make_client())
+    assert allowed_api.get(f"{API}/employer/candidates/{hidden.id}").status_code == 200
+    assert str(hidden.id) in {
+        row["candidate_id"] for row in allowed_api.get(f"{API}/employer/candidates").json()["items"]
+    }
+    assert api.put(f"{API}/employer/needs/{need_id}/pins/{hidden.id}").status_code == 404
+
+    # Новый состав также исключает кандидата; сохранённые строки исходной версии неизменны.
+    second_id = service.create_snapshot(
+        db, employer.id, need_id, clock.now(db),
+        parent_id=UUID(first["id"]), refinement=ShortlistRefinement(nice_skills=["kafka"]),
+    )
+    second = api.get(f"{API}/employer/shortlists/{second_id}").json()
+    assert str(hidden.id) not in {row["candidate_id"] for row in second["items"]}
+    diff = api.get(f"{API}/employer/shortlists/{second_id}/diff", params={"base": first["id"]})
+    assert diff.status_code == 200, diff.text
+    assert str(hidden.id) not in {cid for _, cid in ids_with_candidate(diff.json())}
+    profile.save_privacy(db, hidden.id, PrivacyData(hidden_domains=[]), clock.now(db))
+    assert api.get(f"{API}/employer/candidates/{hidden.id}").status_code == 200
+    restored = api.get(f"{API}/employer/shortlists/{first['id']}").json()
+    assert restored["hidden_count"] == 0
+    assert str(hidden.id) in {row["candidate_id"] for row in restored["items"]}
 
 
 def test_disclosed_pair_keeps_row_when_hidden(api: TestClient, world: Any, db: Session, employer: Any) -> None:
@@ -585,6 +635,29 @@ def test_demo_employer_sees_only_demo_candidates(
     assert real.get(f"{API}/employer/candidates").json()["total"] == 2
 
 
+def test_hidden_domain_hides_candidate_from_that_employer(
+    world: Any, db: Session, make_user: Callable[..., Any], login_as: Callable[..., TestClient]
+) -> None:
+    """«Не показывать компаниям» (Арх. 10.4): работодатель со скрытым доменом почты не видит кандидата нигде."""
+    closed_for = make_user("employer", email="hr@hidden-corp.example")
+    shy = world.add(theta=2.5, test={"python": True, "postgresql": True})
+    plain = world.add(theta=1.0, test={"python": True})
+    db.add(PrivacySettings(user_id=shy.id, hidden_domains=["hidden-corp.example"], updated_at=clock.now(db)))
+    db.flush()
+    api = login_as(closed_for)
+    need_id = make_need(db, world, closed_for.id)
+    view = api.post(f"{API}/employer/needs/{need_id}/shortlists").json()
+    assert [row["candidate_id"] for row in view["items"]] == [str(plain.id)]
+    bank = api.get(f"{API}/employer/candidates").json()
+    assert [row["candidate_id"] for row in bank["items"]] == [str(plain.id)] and bank["total"] == 1
+    assert api.get(f"{API}/employer/candidates/{shy.id}").status_code == 404
+    assert shy.public_code not in api.get(f"{API}/employer/shortlists/{view['id']}").text
+
+    other = login_as(make_user("employer", email="hr@open-corp.example"), client=None)
+    assert other.get(f"{API}/employer/candidates").json()["total"] == 2
+    assert other.get(f"{API}/employer/candidates/{shy.id}").status_code == 200
+
+
 def test_pdf_requires_disclosure(api: TestClient, world: Any, db: Session, employer: Any) -> None:
     cand = world.add(test={"python": True}, declared=["docker"], custom_skills=["свой тег"])
     denied = api.get(f"{API}/employer/candidates/{cand.id}/pdf")
@@ -679,7 +752,8 @@ def test_explain_for_invitation_and_exposure_stats(api: TestClient, world: Any, 
     assert (why.source, why.target.code, explain.fit_band) == ("need", "backend:middle", "good")
     assert [(item.skill.code, item.kind) for item in why.matched] == [("python", "test"), ("postgresql", "declared")]
     assert why.unconfirmed is not None and why.unconfirmed.skill.code == "postgresql"
-    assert "категория и уровень по тесту" in why.employer_saw and explain.scorer_version.startswith("match-3+")
+    assert "категория и уровень по тесту" in why.employer_saw
+    assert explain.scorer_version.startswith(f"{C.SCORER_VERSION}+")
     dumped = json.dumps(explain.model_dump(mode="json"), ensure_ascii=False)
     assert "position" not in dumped and "risk" not in dumped and "contributions" not in dumped
 

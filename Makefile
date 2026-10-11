@@ -116,7 +116,7 @@ test-db-clean: ## Удалить оставшиеся базы test_* после
 	  | while read -r name; do echo "DROP DATABASE $$name"; \
 	      $(COMPOSE_DEV) exec -T db psql -U app -d app -qc "DROP DATABASE IF EXISTS \"$$name\" WITH (FORCE)"; done
 
-lint: $(VENV)/bin/python ## ruff, mypy, import-linter; с PKG — только каталоги пакета; без PKG — всё, alembic check и biome
+lint: $(VENV)/bin/python ## ruff, mypy, import-linter; с PKG — только пакет; без PKG — всё, alembic check, tsc и biome
 	@cd backend && set -e; \
 	if [ "$(PKG)" = "core" ]; then src="$(CORE_SRC)"; tests="$(CORE_TESTS)"; \
 	elif [ -n "$(PKG)" ]; then \
@@ -140,7 +140,7 @@ ifeq ($(PKG),)
 	@if ls backend/alembic/versions/*.py >/dev/null 2>&1; then \
 	  echo "alembic check"; cd backend && $(LOCAL_ENV) $(BIN)/alembic check; \
 	else echo "alembic check пропущен: начальной миграции ещё нет (схема создаётся из метаданных, Арх. 13.2)"; fi
-	cd frontend && npm run lint
+	cd frontend && npm run typecheck && npm run lint
 endif
 
 # --- точки отката и артефакты --------------------------------------------------------------------------------------------

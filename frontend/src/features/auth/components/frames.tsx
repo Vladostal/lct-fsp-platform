@@ -1,22 +1,13 @@
 import type * as React from 'react'
 import type { MeView } from '@/client'
 import { CabinetLayout, type StepperStep, WizardLayout } from '@/components/app'
-import type { CatalogFeatures } from '@/lib/features'
 import { useLogout } from '../hooks'
 
 /** Каркас кабинета с подключённым выходом из аккаунта — для маршрутов `_cabinet` и их 404. */
-export function CabinetFrame({
-  me,
-  features,
-  children,
-}: {
-  me: MeView
-  features: CatalogFeatures | null
-  children: React.ReactNode
-}) {
+export function CabinetFrame({ me, children }: { me: MeView; children: React.ReactNode }) {
   const logout = useLogout()
   return (
-    <CabinetLayout me={me} features={features} onLogout={() => logout.mutate()} loggingOut={logout.isPending}>
+    <CabinetLayout me={me} onLogout={() => logout.mutate()} loggingOut={logout.isPending}>
       {children}
     </CabinetLayout>
   )

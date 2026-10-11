@@ -44,6 +44,7 @@ import {
   StrengthPill,
   type TileTone,
 } from '@/components/app'
+import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { STRENGTH_SUMMARY } from '@/content/common'
@@ -363,6 +364,7 @@ export function CategoryScreen({ catalog }: { catalog: Catalog | null }) {
                 <span className="min-w-0">{ASSESSMENT.category.keptShort}</span>
               </p>
             ) : null}
+            {s.category.is_demo_result ? <Alert variant="info">{ASSESSMENT.category.demo}</Alert> : null}
           </>
         ) : (
           <>

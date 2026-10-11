@@ -297,10 +297,27 @@ def seed_session_in_progress(db: Session, candidate_id: UUID, grade_code: str, a
     session = sessions.create_session(
         db, profile, grade_code, decision.kind.value, now, flags={sessions.FLAG_PREFILLED: True}
     )
-    items = sessions.session_items(db, session.id)
+    _prefill(db, candidate_id, session.id, answered, now)
+    return session.id
+
+
+def _prefill(db: Session, candidate_id: UUID, session_id: UUID, answered: int, now: datetime) -> None:
+    """Подставить верные ответы на первые `answered` заданий; последнее задание всегда остаётся кандидату."""
+    items = sessions.session_items(db, session_id)
     for item in items[: max(0, min(answered, len(items) - 1))]:
         variant = db.get(VariantRow, item.variant_id)
         assert variant is not None
         raw = correct_raw(variant)
-        sessions.submit_answer(db, candidate_id, str(session.id), str(item.id), raw, False, None, None, now)
+        sessions.submit_answer(db, candidate_id, str(session_id), str(item.id), raw, False, None, None, now)
+
+
+def start_quick_session(db: Session, candidate_id: UUID, grade_code: str, answered: int, now: datetime) -> UUID:
+    """Быстрый демо-тест живого кандидата: первые `answered` ответов подставлены верными.
+
+    В отличие от `seed_session_in_progress`, опрос и заявленный грейд за кандидата не создаются: право на старт
+    проверяется так же, как у обычного теста (`survey_required`, `claim_required`, паузы — Арх. 5.7). Сессия
+    помечается `demo_prefilled`, категория по ней — `is_demo_result = true`.
+    """
+    session = sessions.start_session(db, candidate_id, grade_code, now, flags={sessions.FLAG_PREFILLED: True})
+    _prefill(db, candidate_id, session.id, answered, now)
     return session.id

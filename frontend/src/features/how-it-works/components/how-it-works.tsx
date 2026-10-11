@@ -85,8 +85,13 @@ export function HowItWorks({ limits, demo }: Props) {
   const c = s?.contact
   const testMetrics: Metric[] = t
     ? [
-        { label: 'Точность определения грейда', value: t.v1_accuracy, icon: Target, tone: 'solid' },
-        { label: 'Согласие результатов при повторе', value: t.v2_agreement, icon: Repeat },
+        {
+          label: 'Верное решение «подтверждён или нет» среди определённых исходов',
+          value: t.v1_accuracy,
+          icon: Target,
+          tone: 'solid',
+        },
+        { label: 'Совпадение решения «подтверждён или нет» при повторе', value: t.v2_agreement, icon: Repeat },
         { label: 'Точное попадание в грейд', value: t.v3_exact, icon: Crosshair, tone: 'success' },
         { label: 'Завышение грейда', value: t.v3_overgrade, icon: TrendingUp, tone: 'warning' },
         {
