@@ -471,9 +471,15 @@
             "title": "Display Name"
           },
           "freshness_days": {
-            "default": 0,
-            "title": "Freshness Days",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Freshness Days"
           },
           "fsp_summary": {
             "anyOf": [
@@ -497,7 +503,14 @@
             "type": "boolean"
           },
           "level": {
-            "$ref": "#/components/schemas/LevelView"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LevelView"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "public_code": {
             "title": "Public Code",
@@ -535,8 +548,7 @@
           "candidate_id",
           "public_code",
           "category",
-          "strength_label",
-          "level"
+          "strength_label"
         ],
         "title": "BankItemView",
         "type": "object"
@@ -897,7 +909,14 @@
             "type": "boolean"
           },
           "level": {
-            "$ref": "#/components/schemas/LevelView"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LevelView"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "match": {
             "anyOf": [
@@ -953,7 +972,6 @@
           "available",
           "is_demo",
           "category",
-          "level",
           "fsp",
           "work_formats",
           "relocation_ready",
@@ -1556,9 +1574,28 @@
         "title": "CatalogFeatures",
         "type": "object"
       },
+      "CategoryBasis": {
+        "description": "Основание категории кандидата: подтверждена тестом или грейд заявлен (тест по специализации готовится).",
+        "enum": [
+          "test",
+          "declared"
+        ],
+        "title": "CategoryBasis",
+        "type": "string"
+      },
       "CategoryRef": {
         "description": "Категория «специализация × грейд»: `code` — «backend:middle», `title` — «Backend · Middle».",
         "properties": {
+          "basis": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CategoryBasis"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "code": {
             "title": "Code",
             "type": "string"
@@ -2265,7 +2302,7 @@
         "type": "object"
       },
       "Contribution": {
-        "description": "Вклад в покрытие требований или в силу профиля (Арх. 6.10).",
+        "description": "Строка вклада с источником данных: по нему экран складывает «подтверждено» и «заявлено кандидатом».\n\n`confirmed` — тест и достижения ФСП (в сумме до 40 баллов силы); `declared` — стаж и навыки из профиля\n(до 60 баллов). У вкладов покрытия и у объяснений прежней версии оценщика — `None`.",
         "properties": {
           "code": {
             "title": "Code",
@@ -2290,6 +2327,21 @@
           "points": {
             "title": "Points",
             "type": "number"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "confirmed",
+                  "declared"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
           }
         },
         "required": [
@@ -4990,7 +5042,7 @@
         "type": "object"
       },
       "InvitationEmployerBrief": {
-        "description": "Строка списка приглашений работодателя: слот, срок, исход.",
+        "description": "Строка списка приглашений работодателя: срок, исход.",
         "properties": {
           "can_revise": {
             "title": "Can Revise",
@@ -5075,9 +5127,6 @@
             "title": "Sent At",
             "type": "string"
           },
-          "slot": {
-            "$ref": "#/components/schemas/SlotView"
-          },
           "status": {
             "$ref": "#/components/schemas/InvitationStatus"
           },
@@ -5112,7 +5161,6 @@
           "sent_at",
           "updated_at",
           "expires_at",
-          "slot",
           "can_revise"
         ],
         "title": "InvitationEmployerBrief",
@@ -5286,9 +5334,6 @@
             "title": "Sent At",
             "type": "string"
           },
-          "slot": {
-            "$ref": "#/components/schemas/SlotView"
-          },
           "status": {
             "$ref": "#/components/schemas/InvitationStatus"
           },
@@ -5332,7 +5377,6 @@
           "sent_at",
           "updated_at",
           "expires_at",
-          "slot",
           "timeline",
           "can_withdraw",
           "can_revise",
@@ -7792,7 +7836,7 @@
         "type": "object"
       },
       "QuotaView": {
-        "description": "Слоты и суточный лимит работодателя.",
+        "description": "Суточный лимит работодателя.",
         "properties": {
           "daily_limit": {
             "title": "Daily Limit",
@@ -7805,31 +7849,9 @@
           "frozen": {
             "title": "Frozen",
             "type": "boolean"
-          },
-          "limit": {
-            "title": "Limit",
-            "type": "integer"
-          },
-          "next_release_at": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Next Release At"
-          },
-          "used": {
-            "title": "Used",
-            "type": "integer"
           }
         },
         "required": [
-          "used",
-          "limit",
           "daily_used",
           "daily_limit",
           "frozen"
@@ -8303,9 +8325,15 @@
             "type": "array"
           },
           "freshness_days": {
-            "default": 0,
-            "title": "Freshness Days",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Freshness Days"
           },
           "fsp_summary": {
             "anyOf": [
@@ -8883,32 +8911,6 @@
         "title": "SkillVerdict",
         "type": "string"
       },
-      "SlotView": {
-        "description": "Слот работодателя по приглашению: занят ли сейчас и когда освободится (освободился).",
-        "properties": {
-          "occupied": {
-            "title": "Occupied",
-            "type": "boolean"
-          },
-          "release_at": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Release At"
-          }
-        },
-        "required": [
-          "occupied"
-        ],
-        "title": "SlotView",
-        "type": "object"
-      },
       "SnapshotCategory": {
         "description": "Раздел версии: рекомендованная категория и число её кандидатов (Арх. 6.3).",
         "properties": {
@@ -9076,6 +9078,16 @@
             "title": "Assigned At",
             "type": "string"
           },
+          "basis": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CategoryBasis"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "change_available_at": {
             "format": "date-time",
             "title": "Change Available At",
@@ -9089,8 +9101,15 @@
             "$ref": "#/components/schemas/Ref"
           },
           "level_session_id": {
-            "title": "Level Session Id",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Level Session Id"
           },
           "specialization": {
             "$ref": "#/components/schemas/Ref"
@@ -9106,8 +9125,7 @@
           "specialization",
           "grade",
           "assigned_at",
-          "change_available_at",
-          "level_session_id"
+          "change_available_at"
         ],
         "title": "StateCategory",
         "type": "object"
@@ -9150,7 +9168,7 @@
         "type": "object"
       },
       "StrengthView": {
-        "description": "Сила подтверждённого профиля: подпись с абсолютными порогами и вклады (тест, давность, ФСП).",
+        "description": "Сила профиля: подпись с абсолютными порогами и вклады (тест, давность, ФСП, заявленные стаж и навыки).",
         "properties": {
           "contributions": {
             "items": {
@@ -10321,7 +10339,7 @@
     },
     "/api/v1/assessment/blueprints": {
       "get": {
-        "description": "Планы теста по грейдам своей специализации. 409 `survey_required`.",
+        "description": "Планы теста по грейдам своей специализации. 409 `survey_required`.\n\nПустой список — теста по специализации пока нет.",
         "operationId": "assessment-get_blueprints",
         "responses": {
           "200": {
@@ -10451,7 +10469,7 @@
     },
     "/api/v1/assessment/claim": {
       "put": {
-        "description": "Заявить грейд. 409: `survey_required`, `claim_locked`; 422: `grade_unavailable`.",
+        "description": "Заявить грейд. 409: `survey_required`, `claim_locked`, `cooldown_active`; 422: `grade_unavailable`.\n\nВ специализации без теста заявление сразу даёт категорию `basis = declared`. Первую смену заявленного грейда\nможно сделать сразу, следующие — раз в 90 дней: иначе 409 `cooldown_active` с `params.reason = grade_change`\nи `params.available_at`.",
         "operationId": "assessment-put_claim",
         "requestBody": {
           "content": {
@@ -11040,7 +11058,7 @@
         ]
       },
       "put": {
-        "description": "Сохранить ответы опроса. 409: `survey_version_mismatch`, `session_active`,\n`specialization_change_requires_confirm`, `cooldown_active`; 422: `specialization_unavailable`.",
+        "description": "Сохранить ответы опроса. 409: `survey_version_mismatch`, `session_active`,\n`specialization_change_requires_confirm`, `cooldown_active`; 422 — ошибки полей и\n`specialization_unavailable` (тест по специализации написан, но сейчас недоступен).\n\nСпециализация без теста принимается: категория в ней будет заявленной (`PUT /assessment/claim`).",
         "operationId": "assessment-put_survey",
         "requestBody": {
           "content": {
@@ -14492,7 +14510,7 @@
             "description": "Чужая роль или действие запрещено"
           }
         },
-        "summary": "Слоты и суточный лимит",
+        "summary": "Суточный лимит отправки",
         "tags": [
           "contact"
         ]
@@ -14782,7 +14800,7 @@
             "description": "Ошибки полей или правил"
           }
         },
-        "summary": "Отозвать приглашение; слот занят до исходного срока",
+        "summary": "Отозвать приглашение",
         "tags": [
           "contact"
         ]

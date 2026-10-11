@@ -34,6 +34,14 @@ export const CATALOG = {
   directions: [{ code: 'dev', title: 'Разработка' }],
   specializations: [
     { code: 'backend', title: 'Backend-разработка', title_short: 'Backend', direction_code: 'dev', available: true },
+    // `available: false` — теста по специализации ещё нет: она выбирается, грейд по ней заявленный.
+    {
+      code: 'frontend',
+      title: 'Frontend-разработка',
+      title_short: 'Frontend',
+      direction_code: 'dev',
+      available: false,
+    },
   ],
   grades: [
     { code: 'junior', title: 'Junior', order: 1, description: 'Решает типовые задачи с поддержкой', available: true },
@@ -53,6 +61,63 @@ export const LEGAL_PROCESSING = {
   title: 'Согласие на обработку персональных данных',
   text: '# 1. Что обрабатывается\n\nАдрес электронной почты, данные профиля, результаты тестов и история приглашений.\n\n# 2. Срок\n\nДо отзыва согласия. Отзыв удаляет аккаунт и все данные немедленно; резервных копий стенд не ведёт.',
   sha256: '0'.repeat(64),
+}
+
+/** Вклады в силу профиля заявленного кандидата (match-3): тест — 0 из 10, остальное заявлено. */
+export const DECLARED_CONTRIBUTIONS = [
+  {
+    group: 'strength',
+    code: 'test',
+    label: 'Тест по специализации готовится',
+    points: 0,
+    max_points: 10,
+    source: 'confirmed',
+  },
+  {
+    group: 'strength',
+    code: 'experience',
+    label: 'Стаж (заявлен кандидатом)',
+    points: 21,
+    max_points: 35,
+    source: 'declared',
+  },
+  {
+    group: 'strength',
+    code: 'skills',
+    label: 'Навыки по специализации (заявлены кандидатом)',
+    points: 12.5,
+    max_points: 25,
+    source: 'declared',
+  },
+]
+
+/** Категория с заявленным грейдом: специализация без теста, уровня и сессии нет. */
+export const DECLARED_CATEGORY = {
+  code: 'frontend:middle',
+  title: 'Frontend · Middle',
+  specialization: { code: 'frontend', title: 'Frontend' },
+  grade: { code: 'middle', title: 'Middle' },
+  basis: 'declared',
+}
+
+/** Состояние кандидата с заявленным грейдом: первая смена свободна (`change_available_at` = дата заявления). */
+export const DECLARED_STATE = {
+  survey_completed: true,
+  direction: { code: 'dev', title: 'Разработка' },
+  specialization: { code: 'frontend', title: 'Frontend-разработка' },
+  main_language: null,
+  claimed_grade: { code: 'middle', title: 'Middle' },
+  claim_locked: false,
+  category: {
+    ...DECLARED_CATEGORY,
+    assigned_at: '2026-10-01T10:00:00Z',
+    change_available_at: '2026-10-01T10:00:00Z',
+    level_session_id: null,
+  },
+  level: null,
+  active_session: null,
+  last_session: null,
+  next_actions: [],
 }
 
 type Handler = (route: Route) => Promise<void> | void
@@ -138,8 +203,7 @@ export async function mockApi(page: Page, options: MockOptions = {}): Promise<vo
         is_complete: true,
       }),
     'GET /employer/needs': (route) => json(route, []),
-    'GET /employer/invitations/quota': (route) =>
-      json(route, { used: 3, limit: 10, next_release_at: null, daily_used: 1, daily_limit: 20, frozen: false }),
+    'GET /employer/invitations/quota': (route) => json(route, { daily_used: 1, daily_limit: 20, frozen: false }),
   }
   const handlers = { ...defaults, ...options.handlers }
 

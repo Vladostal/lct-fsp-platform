@@ -18,7 +18,7 @@ class MatchingConstants(BaseSettings):
 
     model_config = module_env("MATCHING_")
 
-    scorer_version: str = "match-2"
+    scorer_version: str = "match-3"
     # Вес доказательства `e` (Арх. 6.2). Заявленное в подтверждённое покрытие не входит.
     e_test: float = 1.0
     e_test_single: float = 0.7
@@ -32,13 +32,28 @@ class MatchingConstants(BaseSettings):
     gap_cap_band: int = 6
     fit_strong_min: int = 70
     fit_good_min: int = 40
-    # Сила профиля (Арх. 6.6): доли теста и ФСП, нижняя граница, запас ниже порога.
-    w_test: float = 0.7
-    w_fsp: float = 0.3
+    # Сила профиля (версия 3): доли теста, ФСП, заявленного стажа и заявленных навыков специализации (в сумме 1.0);
+    # нижняя граница уровня, запас ниже порога. Тест и ФСП — подтверждённая часть (до 40 баллов), стаж и навыки —
+    # заявленная кандидатом (до 60 баллов).
+    w_test: float = 0.10
+    w_fsp: float = 0.30
+    w_experience: float = 0.35
+    w_skills: float = 0.25
     z_lower: float = 1.0
     under: float = 0.5
-    strength_high_min: int = 55
-    strength_medium_min: int = 30
+    # Стаж, при котором вклад стажа полный, по грейдам и для неизвестного грейда; дальше вклад не растёт.
+    exp_full_junior: float = 2.0
+    exp_full_middle: float = 5.0
+    exp_full_senior: float = 8.0
+    exp_full_default: float = 5.0
+    # Число заявленных навыков своей специализации, при котором вклад навыков полный; дальше вклад не растёт.
+    skills_full: int = 6
+    strength_high_min: int = 65
+    strength_medium_min: int = 35
+    # Обычный минимальный стаж грейда, лет: ниже него в объяснении появляется пометка (на порядок не влияет).
+    exp_min_junior: float = 0.0
+    exp_min_middle: float = 2.0
+    exp_min_senior: float = 5.0
     # Размер разделов версии подборки.
     section_limit_exact: int = 30
     section_limit_lower: int = 10
@@ -76,6 +91,20 @@ FIT_STRONG_MIN: int = _c.fit_strong_min
 FIT_GOOD_MIN: int = _c.fit_good_min
 W_TEST: float = _c.w_test
 W_FSP: float = _c.w_fsp
+W_EXPERIENCE: float = _c.w_experience
+W_SKILLS: float = _c.w_skills
+EXP_FULL_YEARS: dict[str, float] = {
+    "junior": _c.exp_full_junior,
+    "middle": _c.exp_full_middle,
+    "senior": _c.exp_full_senior,
+}
+EXP_FULL_YEARS_DEFAULT: float = _c.exp_full_default
+SKILLS_FULL: int = _c.skills_full
+EXP_EXPECTED_MIN: dict[str, float] = {
+    "junior": _c.exp_min_junior,
+    "middle": _c.exp_min_middle,
+    "senior": _c.exp_min_senior,
+}
 Z_LOWER: float = _c.z_lower
 UNDER: float = _c.under
 STRENGTH_HIGH_MIN: int = _c.strength_high_min

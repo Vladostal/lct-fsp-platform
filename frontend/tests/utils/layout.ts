@@ -335,6 +335,8 @@ export async function checkFocusNotCovered(page: Page, limit = 200): Promise<Iss
     })
     for (const el of focusable.slice(0, max)) {
       el.focus()
+      // Поле внутри отключённого fieldset фокус не берёт: перекрыть «в фокусе» его нельзя.
+      if (document.activeElement !== el) continue
       await new Promise((resolve) => requestAnimationFrame(() => resolve(null)))
       const rect = el.getBoundingClientRect()
       if (rect.width < 1 || rect.height < 1) continue

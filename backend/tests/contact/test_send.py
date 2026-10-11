@@ -126,30 +126,16 @@ def test_daily_limit_and_demo_account_exemption(db, client, login_as, make_clien
 
     # Демо-аккаунт: суточный лимит не применяется (Арх. 4.14); 25 отправок за сутки проходят.
     demo = actors.employer(is_demo=True)
-    service.set_slot_override(db, demo.id, 10_000)
     for _ in range(25):
         assert send(db, now, demo.id, actors.candidate(is_demo=True).id).status == InvitationStatus.SENT
     quota = login_as(demo, client=make_client()).get("/api/v1/employer/invitations/quota").json()
-    assert quota["used"] == 25 and quota["limit"] == 10_000 and quota["daily_limit"] == c.DEMO_DAILY_SEND_LIMIT
-
-
-def test_quota_exceeded_reports_next_release(db, client, login_as, actors, now, freeze_now):
-    employer = actors.employer()
-    first = send(db, now, employer.id, actors.candidate().id)
-    for _ in range(9):
-        send(db, freeze_now.tick(60), employer.id, actors.candidate().id)
-    login_as(employer)
-    response = _post(client, employer, actors.candidate().id)
-    assert (response.status_code, response.json()["code"]) == (409, "quota_exceeded")
-    params = response.json()["params"]
-    assert (params["used"], params["limit"]) == (10, 10)
-    assert params["next_release_at"] == first.expires_at.isoformat()
+    assert quota["daily_used"] == 25 and quota["daily_limit"] == c.DEMO_DAILY_SEND_LIMIT
 
 
 # --- сверка вилки ---------------------------------------------------------------------------------------------------
 
 
-def test_bounced_holds_slot_72h_hidden_from_candidate_and_shown_in_funnel(
+def test_bounced_hidden_from_candidate_and_shown_in_funnel(
     db, client, make_client, login_as, actors, world, now, freeze_now, mailbox
 ):
     pair = actors.pair(min_salary=220_000)
@@ -158,10 +144,6 @@ def test_bounced_holds_slot_72h_hidden_from_candidate_and_shown_in_funnel(
     body = response.json()
     assert response.status_code == 201 and body["status"] == "bounced"
     assert body["status_label"] == "Не доставлено" and body["can_revise"] is True
-    assert body["slot"] == {
-        "occupied": True,
-        "release_at": (now + timedelta(hours=72)).isoformat().replace("+00:00", "Z"),
-    }
     assert "220000" not in response.text.replace(" ", "")  # минимум в ответ не попадает
     assert mailbox == []
 
@@ -180,10 +162,6 @@ def test_bounced_holds_slot_72h_hidden_from_candidate_and_shown_in_funnel(
     assert again.json()["params"]["until"] == (now + timedelta(days=30)).isoformat()
     precheck = client.get(f"/api/v1/employer/invitations/precheck?candidate_id={pair.candidate.id}").json()
     assert precheck["blockers"][0]["code"] == "conditions_mismatch" and precheck["pair"]["can_revise"] is True
-
-    assert client.get("/api/v1/employer/invitations/quota").json()["used"] == 1
-    freeze_now.tick(hours=72)
-    assert client.get("/api/v1/employer/invitations/quota").json()["used"] == 0
 
 
 def test_check_always_applies_five_employers_all_bounced(db, client, make_client, login_as, actors, world, now):

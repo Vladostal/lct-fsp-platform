@@ -39,7 +39,7 @@ def _table(header: list[str], rows: list[list[str]]) -> str:
 def build(seed: int, runs: int, sens_runs: int, n: int) -> tuple[str, dict[str, Any]]:
     """Собрать текст отчёта и данные `report.json`."""
     main = sim.compare(seed, runs, DEFAULT_ALPHA, DEFAULT_SILENT, n)
-    a, b, cc = main["A"], main["B"], main["C"]
+    a, cc = main["A"], main["B"]
 
     parts: list[str] = [
         "# Валидация механики контакта («Приглашение с возвратом»)",
@@ -51,7 +51,7 @@ def build(seed: int, runs: int, sens_runs: int, n: int) -> tuple[str, dict[str, 
         f"{DEFAULT_ALPHA}` — падение внимания кандидата с числом неотвеченных приглашений; доли персон и вероятности "
         "ответа в срок заданы моделью; константы механики (Арх. 4.3) не калиброваны. Популяция строится в самом "
         "пакете валидации по правилам Арх. 12.1 (общий модуль `app.simulation` на момент расчёта отсутствовал). "
-        "Сверка вилки, занятость слотов, пересмотр и решения персон считаются боевыми функциями `contact/rules.py`.",
+        "Сверка вилки, суточный лимит, пересмотр и решения персон считаются боевыми функциями `contact/rules.py`.",
         "",
         "## Сравнение режимов",
         "",
@@ -91,7 +91,7 @@ def build(seed: int, runs: int, sens_runs: int, n: int) -> tuple[str, dict[str, 
             result = sim.compare(seed, sens_runs, alpha, silent, n)
             reply = {m: result[m].reply_in_time_share or 0.0 for m in sim.MODES}
             filled = {m: result[m].needs_filled_share for m in sim.MODES}
-            kept = reply["C"] >= reply["B"] >= reply["A"]
+            kept = reply["B"] >= reply["A"]
             order_kept += kept
             sens_rows.append(
                 [
@@ -113,15 +113,15 @@ def build(seed: int, runs: int, sens_runs: int, n: int) -> tuple[str, dict[str, 
             )
             if alpha == 0.0:
                 zero_alpha_note.append(
-                    f"молчащих {_pct(silent)}: потребностей с тремя согласиями A {_pct(filled['A'])} → C "
-                    f"{_pct(filled['C'])}, суток до первого согласия A "
-                    f"{_num(result['A'].median_days_to_first_accept)} → C "
-                    f"{_num(result['C'].median_days_to_first_accept)}"
+                    f"молчащих {_pct(silent)}: потребностей с тремя согласиями A {_pct(filled['A'])} → B "
+                    f"{_pct(filled['B'])}, суток до первого согласия A "
+                    f"{_num(result['A'].median_days_to_first_accept)} → B "
+                    f"{_num(result['B'].median_days_to_first_accept)}"
                 )
     parts += [
         "## Чувствительность",
         "",
-        f"По {sens_runs} прогонов на ячейку. Порядок режимов по доле ответов в срок (C ≥ B ≥ A) сохраняется в "
+        f"По {sens_runs} прогонов на ячейку. Порядок режимов по доле ответов в срок (B ≥ A) сохраняется в "
         f"{order_kept} из {len(sens_rows)} ячеек.",
         "",
         _table(
@@ -130,14 +130,11 @@ def build(seed: int, runs: int, sens_runs: int, n: int) -> tuple[str, dict[str, 
                 "молчащих",
                 "ответ в срок A",
                 "B",
-                "C",
                 "три согласия A",
                 "B",
-                "C",
                 "суток до согласия A",
                 "B",
-                "C",
-                "порядок C ≥ B ≥ A",
+                "порядок B ≥ A",
             ],
             sens_rows,
         ),
@@ -153,7 +150,7 @@ def build(seed: int, runs: int, sens_runs: int, n: int) -> tuple[str, dict[str, 
         "## Сверка вилки",
         "",
         "У кандидатов популяции есть скрытый минимум, работодатели называют «от» своей потребности, отправка "
-        "проходит боевую `rules.salary_ok`. Режим C.",
+        "проходит боевую `rules.salary_ok`. Режим B.",
         "",
         _table(
             ["Показатель", "Значение"],
@@ -163,7 +160,6 @@ def build(seed: int, runs: int, sens_runs: int, n: int) -> tuple[str, dict[str, 
                     [f"Доля недоставленных: {quartiles[q]} по силе профиля", _pct(cc.bounced_share_by_quartile[q])]
                     for q in range(4)
                 ),
-                ["Доля слото-дней, занятых недоставленными", _pct(cc.slot_days_bounced_share)],
                 ["Доля пересмотров после недоставки, приведших к доставке", _pct(cc.revision_success_share)],
             ],
         ),
@@ -181,7 +177,7 @@ def build(seed: int, runs: int, sens_runs: int, n: int) -> tuple[str, dict[str, 
         "",
         "Атакующий с `k` аккаунтами ищет минимум одного кандидата двоичным поиском по лестнице (29 ступеней и "
         "«не задан») с боевыми правилами: у пары две сверки за 30 дней (исходная отправка и один пересмотр только "
-        "после недоставки и только с большей нижней границей), каждая проба занимает слот и входит в суточный лимит. "
+        "после недоставки и только с большей нижней границей), каждая проба входит в суточный лимит. "
         "Планки нет: это измеренная стоимость атаки по всем 30 гипотезам.",
         "",
         _table(
@@ -249,14 +245,12 @@ def build(seed: int, runs: int, sens_runs: int, n: int) -> tuple[str, dict[str, 
         "salary_check": {
             "bounced_share": None if cc.delivered_share is None else round(1 - cc.delivered_share, 4),
             "bounced_share_by_strength_quartile": cc.bounced_share_by_quartile,
-            "slot_days_bounced_share": cc.slot_days_bounced_share,
             "revision_success_share": cc.revision_success_share,
             "feasible_at_10": cc.feasible_at_10,
             "feasible_at_10_at_median": cc.feasible_at_10_median,
         },
         "adaptive_search": [asdict(cost) for cost in costs],
         "revision_pass_blocked": pass_blocked,
-        "mode_b_reply_in_time_share": b.reply_in_time_share,
     }
     return "\n".join(parts), document
 

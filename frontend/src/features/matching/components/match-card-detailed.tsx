@@ -1,18 +1,21 @@
 import { Link } from '@tanstack/react-router'
-import { ChevronDown, Lock, Pin, TriangleAlert } from 'lucide-react'
+import { ChevronDown, Lock, LockOpen, Pin, TriangleAlert } from 'lucide-react'
 import type { CandidateCardEmployerView, EvidenceItem, PairStateItem } from '@/client'
 import {
-  CategoryChip,
+  CandidateCategoryChip,
   ContributionBars,
   DemoChip,
   EvidenceChip,
   FitBadge,
   LevelScale,
+  RevealOnce,
+  Section,
   StatusBadge,
 } from '@/components/app'
 import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { formatDate, formatList } from '@/lib/format'
+import { CATEGORY_DECLARED, INVITATION_STATUS_LABELS } from '@/content/common'
+import { formatDate, formatList, formatYears } from '@/lib/format'
 import { MATCHING } from '../content'
 
 const T = MATCHING.card
@@ -28,12 +31,46 @@ export type MatchCardDetailedProps = {
   contacts?: React.ReactNode
 }
 
-function Section({ title, children, id }: { title: string; children: React.ReactNode; id?: string }) {
+/** Лестница решения: те же величины и в том же порядке, что и в ранжировании (обязательные → подтверждённое → сила). */
+function RankLadder({ match, strength }: { match: NonNullable<CandidateCardEmployerView['match']>; strength: string }) {
+  const c = match.coverage
+  const rungs: { label: string; value: string; ratio: number }[] = []
+  if (c.must_total > 0) {
+    rungs.push({
+      label: 'Обязательные навыки закрыты',
+      value: `${c.must_covered} из ${c.must_total}`,
+      ratio: c.must_covered / c.must_total,
+    })
+    rungs.push({
+      label: 'Из них подтверждено',
+      value: `${c.must_confirmed} из ${c.must_total}`,
+      ratio: c.must_confirmed / c.must_total,
+    })
+  }
+  const strengthRatio = strength === 'high' ? 1 : strength === 'medium' ? 0.66 : 0.33
+  rungs.push({ label: 'Сила профиля', value: MATCHING.compact.strength[strength as 'high'], ratio: strengthRatio })
   return (
-    <section id={id} className="flex min-w-0 flex-col gap-3 border-t border-line pt-4 first:border-t-0 first:pt-0">
-      <h3 className="type-h3">{title}</h3>
-      {children}
-    </section>
+    <ol className="flex min-w-0 flex-col gap-2" aria-label="Порядок ранжирования">
+      {rungs.map((r, i) => (
+        <li
+          key={r.label}
+          style={{ '--i': i } as React.CSSProperties}
+          className="stagger animate-rise-in grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1"
+        >
+          <span className="type-sm min-w-0 break-words">
+            <span className="num mr-2 text-ink-subtle">{i + 1}</span>
+            {r.label}
+          </span>
+          <span className="num type-sm text-ink-muted">{r.value}</span>
+          <span aria-hidden="true" className="col-span-2 h-1 overflow-hidden rounded-full bg-fill">
+            <span
+              className="animate-grow-x block h-full origin-left rounded-full bg-brand-600"
+              style={{ width: `${Math.round(r.ratio * 100)}%` }}
+            />
+          </span>
+        </li>
+      ))}
+    </ol>
   )
 }
 
@@ -74,7 +111,7 @@ export function MatchCardDetailed({ card, pair, needContext, onPinToggle, contac
           {card.is_demo ? <DemoChip /> : null}
         </div>
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <CategoryChip title={card.category.title} />
+          <CandidateCategoryChip category={card.category} />
           {m ? <FitBadge band={m.fit_band} strength={card.strength.label} size="sm" /> : null}
           {m?.position ? (
             <span className="type-sm text-ink-muted num">
@@ -91,13 +128,19 @@ export function MatchCardDetailed({ card, pair, needContext, onPinToggle, contac
             </Button>
           ) : null}
           {pair?.invitation ? (
-            <StatusBadge status={pair.invitation.status} label={pair.invitation.status} size="sm" live />
+            <StatusBadge
+              status={pair.invitation.status}
+              label={INVITATION_STATUS_LABELS.employer[pair.invitation.status] ?? pair.invitation.status}
+              size="sm"
+              live
+            />
           ) : null}
         </div>
       </header>
 
       {m ? (
         <Section title={T.why}>
+          <RankLadder match={m} strength={card.strength.label} />
           {m.reasons.length > 0 ? (
             <ul className="flex min-w-0 flex-col gap-2">
               {m.reasons.slice(0, 3).map((r) => (
@@ -131,7 +174,7 @@ export function MatchCardDetailed({ card, pair, needContext, onPinToggle, contac
             {m.requirements.map((r) => (
               <li key={r.skill.code} className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                 <span className="min-w-0 break-words font-medium">{r.skill.title}</span>
-                <span className="type-caption text-ink-muted">{r.priority === 'must' ? T.required : T.desirable}</span>
+                {r.priority === 'must' ? <span className="type-caption text-ink-muted">{T.required}</span> : null}
                 <EvidenceChip
                   kind={r.kind}
                   size="sm"
@@ -145,15 +188,24 @@ export function MatchCardDetailed({ card, pair, needContext, onPinToggle, contac
       ) : null}
 
       <Section title={T.level}>
-        <LevelScale level={card.level} size="md" ownGrade={card.category.grade.code} />
-        <p className="type-sm text-ink-muted">
-          Тест {formatDate(card.level.tested_at)}
-          {card.level.stale ? <span className="ml-2 rounded-full bg-fill px-2 py-0.5">{T.stale}</span> : null}
-        </p>
+        {card.level ? (
+          <>
+            <LevelScale level={card.level} size="md" ownGrade={card.category.grade.code} />
+            <p className="type-sm text-ink-muted">
+              Тест {formatDate(card.level.tested_at)}
+              {card.level.stale ? <span className="ml-2 text-warning">{T.stale}</span> : null}
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="type-body min-w-0">{CATEGORY_DECLARED.card}</p>
+            <p className="type-sm min-w-0 text-ink-muted">{T.levelDeclared}</p>
+          </>
+        )}
       </Section>
 
-      <Collapsible className="min-w-0 border-t border-line pt-4">
-        <CollapsibleTrigger className="tap-target group flex w-full min-w-0 items-center justify-between gap-2 text-left type-h3">
+      <Collapsible className="min-w-0">
+        <CollapsibleTrigger className="tap-target group flex w-full min-w-0 items-center justify-between gap-2 text-left type-eyebrow">
           {T.contribution}
           <ChevronDown
             className="size-5 shrink-0 transition-transform group-data-[state=open]:rotate-180"
@@ -173,10 +225,10 @@ export function MatchCardDetailed({ card, pair, needContext, onPinToggle, contac
             <p className="type-sm font-medium">
               {T.strength}: {MATCHING.compact.strength[card.strength.label]}
             </p>
-            <ContributionBars items={card.strength.contributions} />
+            <ContributionBars items={card.strength.contributions} summary />
           </div>
           {m ? <p className="num type-caption text-ink-muted">{m.scorer_version}</p> : null}
-          <Link to="/how-it-works" hash="matching" className="text-link type-sm">
+          <Link to="/how-it-works" hash="matching" className="text-link tap-target type-sm w-fit">
             {T.calc}
           </Link>
         </CollapsibleContent>
@@ -219,7 +271,7 @@ export function MatchCardDetailed({ card, pair, needContext, onPinToggle, contac
         )}
         {card.fsp.source ? (
           <p className="type-caption text-ink-muted">
-            Источник: {card.fsp.source.label}, проверено {formatDate(card.fsp.source.checked_at)}
+            {card.fsp.source.label}, проверено {formatDate(card.fsp.source.checked_at)}
           </p>
         ) : null}
       </Section>
@@ -236,7 +288,7 @@ export function MatchCardDetailed({ card, pair, needContext, onPinToggle, contac
             {declared.experience_years != null ? (
               <>
                 <dt className="text-ink-muted">Стаж</dt>
-                <dd>{declared.experience_years} лет</dd>
+                <dd>{formatYears(declared.experience_years)}</dd>
               </>
             ) : null}
             {(declared.roles?.length ?? 0) > 0 ? (
@@ -252,16 +304,27 @@ export function MatchCardDetailed({ card, pair, needContext, onPinToggle, contac
         </Section>
       ) : null}
 
-      <Section title={T.contacts} id="candidate-contacts">
-        {card.disclosed ? (
-          (contacts ?? <p className="type-sm text-ink-muted">{T.contactsOpen}</p>)
-        ) : (
-          <p className="type-sm flex min-w-0 items-start gap-2 text-ink-muted">
-            <Lock className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-            <span className="min-w-0">{T.contactsLocked}</span>
-          </p>
-        )}
-      </Section>
+      <div id="candidate-contacts" className="min-w-0">
+        <Section title={T.contacts}>
+          {card.disclosed ? (
+            <RevealOnce
+              storageKey={`contacts-revealed:${card.candidate_id}`}
+              className="flex min-w-0 flex-col gap-3 p-3 -m-3"
+            >
+              <p className="type-caption flex min-w-0 items-center gap-2 text-ink-muted">
+                <LockOpen className="animate-pop-in size-4 shrink-0 text-success" aria-hidden="true" />
+                открыто после согласия кандидата
+              </p>
+              {contacts ?? <p className="type-sm text-ink-muted">{T.contactsOpen}</p>}
+            </RevealOnce>
+          ) : (
+            <p className="type-sm flex min-w-0 items-start gap-2 text-ink-muted">
+              <Lock className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+              <span className="min-w-0">{T.contactsLocked}</span>
+            </p>
+          )}
+        </Section>
+      </div>
     </article>
   )
 }

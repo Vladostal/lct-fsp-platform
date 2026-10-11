@@ -52,8 +52,11 @@ ul { margin: 0; padding-left: 4mm; }
 <h1>{{ full_name }}</h1>
 <div class="meta"><span class="code">{{ public_code }}</span> · сформирован {{ generated_date }}</div>
 
-<h2>Категория</h2>
-{% if category and level %}
+<h2>{% if declared_grade %}Заявленный грейд{% else %}Категория{% endif %}</h2>
+{% if declared_grade %}
+<div><strong>{{ category.title }}</strong> · заявленный грейд, тест готовится</div>
+<div class="muted">Грейд заявлен кандидатом. Тест по специализации готовится: уровень тестом не измерен.</div>
+{% elif category and level %}
 <div><strong>{{ category.title }}</strong>{% if verdict_note %} · {{ verdict_note }}{% endif %}</div>
 <div class="muted">Тест пройден {{ tested_date }}, последнее подтверждение — {{ evidence_age }}</div>
 <div class="scale">

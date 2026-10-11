@@ -145,6 +145,7 @@ def read_explanation(db: Session, live: Live, candidate_id: UUID, stored: Mappin
     expl = MatchExplanation.model_validate(stored)
     rules = ReadRules(
         declared_hidden=not live.profiles[candidate_id].privacy.show_declared_stack,
+        experience_hidden=not live.profiles[candidate_id].privacy.show_experience,
         fsp_visible=live.fsp_visible(candidate_id),
         fsp_texts=fsp_texts(db, live, candidate_id, fsp_fact_ids(expl)),
     )

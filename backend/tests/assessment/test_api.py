@@ -9,12 +9,12 @@ from datetime import timedelta
 from typing import Any
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.modules.assessment import candidate, preview, seeding, service, sessions
+from app.modules.assessment import candidate, preview, repo, seeding, service, sessions
 from app.modules.assessment.config import get_config
-from app.modules.assessment.models import FamilyRow, VariantRow
+from app.modules.assessment.models import FamilyRow, GradeClaim, VariantRow
 from app.modules.catalog import service as catalog
 from tests.assessment.conftest import T0
 
@@ -61,8 +61,9 @@ def test_full_path_over_http(db: Session, make_user, login_as, freeze_now) -> No
     assert bad.status_code == 422 and bad.json()["fields"][0]["name"] == "answers.main_language"
     many = client.put(f"{API}/survey", json={"version": version, "answers": {**SURVEY, "industry_domains": ["fintech", "gov", "media", "other"]}})
     assert many.status_code == 422
-    gone = client.put(f"{API}/survey", json={"version": version, "answers": {**SURVEY, "direction": "quality_infra", "specialization": "qa", "main_language": "other"}})
-    assert (gone.status_code, gone.json()["code"]) == (422, "specialization_unavailable")
+    # Специализация без теста опросом принимается (категория в ней будет заявленной); затем кандидат выбирает backend.
+    no_test = client.put(f"{API}/survey", json={"version": version, "answers": {**SURVEY, "direction": "quality_infra", "specialization": "qa", "main_language": "other"}})
+    assert no_test.status_code == 200 and no_test.json()["answers"]["specialization"] == "qa"
     saved = client.put(f"{API}/survey", json={"version": version, "answers": SURVEY})
     assert saved.status_code == 200 and saved.json()["answers"] == SURVEY
 
@@ -120,9 +121,13 @@ def test_full_path_over_http(db: Session, make_user, login_as, freeze_now) -> No
     assert body["outcome"] == "confirmed_with_margin" and body["category"]["code"] == "backend:middle"
     assert body["items_answered"] == 14 and body["level"]["thresholds"][1] == {"grade": {"code": "middle", "title": "Middle"}, "pos": 50.0}
     history = client.get(f"{API}/history").json()
-    assert [h["kind"] for h in history] == ["test", "survey"] and history[0]["title"] == "Тест на Middle"
+    # Опросов в истории два: сначала принятый qa (специализация без теста), затем backend.
+    assert [h["kind"] for h in history] == ["test", "survey", "survey"] and history[0]["title"] == "Тест на Middle"
     state = client.get(f"{API}/state").json()
     assert state["category"]["code"] == "backend:middle" and state["claim_locked"] is True
+    assert state["category"]["basis"] == "test" and state["category"]["level_session_id"] == sid and state["level"] is not None
+    assert body["category"]["basis"] == "test" and service.get_category(db, user.id).basis == "test"
+    assert [(lv.basis, lv.theta is not None, lv.age_days) for lv in service.get_levels(db, candidate_ids=[user.id], now=T0)] == [("test", True, 0)]
     session_view = client.get(f"{API}/sessions/{sid}").json()
     assert session_view["status"] == "finished" and session_view["item"] is None
 
@@ -138,6 +143,116 @@ def test_full_path_over_http(db: Session, make_user, login_as, freeze_now) -> No
     assert stranger.get(f"{API}/sessions/not-a-uuid").status_code == 404
     employer = login_as(make_user("employer"))
     assert employer.get(f"{API}/state").status_code == 403
+
+
+QA_SURVEY = {"direction": "quality_infra", "specialization": "qa", "main_language": "other", "experience_band": "2_4"}
+
+
+def test_declared_category_over_http(db: Session, make_user, login_as, freeze_now) -> None:
+    """Специализация без теста: опрос и заявление грейда дают категорию `basis = declared` без уровня и без теста."""
+    freeze_now(T0)
+    user = make_user("candidate")
+    client = login_as(user)
+    version = get_config().survey_version
+    assert not catalog.is_available("qa")
+
+    assert client.put(f"{API}/survey", json={"version": version, "answers": QA_SURVEY}).status_code == 200
+    state = client.get(f"{API}/state").json()
+    assert state["specialization"]["code"] == "qa" and state["category"] is None and state["next_actions"] == []
+    assert client.get(f"{API}/blueprints").json() == []
+    assert client.put(f"{API}/claim", json={"grade_code": "principal"}).json()["code"] == "grade_unavailable"
+
+    claimed = client.put(f"{API}/claim", json={"grade_code": "middle"})
+    assert claimed.status_code == 200
+    state = claimed.json()
+    assert state["category"]["code"] == "qa:middle" and state["category"]["basis"] == "declared"
+    assert state["category"]["level_session_id"] is None and state["level"] is None and state["next_actions"] == []
+    assert state["claimed_grade"]["code"] == "middle" and state["claim_locked"] is False
+    assert state["category"]["assigned_at"] == state["category"]["change_available_at"]  # первая смена доступна сразу
+    assert client.put(f"{API}/claim", json={"grade_code": "middle"}).status_code == 200  # повтор ничего не меняет
+    started = client.post(f"{API}/sessions", json={"grade_code": "middle"})
+    assert (started.status_code, started.json()["code"]) == (422, "grade_unavailable")
+
+    dto = service.get_category(db, user.id)
+    assert dto is not None and (dto.basis, dto.category_code, dto.verdict, dto.level_session_id) == ("declared", "qa:middle", None, None)
+    (level,) = service.get_levels(db, specialization_code="qa", now=T0)
+    assert (level.basis, level.verdict, level.theta, level.se, level.se_eff, level.tested_at, level.last_evidence_at) == ("declared", None, None, None, None, None, None)
+    assert level.age_days is None and level.stale is False
+    cfg = get_config()
+    assert (level.cut, level.cut_next, level.width) == (cfg.theta_cut["middle"], cfg.theta_cut["middle"] + cfg.grade_width, cfg.grade_width)
+    assert service.level_views(db, [user.id], T0) == {} and service.skill_evidence(db, [user.id]) == {user.id: []}
+    assert sessions.category_state(repo.category(db, user.id), "qa") is None  # правила заявленную категорию не видят
+    assert not keys(state) & HIDDEN
+
+    # Первая смена заявленного грейда свободна (ошибочный клик), вторая — не раньше чем через 90 дней.
+    freeze_now(T0 + timedelta(days=1))
+    fixed = client.put(f"{API}/claim", json={"grade_code": "senior"}).json()
+    assert fixed["category"]["code"] == "qa:senior" and fixed["claimed_grade"]["code"] == "senior"
+    freeze_now(T0 + timedelta(days=30))
+    client = login_as(user)  # сессия входа живёт 14 дней: после сдвига часов входим заново
+    early = client.put(f"{API}/claim", json={"grade_code": "junior"})
+    assert (early.status_code, early.json()["code"]) == (409, "cooldown_active")
+    assert early.json()["params"] == {"reason": "grade_change", "available_at": (T0 + timedelta(days=91)).isoformat()}
+    assert client.get(f"{API}/state").json()["category"]["code"] == "qa:senior"
+    freeze_now(T0 + timedelta(days=91, minutes=1))
+    client = login_as(user)  # сессия входа живёт 14 дней: после сдвига часов входим заново
+    late = client.put(f"{API}/claim", json={"grade_code": "junior"})
+    assert late.status_code == 200 and late.json()["category"]["code"] == "qa:junior"
+    assert [h["kind"] for h in client.get(f"{API}/history").json()] == ["survey"]
+    claims = db.scalars(select(GradeClaim).where(GradeClaim.candidate_id == user.id).order_by(GradeClaim.created_at)).all()
+    assert [c.grade_code for c in claims] == ["middle", "senior", "junior"]
+
+
+def test_unavailable_test_never_gives_declared_category(db: Session, candidate_ready: Callable[..., Any], make_user, login_as) -> None:
+    """Тест написан, но недоступен (банк не собран, специализация выключена): заявленной категории не бывает."""
+    ready = candidate_ready(None)  # опрос backend пройден, пока тест был доступен
+    confirmed = candidate_ready("junior")
+    done = sessions.start_session(db, confirmed.id, "junior", T0)
+    while done.status == "in_progress":
+        item = next(i for i in sessions.session_items(db, done.id) if i.status == "shown")
+        raw = seeding.correct_raw(db.get(VariantRow, item.variant_id))
+        sessions.submit_answer(db, confirmed.id, str(done.id), str(item.id), raw, False, None, None, T0 + timedelta(minutes=1))
+    before = service.get_category(db, confirmed.id)
+    assert before is not None and before.basis == "test"
+
+    catalog.publish_availability(set())
+    fresh = login_as(make_user("candidate"))
+    reply = fresh.put(f"{API}/survey", json={"version": get_config().survey_version, "answers": SURVEY})
+    assert (reply.status_code, reply.json()["code"]) == (422, "specialization_unavailable")
+    client = login_as(ready)
+    for grade in ("junior", "senior"):
+        reply = client.put(f"{API}/claim", json={"grade_code": grade})
+        assert (reply.status_code, reply.json()["code"]) == (422, "grade_unavailable")
+    state = client.get(f"{API}/state").json()
+    assert state["category"] is None and state["claimed_grade"] is None
+    assert len(client.get(f"{API}/blueprints").json()) == 3  # планы показываются, но недоступны
+    reply = login_as(confirmed).put(f"{API}/claim", json={"grade_code": "senior"})
+    assert (reply.status_code, reply.json()["code"]) == (422, "grade_unavailable")
+    with pytest.raises(ValueError):
+        service.seed_declared(db, candidate_id=ready.id, specialization_code="backend", grade_code="middle", now=T0)
+    # Даже в обход проверки заявление не заменяет подтверждённую тестом категорию той же специализации.
+    with pytest.raises(Exception) as error:
+        sessions.declare_category(db, confirmed.id, "backend", "senior", T0)
+    assert error.value.code == "claim_locked"
+    after = service.get_category(db, confirmed.id)
+    assert after is not None and (after.basis, after.category_code, after.verdict, after.level_session_id) == ("test", before.category_code, before.verdict, before.level_session_id)
+
+
+def test_seed_declared(db: Session, make_user) -> None:
+    user = make_user("candidate")
+    with pytest.raises(ValueError):
+        service.seed_declared(db, candidate_id=user.id, specialization_code="backend", grade_code="middle", now=T0)
+    with pytest.raises(ValueError):
+        service.seed_declared(db, candidate_id=user.id, specialization_code="qa", grade_code="principal", now=T0)
+    for _ in range(2):  # идемпотентна
+        service.seed_declared(db, candidate_id=user.id, specialization_code="qa", grade_code="senior", now=T0, experience_band="4_plus")
+    dto = service.get_category(db, user.id)
+    assert dto is not None and (dto.category_code, dto.basis, dto.assigned_at) == ("qa:senior", "declared", T0)
+    declared = service.survey_declared(db, [user.id])[user.id]
+    assert (declared.direction, declared.experience_band) == ("quality_infra", "4_plus")
+    state = candidate.state_view(db, user.id, T0)
+    assert state.claimed_grade.code == "senior" and state.category.basis == "declared" and state.level is None
+    assert db.scalar(select(func.count()).select_from(GradeClaim).where(GradeClaim.candidate_id == user.id)) == 1
 
 
 def test_specialization_change(db: Session, candidate_ready: Callable[..., Any]) -> None:

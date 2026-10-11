@@ -12,7 +12,7 @@ export function blueprintLine(bp: TestBlueprintView): string {
 export function Tile({ value, label }: { value: string; label?: string }) {
   return (
     <div className="surface-card flex min-w-0 flex-col justify-center gap-0.5 p-3">
-      <span className="type-body min-w-0 break-words font-mono font-medium">{value}</span>
+      <span className="type-body min-w-0 break-words font-numeric font-medium tabular-nums">{value}</span>
       {label ? <span className="type-caption min-w-0 text-ink-muted">{label}</span> : null}
     </div>
   )

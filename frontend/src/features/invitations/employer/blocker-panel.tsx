@@ -33,10 +33,10 @@ export function BlockerPanel({ code, message, params, needId }: BlockerPanelProp
         </Link>
       </Button>
     )
-  else if (code === 'quota_exceeded' || code === 'active_invitation_exists')
+  else if (code === 'active_invitation_exists')
     action = (
       <Button asChild variant="primary">
-        <Link to="/employer/invitations">{code === 'quota_exceeded' ? 'К приглашениям' : 'Открыть приглашение'}</Link>
+        <Link to="/employer/invitations">Открыть приглашение</Link>
       </Button>
     )
   else

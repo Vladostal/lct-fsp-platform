@@ -71,8 +71,6 @@ class EmployerContactState(Base):
     __tablename__ = "employer_contact_state"
 
     employer_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("app_user.id", ondelete="CASCADE"), primary_key=True)
-    #: Заменяет `SLOT_LIMIT[trust_level]`; нужен демо-компаниям (Арх. 4.14).
-    slot_limit_override: Mapped[int | None] = mapped_column(Integer, nullable=True)
     sending_frozen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     sending_frozen_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
@@ -123,8 +121,6 @@ class Invitation(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     viewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    #: С этого момента запись не занимает слот; `None`, пока статус `sent` или `viewed`.
-    slot_release_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     #: До этого момента новое приглашение паре запрещено.
     pair_block_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     decline_reason: Mapped[str | None] = mapped_column(Text, nullable=True)

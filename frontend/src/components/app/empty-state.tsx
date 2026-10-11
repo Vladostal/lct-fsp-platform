@@ -4,7 +4,7 @@ import type * as React from 'react'
 import { cn } from '@/lib/utils'
 
 export type EmptyStateProps = {
-  /** Иконка 40 px; по умолчанию — «входящие». */
+  /** Иконка 24 px без круга; по умолчанию — «входящие». */
   icon?: LucideIcon
   title?: string
   /** Одно-два предложения; переносится, никогда не усекается. */
@@ -33,17 +33,12 @@ export function EmptyState({
     <div
       data-slot="empty-state"
       className={cn(
-        'flex min-w-0 flex-col items-center gap-4 text-center',
-        compact ? 'px-4 py-8' : 'px-4 py-12 md:py-16',
+        'flex min-w-0 flex-col items-center gap-3 text-center',
+        compact ? 'px-4 py-6' : 'px-4 py-8 md:py-12',
         className,
       )}
     >
-      <span
-        className="grid size-16 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-700"
-        aria-hidden="true"
-      >
-        <Icon className="size-10" strokeWidth={1.5} />
-      </span>
+      <Icon className="size-6 text-ink-subtle" strokeWidth={1.5} aria-hidden="true" />
       <div className="flex max-w-[52ch] min-w-0 flex-col gap-2">
         {title ? <Heading className="type-h3 text-ink">{title}</Heading> : null}
         {text ? <p className="type-body text-ink-muted">{text}</p> : null}

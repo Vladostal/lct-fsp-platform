@@ -13,7 +13,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Skeleton } from '@/components/ui/skeleton'
 import { errorMessage, hasCode, isApiError } from '@/lib/api'
 import { invalidateGuardData } from '@/lib/guards'
-import { candidateProfileQuery } from '@/lib/query'
+import { assessmentStateQuery, candidateProfileQuery, catalogQuery } from '@/lib/query'
 import { cn } from '@/lib/utils'
 import { draft, putSurvey, surveyQuery } from '../api'
 import { ASSESSMENT } from '../content'
@@ -117,7 +117,8 @@ function SurveyFormBody({
       } catch {
         /* повреждённый черновик игнорируется */
       }
-    } else if (specializationHint && !base.specialization) {
+    }
+    if (specializationHint && !base.specialization) {
       const spec = schema.questions.flatMap((q) => q.options).find((o) => o.code === specializationHint && o.available)
       const specQuestion = schema.questions.find((q) => q.options.includes(spec as never))
       if (spec && specQuestion) {
@@ -134,6 +135,13 @@ function SurveyFormBody({
   const [resetNote, setResetNote] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<{ message: string; questionId?: string } | null>(null)
+  // Сервер просит подтвердить смену специализации (409): текст зависит от того, что будет заменено.
+  const [confirm, setConfirm] = useState<string | null>(null)
+  const catalog = useQuery(catalogQuery).data
+  const changeDays = Number(catalog?.limits.assessment_specialization_change_cooldown_days ?? 90)
+  // Категория или тест уже есть: опрос открыт из «Категории и тестов» (смена специализации), туда же и «Назад».
+  const state = useQuery(assessmentStateQuery).data
+  const returning = state != null && (state.category != null || state.last_session != null)
 
   useEffect(() => {
     draft.write(storageKey, JSON.stringify(answers))
@@ -149,6 +157,7 @@ function SurveyFormBody({
     setResetNote(reset.length > 0)
     fromResume.current.delete(question.id)
     setError(null)
+    setConfirm(null)
     setAnswers(next)
   }
 
@@ -169,7 +178,7 @@ function SurveyFormBody({
     setSaving(true)
     setError(null)
     try {
-      await putSurvey({ version: schema.version, answers })
+      await putSurvey({ version: schema.version, answers, confirm_specialization_change: confirm != null })
       draft.clear(storageKey)
       await invalidateGuardData(queryClient)
       await navigate({ to: '/candidate/onboarding/grade' })
@@ -179,6 +188,12 @@ function SurveyFormBody({
         setError({ message: ASSESSMENT.survey.changed })
       } else if (hasCode(e, 'session_active') && isApiError(e) && e.params.session_id) {
         await navigate({ to: '/candidate/test/$sessionId', params: { sessionId: String(e.params.session_id) } })
+      } else if (hasCode(e, 'specialization_change_requires_confirm')) {
+        setConfirm(
+          isApiError(e) && (e.params as Record<string, unknown>).replaces_confirmed_category === true
+            ? ASSESSMENT.survey.confirmReplace(changeDays)
+            : ASSESSMENT.survey.confirmReset(changeDays),
+        )
       } else if (hasCode(e, 'specialization_unavailable')) {
         setError({ message: errorMessage(e), questionId: 'specialization' })
       } else {
@@ -204,60 +219,45 @@ function SurveyFormBody({
         const title = question.id === 'industry_domains' ? ASSESSMENT.survey.industryTitle : question.title
         const count = Array.isArray(value) ? value.length : 0
         return (
-          <section
-            key={question.id}
-            aria-labelledby={titleId}
-            className="surface-card flex min-w-0 flex-col gap-3 p-4 md:p-6"
-          >
+          <section key={question.id} aria-labelledby={titleId} className="surface-card flex min-w-0 flex-col gap-3">
             <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
               <h2 id={titleId} className="type-h3 min-w-0">
                 {title}
                 {question.required ? <span aria-hidden="true"> *</span> : null}
               </h2>
               {fromResume.current.has(question.id) ? (
-                <span className="type-caption rounded-full bg-brand-50 px-2 py-0.5 text-brand-700">
-                  {ASSESSMENT.survey.fromResume}
-                </span>
+                <span className="type-sm text-ink-muted">{ASSESSMENT.survey.fromResume}</span>
               ) : null}
               {question.kind === 'multi' && question.max ? (
-                <span className="type-caption num text-ink-muted">{ASSESSMENT.survey.chosen(count, question.max)}</span>
+                <span className="type-sm num text-ink-muted">{ASSESSMENT.survey.chosen(count, question.max)}</span>
               ) : null}
             </div>
             {question.kind === 'single' ? (
-              <>
-                <RadioGroup
-                  aria-labelledby={titleId}
-                  value={typeof value === 'string' ? value : ''}
-                  onValueChange={(code) => setAnswer(question, code)}
-                  className={GRID}
-                >
-                  {options.map((option) => (
-                    <Label
-                      key={option.code}
-                      className={cn(
-                        'surface-row flex min-h-14 min-w-0 cursor-pointer items-center gap-3 rounded-md border border-line p-3 font-normal',
-                        value === option.code && 'border-brand-600 bg-brand-50',
-                        !option.available && 'cursor-not-allowed opacity-60',
-                      )}
-                    >
-                      <RadioGroupItem value={option.code} disabled={!option.available} />
-                      <span className="min-w-0 break-words">
-                        {option.title}
-                        {!option.available ? (
-                          <span className="type-caption block text-ink-muted">{ASSESSMENT.survey.notReady}</span>
-                        ) : null}
-                      </span>
-                    </Label>
-                  ))}
-                </RadioGroup>
-                {options.length > 0 && options.every((option) => !option.available) ? (
-                  <Alert variant="info">
-                    {ASSESSMENT.survey.allNotReady(
-                      question.options.filter((option) => option.available).map((option) => option.title),
+              <RadioGroup
+                aria-labelledby={titleId}
+                value={typeof value === 'string' ? value : ''}
+                onValueChange={(code) => setAnswer(question, code)}
+                className={GRID}
+              >
+                {options.map((option) => (
+                  <Label
+                    key={option.code}
+                    className={cn(
+                      'flex min-h-14 min-w-0 cursor-pointer items-center gap-3 rounded-md hover:bg-fill p-3 font-normal',
+                      value === option.code && 'bg-brand-50 hover:bg-brand-50',
                     )}
-                  </Alert>
-                ) : null}
-              </>
+                  >
+                    {/* `available === false` — теста нет: вариант выбирается, грейд по нему будет заявленным. */}
+                    <RadioGroupItem value={option.code} />
+                    <span className="min-w-0 break-words">
+                      {option.title}
+                      {!option.available ? (
+                        <span className="type-caption block text-ink-muted">{ASSESSMENT.survey.notReady}</span>
+                      ) : null}
+                    </span>
+                  </Label>
+                ))}
+              </RadioGroup>
             ) : (
               <div role="group" aria-labelledby={titleId} className={GRID}>
                 {options.map((option) => {
@@ -267,8 +267,8 @@ function SurveyFormBody({
                     <Label
                       key={option.code}
                       className={cn(
-                        'surface-row flex min-h-14 min-w-0 cursor-pointer items-center gap-3 rounded-md border border-line p-3 font-normal',
-                        checked && 'border-brand-600 bg-brand-50',
+                        'flex min-h-14 min-w-0 cursor-pointer items-center gap-3 rounded-md hover:bg-fill p-3 font-normal',
+                        checked && 'bg-brand-50 hover:bg-brand-50',
                         (!option.available || blocked) && 'cursor-not-allowed opacity-60',
                       )}
                     >
@@ -293,16 +293,21 @@ function SurveyFormBody({
         )
       })}
       {error && !error.questionId ? <Alert variant="destructive">{error.message}</Alert> : null}
+      {confirm ? (
+        <Alert variant="warning" live>
+          {confirm}
+        </Alert>
+      ) : null}
       <StickyActionBar
         note={ready ? undefined : ASSESSMENT.survey.pickHint}
         secondary={
           <Button variant="ghost" asChild>
-            <Link to="/candidate/onboarding/profile">Назад</Link>
+            <Link to={returning ? '/candidate/category' : '/candidate/onboarding/profile'}>Назад</Link>
           </Button>
         }
       >
         <Button variant="primary" loading={saving} disabled={!ready || saving} onClick={submit}>
-          {ASSESSMENT.survey.next}
+          {confirm ? ASSESSMENT.survey.confirmNext : ASSESSMENT.survey.next}
         </Button>
       </StickyActionBar>
     </div>

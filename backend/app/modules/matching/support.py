@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from app.core.errors import ApiException, field_error
 from app.modules.catalog import service as catalog
 from app.modules.identity import service as identity
+from app.shared.enums import CategoryBasis
 from app.shared.schemas import CategoryRef, Ref
 
 #: Тексты ошибок модуля (Арх. 9.12); клиент берёт свой текст по `code`, это — запасной.
@@ -28,7 +29,7 @@ MESSAGES: dict[str, str] = {
     "text_too_short": "Текст слишком короткий для разбора",
     "text_too_long": "Текст слишком длинный",
     "skill_unknown": "Навыка нет в справочнике",
-    "specialization_unavailable": "Тест для этой специализации и грейда пока недоступен",
+    "specialization_unavailable": "Такой специализации или грейда нет в справочнике",
     "filter_invalid": "Проверьте фильтры",
     "cursor_invalid": "Список изменился. Обновите страницу",
     "shortlist_rate_limited": "Слишком много версий подборки за час. Повторите позже",
@@ -94,8 +95,12 @@ def category_code(specialization_code: str, grade_code: str) -> str:
     return f"{specialization_code}:{grade_code}"
 
 
-def category_ref(specialization_code: str, grade_code: str) -> CategoryRef:
-    return catalog.category_ref(category_code(specialization_code, grade_code))
+def category_ref(specialization_code: str, grade_code: str, basis: CategoryBasis | None = None) -> CategoryRef:
+    """Категория со ссылками на справочник. `basis` задаётся только для категории кандидата: подтверждена тестом
+    либо грейд заявлен; у цели потребности и раздела банка — `None`.
+    """
+    ref = catalog.category_ref(category_code(specialization_code, grade_code))
+    return ref if basis is None else ref.model_copy(update={"basis": basis})
 
 
 def closure(skill_code: str) -> frozenset[str]:

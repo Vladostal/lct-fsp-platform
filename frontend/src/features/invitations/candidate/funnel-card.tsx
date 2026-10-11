@@ -1,18 +1,9 @@
 import { Link } from '@tanstack/react-router'
 import type { FunnelView } from '@/client'
+import { FunnelStrip } from '@/components/app'
 import { Button } from '@/components/ui/button'
-import { formatNumber } from '@/lib/format'
 
 export type FunnelCardProps = { funnel: FunnelView; fspLinked: boolean }
-
-function Stat({ value, label }: { value: number; label: string }) {
-  return (
-    <div className="min-w-0">
-      <p className="num text-2xl leading-8 font-medium text-ink">{formatNumber(value)}</p>
-      <p className="type-sm text-ink-muted">{label}</p>
-    </div>
-  )
-}
 
 /** «Спрос на ваш профиль»: четыре числа окна 30 дней, объяснение стадии и одно действие. */
 export function FunnelCard({ funnel, fspLinked }: FunnelCardProps) {
@@ -66,12 +57,14 @@ export function FunnelCard({ funnel, fspLinked }: FunnelCardProps) {
   }
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Stat value={funnel.shown} label="в подборках" />
-        <Stat value={funnel.opened} label="открыли карточку" />
-        <Stat value={funnel.delivered} label="приглашений" />
-        <Stat value={funnel.not_delivered} label="не доставлено" />
-      </div>
+      <FunnelStrip
+        steps={[
+          { label: 'в подборках', value: funnel.shown },
+          { label: 'открыли карточку', value: funnel.opened },
+          { label: 'приглашений', value: funnel.delivered },
+          { label: 'не доставлено', value: funnel.not_delivered },
+        ]}
+      />
       <p className="type-body text-ink [overflow-wrap:anywhere]">{text}</p>
       {action}
     </div>

@@ -240,7 +240,6 @@ def test_candidate_funnel_stages(db, client, login_as, actors, world, now):
 def test_demo_responder_personas(db, actors, world, now, override_settings):
     """Персоны отвечают только в фоновом цикле и по своему расписанию (Арх. 4.14)."""
     employer = actors.employer(is_demo=True)
-    service.set_slot_override(db, employer.id, 10_000)
     personas = {
         name: actors.candidate(is_demo=True, persona=name)
         for name in ("responsive", "selective", "expensive", "silent")

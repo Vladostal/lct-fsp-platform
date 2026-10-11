@@ -1,6 +1,6 @@
 """Проекции приглашения для двух сторон (Арх. 4.9; приложение C, §5.3).
 
-Одна строка `invitation` — две проекции. Функции этого файла только читают: статус, слот и блокировка пары
+Одна строка `invitation` — две проекции. Функции этого файла только читают: статус и блокировка пары
 показываются через `rules.effective_*`, `settle` не вызывается, блокировки не берутся (Арх. 4.4). Единственная
 запись при чтении в модуле — отметка `employer_seen_at` — выполняется роутером, а не здесь.
 
@@ -45,7 +45,6 @@ from app.modules.contact.schemas import (
     NeedBrief,
     OutcomeCandidateView,
     OutcomeEmployerView,
-    SlotView,
     TimelineEvent,
 )
 from app.modules.identity import service as identity_service
@@ -53,6 +52,7 @@ from app.modules.matching import service as matching_service
 from app.modules.matching.dto import InvitationWhy
 from app.modules.profile import service as profile_service
 from app.shared.enums import (
+    CategoryBasis,
     ConditionKind,
     ContactKind,
     DeclineReason,
@@ -282,7 +282,6 @@ def _employer_common(inv: Invitation, now: datetime, look: _EmployerLookups) -> 
         "sent_at": inv.created_at,
         "updated_at": inv.updated_at,
         "expires_at": inv.expires_at,
-        "slot": SlotView(occupied=rules.slot_occupied(inv, now), release_at=rules.slot_release_at(inv, now)),
         "pair_block_until": rules.effective_pair_block_until(inv, now),
         "revises_id": inv.revises_id,
         "can_revise": rules.can_revise(inv, now, has_revision=inv.id in look.revisions),
@@ -420,7 +419,12 @@ def candidate_view(db: Session, now: datetime, inv: Invitation) -> InvitationCan
         why = InvitationWhy(
             source="need" if inv.need_id else "bank",
             target=_category_ref(category.category_code if category else None, None),
-            employer_saw=list(texts.DEFAULT_EMPLOYER_SAW),
+            # Заявленный грейд: уровня по тесту нет, поэтому «категорию и интервал уровня» работодатель не видел.
+            employer_saw=list(
+                texts.DECLARED_EMPLOYER_SAW
+                if category is not None and category.basis == CategoryBasis.DECLARED
+                else texts.DEFAULT_EMPLOYER_SAW
+            ),
         )
 
     options: list[DiscloseOption] = []

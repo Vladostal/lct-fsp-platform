@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Skeleton } from '@/components/ui/skeleton'
 import { errorMessage, hasCode } from '@/lib/api'
+import { hasTest } from '@/lib/category'
 import { invalidateGuardData } from '@/lib/guards'
 import { assessmentStateQuery, candidateProfileQuery } from '@/lib/query'
 import { cn } from '@/lib/utils'
@@ -23,7 +24,10 @@ export function GradePicker({ catalog }: { catalog: Catalog | null }) {
   const blueprints = useQuery(blueprintsQuery)
   const profile = useQuery(candidateProfileQuery)
   const survey = useQuery(surveyQuery)
-  const failure = state.error ?? blueprints.error
+  // Специализация без теста: грейд заявляется, состав теста не нужен — его запрос экран не ждёт.
+  const specialization = state.data?.specialization ?? null
+  const declared = specialization != null && !hasTest(catalog, specialization.code)
+  const failure = state.error ?? (declared ? null : blueprints.error)
   if (failure) {
     return (
       <>
@@ -39,7 +43,7 @@ export function GradePicker({ catalog }: { catalog: Catalog | null }) {
       </>
     )
   }
-  if (!state.data || !blueprints.data || profile.isPending || survey.isPending) {
+  if (!state.data || (!declared && !blueprints.data) || profile.isPending || survey.isPending) {
     return (
       <div className="flex flex-col gap-4" aria-busy="true">
         <PageHeader title={ASSESSMENT.grade.title} />
@@ -52,7 +56,8 @@ export function GradePicker({ catalog }: { catalog: Catalog | null }) {
   return (
     <GradePickerBody
       catalog={catalog}
-      blueprints={blueprints.data}
+      blueprints={declared ? [] : (blueprints.data ?? [])}
+      declaredFor={declared ? (specialization?.title ?? '') : null}
       claimed={state.data.claimed_grade?.code ?? null}
       resumeHint={profile.data?.hints.grade_hint ?? null}
       surveyHint={typeof band === 'string' ? (BAND_GRADE[band] ?? null) : null}
@@ -63,12 +68,15 @@ export function GradePicker({ catalog }: { catalog: Catalog | null }) {
 function GradePickerBody({
   catalog,
   blueprints,
+  declaredFor,
   claimed,
   resumeHint,
   surveyHint,
 }: {
   catalog: Catalog | null
   blueprints: TestBlueprintView[]
+  /** Название специализации без теста: грейд заявляется, тест пропускается. null — обычный путь через тест. */
+  declaredFor: string | null
   claimed: string | null
   resumeHint: string | null
   surveyHint: string | null
@@ -77,8 +85,9 @@ function GradePickerBody({
   const navigate = useNavigate()
   const byGrade = new Map(blueprints.map((b) => [b.grade.code, b]))
   const grades = [...(catalog?.grades ?? [])].sort((a, b) => a.order - b.order)
+  const declared = declaredFor != null
   const usable = (code: string) =>
-    grades.find((g) => g.code === code)?.available !== false && byGrade.get(code)?.available !== false
+    declared || (grades.find((g) => g.code === code)?.available !== false && byGrade.get(code)?.available !== false)
 
   const initial = (): { code: string | null; source: 'resume' | 'survey' | null } => {
     if (claimed && usable(claimed)) return { code: claimed, source: null }
@@ -101,7 +110,8 @@ function GradePickerBody({
     try {
       await putClaim(selected)
       await invalidateGuardData(queryClient)
-      await navigate({ to: '/candidate/test/new' })
+      // Заявленный грейд сразу даёт категорию: тест пропускается, дальше — экран категории с публикацией.
+      await navigate({ to: declared ? '/candidate/category' : '/candidate/test/new' })
     } catch (e) {
       if (hasCode(e, 'claim_locked')) await navigate({ to: '/candidate/category' })
       else if (hasCode(e, 'survey_required')) await navigate({ to: '/candidate/onboarding/survey' })
@@ -116,9 +126,12 @@ function GradePickerBody({
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
-      <PageHeader title={ASSESSMENT.grade.title} description={ASSESSMENT.grade.description} />
+      <PageHeader
+        title={declared ? ASSESSMENT.grade.declared.title : ASSESSMENT.grade.title}
+        description={declared ? ASSESSMENT.grade.declared.text(declaredFor, days) : ASSESSMENT.grade.description}
+      />
       <RadioGroup
-        aria-label={ASSESSMENT.grade.title}
+        aria-label={declared ? ASSESSMENT.grade.declared.title : ASSESSMENT.grade.title}
         value={selected ?? ''}
         onValueChange={(code) => {
           setSelected(code)
@@ -134,8 +147,8 @@ function GradePickerBody({
             <Label
               key={grade.code}
               className={cn(
-                'surface-row flex min-w-0 cursor-pointer items-start gap-3 rounded-md border border-line p-4 font-normal',
-                selected === grade.code && 'border-brand-600 bg-brand-50',
+                'flex min-w-0 cursor-pointer items-start gap-3 rounded-md hover:bg-fill p-4 font-normal',
+                selected === grade.code && 'bg-brand-50 hover:bg-brand-50',
                 !ok && 'cursor-not-allowed opacity-60',
               )}
             >
@@ -144,14 +157,18 @@ function GradePickerBody({
                 <span className="flex min-w-0 flex-wrap items-center gap-2">
                   <span className="type-h3 min-w-0">{grade.title}</span>
                   {selected === grade.code && source ? (
-                    <span className="type-caption rounded-full bg-brand-50 px-2 py-0.5 text-brand-700">
+                    <span className="type-sm text-ink-muted">
                       {source === 'resume' ? ASSESSMENT.grade.fromResume : ASSESSMENT.grade.fromSurvey}
                     </span>
                   ) : null}
                 </span>
                 <span className="type-sm min-w-0 break-words text-ink-muted">{grade.description}</span>
-                {ok && bp ? (
-                  <span className="font-mono type-caption min-w-0 break-words text-ink">{blueprintLine(bp)}</span>
+                {declared ? (
+                  <span className="type-caption text-ink-muted">{ASSESSMENT.grade.declared.option}</span>
+                ) : ok && bp ? (
+                  <span className="font-numeric tabular-nums type-caption min-w-0 break-words text-ink">
+                    {blueprintLine(bp)}
+                  </span>
                 ) : (
                   <span className="type-caption text-ink-muted">{ASSESSMENT.grade.notReady}</span>
                 )}
@@ -160,7 +177,7 @@ function GradePickerBody({
           )
         })}
       </RadioGroup>
-      <Alert variant="info">{ASSESSMENT.grade.rules(days)}</Alert>
+      {declared ? null : <p className="type-sm min-w-0 text-ink-muted">{ASSESSMENT.grade.rules(days)}</p>}
       {error ? <Alert variant="destructive">{error}</Alert> : null}
       <StickyActionBar
         note={selected ? undefined : ASSESSMENT.grade.pick}
@@ -171,7 +188,7 @@ function GradePickerBody({
         }
       >
         <Button variant="primary" loading={saving} disabled={!selected || saving} onClick={submit}>
-          {ASSESSMENT.grade.next}
+          {declared ? ASSESSMENT.grade.declared.next : ASSESSMENT.grade.next}
         </Button>
       </StickyActionBar>
     </div>

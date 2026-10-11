@@ -5,6 +5,7 @@ import { COMMON } from '@/content/common'
 import { AppLogo } from '../app-logo'
 import { type Crumb, PageHeader } from '../page-header'
 import { Stepper, type StepperStep } from '../stepper'
+import { AppHeader } from './app-header'
 import { SkipLink } from './skip-link'
 
 export type WizardLayoutProps = {
@@ -25,15 +26,15 @@ export function WizardLayout({ stepper, homeHref, onLogout, loggingOut = false, 
   return (
     <div className="flex min-h-dvh flex-col bg-canvas">
       <SkipLink />
-      <header data-sticky="top" className="sticky top-0 z-20 border-b border-line bg-surface">
-        <div className="page-container flex h-14 items-center justify-between gap-4 md:h-16">
-          <AppLogo href={homeHref} compact />
+      <AppHeader
+        logo={<AppLogo href={homeHref} compact />}
+        actions={
           <Button variant="ghost" size="sm" onClick={onLogout} loading={loggingOut}>
             <LogOut aria-hidden="true" />
             {COMMON.logout}
           </Button>
-        </div>
-      </header>
+        }
+      />
       <div className="mx-auto flex w-full max-w-[768px] min-w-0 flex-1 flex-col gap-6 px-4 py-6 md:gap-8 md:px-6 md:py-8">
         {stepper ? (
           <Stepper
@@ -61,7 +62,7 @@ export type WizardStepProps = {
 /** Содержимое шага мастера: заголовок шага и блоки столбцом. */
 export function WizardStep({ title, description, breadcrumbs, children }: WizardStepProps) {
   return (
-    <div className="flex min-w-0 animate-fade-in flex-col gap-6">
+    <div className="flex min-w-0 flex-col gap-6">
       <PageHeader title={title} description={description} breadcrumbs={breadcrumbs} />
       {children}
     </div>

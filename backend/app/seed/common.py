@@ -21,6 +21,9 @@ DEMO_DOMAIN = "demo.test"
 
 #: Сколько синтетических кандидатов специализации `backend` создаёт сид (переменная `SEED_PER_SPECIALIZATION`).
 DEFAULT_POPULATION = 150
+#: Сколько кандидатов с заявленным грейдом создаёт сид в каждой специализации без теста
+#: (переменная `SEED_DECLARED_PER_SPECIALIZATION`; 0 — не создавать).
+DEFAULT_DECLARED = 12
 #: Доли грейдов в популяции: junior, middle, senior.
 GRADE_SHARES: tuple[tuple[str, float], ...] = (("junior", 0.34), ("middle", 0.40), ("senior", 0.26))
 #: Доля кандидатов с привязкой ФСП и с привязкой без участий (приложение D, §8.4).

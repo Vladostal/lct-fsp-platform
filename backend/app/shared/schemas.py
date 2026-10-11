@@ -10,7 +10,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.shared.enums import ContactKind, EvidenceKind
+from app.shared.enums import CategoryBasis, ContactKind, EvidenceKind
 
 
 class Ref(BaseModel):
@@ -31,6 +31,8 @@ class CategoryRef(BaseModel):
     title: str
     specialization: Ref
     grade: Ref
+    #: Основание категории кандидата; `None` — это не категория кандидата (цель потребности, справочник).
+    basis: CategoryBasis | None = None
 
 
 class ContactMethod(BaseModel):

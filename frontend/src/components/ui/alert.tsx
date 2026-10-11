@@ -4,18 +4,18 @@ import type * as React from 'react'
 import { cn } from '@/lib/utils'
 
 /**
- * Плашка четырёх тонов с обязательной иконкой (E §3.2): статус передаётся иконкой и текстом, цвет лишь дублирует.
+ * Плашка четырёх тонов с обязательной иконкой (E §3.2): один сигнал — иконка тона, заголовок и текст нейтральные.
  * `destructive` получает role="alert" (ошибка мутации, E §7); остальные тона — обычный блок, если не задан `live`.
  */
 const alertVariants = cva(
-  'grid w-full min-w-0 grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-1 rounded-lg px-4 py-3 text-sm leading-5',
+  'grid w-full min-w-0 grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-1 rounded-md px-4 py-3 text-sm leading-5',
   {
     variants: {
       variant: {
-        info: 'bg-brand-50 text-ink [&>svg]:text-brand-700 **:data-[slot=alert-title]:text-brand-700',
-        success: 'bg-success-bg text-ink [&>svg]:text-success **:data-[slot=alert-title]:text-success',
-        warning: 'bg-warning-bg text-ink [&>svg]:text-warning **:data-[slot=alert-title]:text-warning',
-        destructive: 'bg-danger-bg text-ink [&>svg]:text-danger **:data-[slot=alert-title]:text-danger',
+        info: 'bg-brand-50 text-ink [&>svg]:text-brand-700',
+        success: 'bg-success-bg text-ink [&>svg]:text-success',
+        warning: 'bg-warning-bg text-ink [&>svg]:text-warning',
+        destructive: 'bg-danger-bg text-ink [&>svg]:text-danger',
       },
     },
     defaultVariants: {
@@ -51,7 +51,7 @@ function Alert({ className, variant = 'info', icon, live = false, children, ...p
       className={cn(alertVariants({ variant }), className)}
       {...props}
     >
-      {icon ?? <Icon className="size-5" aria-hidden="true" />}
+      {icon ?? <Icon className="size-4 mt-0.5" aria-hidden="true" />}
       <div className="col-start-2 flex min-w-0 flex-col items-start gap-1">{children}</div>
     </div>
   )

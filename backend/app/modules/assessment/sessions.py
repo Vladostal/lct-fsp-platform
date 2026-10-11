@@ -27,6 +27,7 @@ from app.modules.assessment.engine import assemble, rules
 from app.modules.assessment.engine.decide import checkpoint, decide, final_outcome
 from app.modules.assessment.engine.model import Posterior, estimate
 from app.modules.assessment.engine.skills import SkillAnswer, group_verdicts
+from app.modules.assessment.groups import TESTED_SPECIALIZATIONS
 from app.modules.assessment.models import (
     AssessmentProfile,
     BlueprintCounter,
@@ -41,6 +42,7 @@ from app.modules.assessment.models import (
 )
 from app.modules.catalog import service as catalog
 from app.shared.enums import (
+    CategoryBasis,
     EvidenceSource,
     GradeChangeKind,
     ItemStatus,
@@ -73,8 +75,14 @@ _ANSWERED = (ItemStatus.ANSWERED.value, ItemStatus.SKIPPED.value)
 
 
 def category_state(row: CategoryRow | None, specialization: str | None) -> rules.CategoryState | None:
-    """Категория глазами правил: только если она в специализации опроса."""
+    """Категория глазами правил: только если она в специализации опроса и подтверждена тестом.
+
+    Заявленную категорию правила не видят: когда у специализации появится тест, первым действием будет тест
+    на заявленный грейд, а не пересдача.
+    """
     if row is None or row.specialization_code != specialization:
+        return None
+    if row.basis != CategoryBasis.TEST.value or row.verdict is None:
         return None
     return rules.CategoryState(
         grade=row.grade_code,
@@ -82,6 +90,59 @@ def category_state(row: CategoryRow | None, specialization: str | None) -> rules
         last_grade_change_at=row.last_grade_change_at,
         change_available_at=row.change_available_at,
     )
+
+
+def declared_allowed(specialization: str) -> bool:
+    """Можно ли в специализации получить заявленную категорию: тест по ней не написан и в банке его нет.
+
+    Одной доступности банка мало: она — состояние процесса (`repo.refresh_availability`) и пуста, пока банк
+    не собран или специализация выключена `DISABLED_SPECIALIZATIONS`. Для специализации с написанным тестом
+    (`groups.TESTED_SPECIALIZATIONS`) это «тест временно недоступен», а не «теста нет»: категорию даёт только тест.
+    """
+    return specialization not in TESTED_SPECIALIZATIONS and not catalog.is_available(specialization)
+
+
+def declare_category(db: Session, candidate_id: UUID, specialization: str, grade: str, now: datetime) -> None:
+    """Заявленная категория в специализации без теста (`basis = declared`); вызывающий уже проверил, что теста нет.
+
+    Первое заявление грейд не закрепляет: до первой смены его можно поправить сразу (`last_grade_change_at` пуст).
+    Первая и следующие смены ставят срок `grade_change_cooldown_days`, как у подтверждённого грейда; раньше срока —
+    409 `cooldown_active`. Категория другой специализации (подтверждённая или заявленная) заменяется: поля уровня
+    очищаются. История `GradeChange` не трогается и для заявленных категорий не пишется (в ней обязательна сессия).
+    """
+    row = repo.category(db, candidate_id)
+    if row is not None and row.basis == CategoryBasis.TEST.value and row.specialization_code == specialization:
+        # Подтверждённую тестом категорию той же специализации заявлением не заменить (банк мог временно пропасть).
+        raise ApiException(409, "claim_locked", "Категория подтверждена тестом: заявить грейд без теста нельзя")
+    if row is not None and row.basis == CategoryBasis.DECLARED.value and row.specialization_code == specialization:
+        if row.grade_code == grade:
+            return
+        cooldown_days = get_config().grade_change_cooldown_days
+        if row.last_grade_change_at is not None and now < row.change_available_at:
+            raise ApiException(
+                409,
+                "cooldown_active",
+                f"Заявленный грейд можно менять не чаще раза в {cooldown_days} дней",
+                params={"reason": "grade_change", "available_at": row.change_available_at.isoformat()},
+            )
+        row.grade_code = grade
+        row.last_grade_change_at = now
+        row.change_available_at = now + timedelta(days=cooldown_days)
+        db.flush()
+        return
+    if row is None:
+        row = CategoryRow(candidate_id=candidate_id)
+        db.add(row)
+    row.basis = CategoryBasis.DECLARED.value
+    row.specialization_code = specialization
+    row.grade_code = grade
+    row.verdict = row.theta = row.se = row.items_count = None
+    row.level_session_id = row.level_updated_at = row.last_evidence_at = None
+    row.assigned_at = now
+    row.last_grade_change_at = None
+    row.change_available_at = now
+    row.is_demo_result = False
+    db.flush()
 
 
 def start_context(db: Session, candidate_id: UUID) -> rules.StartContext:
@@ -518,6 +579,8 @@ def finalize(db: Session, session: SessionRow, now: datetime, *, by_time: bool) 
             row.is_demo_result = bool(row.is_demo_result) and prefilled
         row.specialization_code = session.specialization_code
         row.grade_code = update.grade
+        # Тест заменяет и заявленную категорию другой специализации: строка становится подтверждённой.
+        row.basis = CategoryBasis.TEST.value
         row.verdict = update.verdict.value
         row.theta, row.se, row.items_count = post.theta, post.se, post.n
         row.level_session_id = session.id

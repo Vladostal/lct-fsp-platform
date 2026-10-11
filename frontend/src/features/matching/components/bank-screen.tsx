@@ -1,18 +1,19 @@
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { SlidersHorizontal } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import type { Catalog } from '@/client'
 import { EmptyState, ErrorState, PageHeader, TagInput, type TagValue } from '@/components/app'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Sheet, SheetBody, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
-import { hasCode } from '@/lib/api'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { errorMessage, hasCode } from '@/lib/api'
+import { hasTest } from '@/lib/category'
 import { useMediaQuery } from '@/lib/hooks/use-media-query'
 import { bankQuery } from '../api'
 import { MATCHING } from '../content'
@@ -32,14 +33,22 @@ type Props = {
 }
 
 function Filters({ search, catalog, setSearch }: Omit<Props, 'renderInvite'>) {
-  const categories = catalog?.available_categories ?? []
-  const [skills, setSkills] = useState<TagValue[]>(() =>
-    (search.skills?.split(',').filter(Boolean) ?? []).map((c) => ({
-      code: c,
-      title: catalog?.skills.find((s) => s.code === c)?.title ?? c,
-    })),
+  // В списке — все пары «специализация — грейд»: там, где теста нет, в банке кандидаты с заявленным грейдом
+  // (пометка — как в списке специализаций). Код вне справочника (старая ссылка) добавляется, чтобы выбор был виден.
+  const known = (catalog?.specializations ?? []).flatMap((sp) =>
+    [...(catalog?.grades ?? [])].sort((a, b) => a.order - b.order).map((g) => `${sp.code}:${g.code}`),
   )
+  const categories = search.category && !known.includes(search.category) ? [...known, search.category] : known
+  const skillTags = (value: string): TagValue[] =>
+    value
+      .split(',')
+      .filter(Boolean)
+      .map((c) => ({ code: c, title: catalog?.skills.find((s) => s.code === c)?.title ?? c }))
+  const urlSkills = search.skills ?? ''
+  const [skills, setSkills] = useState<TagValue[]>(() => skillTags(urlSkills))
   const [code, setCode] = useState(search.code ?? '')
+  // Значение навыков, с которым поле и адрес в последний раз совпадали.
+  const syncedSkills = useRef(urlSkills)
   const options = (catalog?.skills ?? []).map((s) => ({ code: s.code, title: s.title, aliases: s.aliases }))
   const catTitle = (c: string) => {
     const [spec, grade] = c.split(':')
@@ -49,13 +58,26 @@ function Filters({ search, catalog, setSearch }: Omit<Props, 'renderInvite'>) {
   const skillCodes = skills.map((s) => s.code).filter((c): c is string => Boolean(c))
   const skillsKey = skillCodes.join(',')
 
+  // Адрес изменился не из этого поля (сброс фильтров, «Назад»): поля повторяют адрес. Иначе сброшенные навыки
+  // через 300 мс возвращались бы в запрос.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: skillTags зависит только от справочника
+  useEffect(() => {
+    if (urlSkills === syncedSkills.current) return
+    syncedSkills.current = urlSkills
+    setSkills(skillTags(urlSkills))
+  }, [urlSkills])
+  useEffect(() => setCode(search.code ?? ''), [search.code])
+
   // Навыки применяются с задержкой 300 мс.
   useEffect(() => {
+    if (skillsKey === syncedSkills.current) return
     const value = skillsKey || undefined
-    if (value === search.skills) return
-    const t = setTimeout(() => setSearch({ skills: value, confirmed: value ? search.confirmed : undefined }, true), 300)
+    const t = setTimeout(() => {
+      syncedSkills.current = skillsKey
+      setSearch({ skills: value, confirmed: value ? search.confirmed : undefined }, true)
+    }, 300)
     return () => clearTimeout(t)
-  }, [skillsKey, search.skills, search.confirmed, setSearch])
+  }, [skillsKey, search.confirmed, setSearch])
 
   return (
     <form
@@ -74,13 +96,15 @@ function Filters({ search, catalog, setSearch }: Omit<Props, 'renderInvite'>) {
           }
         >
           <SelectTrigger id="b-cat">
-            <SelectValue />
+            {/* В поле — только название: пометка «заявленные грейды» остаётся в списке. */}
+            <SelectValue>{search.category ? catTitle(search.category) : B.anyCategory}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ANY}>{B.anyCategory}</SelectItem>
             {categories.map((c) => (
               <SelectItem key={c} value={c}>
                 {catTitle(c)}
+                {hasTest(catalog, c.split(':')[0]) ? '' : ` · ${B.specDeclared}`}
               </SelectItem>
             ))}
           </SelectContent>
@@ -94,40 +118,38 @@ function Filters({ search, catalog, setSearch }: Omit<Props, 'renderInvite'>) {
           onValueChange={(v) => setSearch({ specialization: v === ANY ? undefined : v })}
         >
           <SelectTrigger id="b-spec">
-            <SelectValue />
+            {/* В поле — только название: пометка «заявленные грейды» остаётся в списке. */}
+            <SelectValue>
+              {catalog?.specializations.find((sp) => sp.code === search.specialization)?.title ?? B.anySpec}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ANY}>{B.anySpec}</SelectItem>
-            {(catalog?.specializations ?? [])
-              .filter((s) => s.available)
-              .map((s) => (
-                <SelectItem key={s.code} value={s.code}>
-                  {s.title}
-                </SelectItem>
-              ))}
+            {(catalog?.specializations ?? []).map((s) => (
+              <SelectItem key={s.code} value={s.code}>
+                {s.title}
+                {s.available ? '' : ` · ${B.specDeclared}`}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
-      <fieldset className="flex min-w-0 flex-col gap-1" disabled={Boolean(search.category)}>
-        <legend className="type-sm mb-1 font-medium">{B.grade}</legend>
-        {(catalog?.grades ?? [])
-          .filter((g) => g.available)
-          .map((g) => (
-            <Label key={g.code} className="tap-target flex items-center gap-2 font-normal">
-              <Checkbox
-                checked={grades.includes(g.code)}
-                onCheckedChange={(on) => {
-                  const next = on ? [...grades, g.code] : grades.filter((x) => x !== g.code)
-                  setSearch({ grade: next.join(',') || undefined })
-                }}
-              />
+      <fieldset className="flex min-w-0 flex-col gap-1.5" disabled={Boolean(search.category)}>
+        <legend className="type-sm mb-1.5 font-medium">{B.grade}</legend>
+        <ToggleGroup
+          type="multiple"
+          value={grades}
+          onValueChange={(next) => setSearch({ grade: next.join(',') || undefined })}
+        >
+          {(catalog?.grades ?? []).map((g) => (
+            <ToggleGroupItem key={g.code} value={g.code}>
               {g.title}
-            </Label>
+            </ToggleGroupItem>
           ))}
+        </ToggleGroup>
       </fieldset>
       <div className="flex min-w-0 flex-col gap-1">
         <TagInput label={B.skills} value={skills} onChange={setSkills} options={options} max={8} />
-        <p className="type-sm text-ink-muted">{B.skillsHint}</p>
       </div>
       <div className="flex min-w-0 flex-col gap-1">
         <Label className="tap-target flex min-w-0 items-center justify-between gap-3 font-normal">
@@ -145,7 +167,6 @@ function Filters({ search, catalog, setSearch }: Omit<Props, 'renderInvite'>) {
           <span className="min-w-0">{B.fsp}</span>
           <Switch checked={Boolean(search.fsp)} onCheckedChange={(on) => setSearch({ fsp: on || undefined })} />
         </Label>
-        <p className="type-sm text-ink-muted">{B.fspHint}</p>
       </div>
       <div className="flex min-w-0 flex-col gap-1.5">
         <Label htmlFor="b-code">{B.code}</Label>
@@ -247,7 +268,8 @@ export function BankScreen({ search, catalog, setSearch, renderInvite }: Props) 
         </div>
       )
     }
-    if (query.isError && !hasCode(query.error, 'filter_invalid', 'cursor_invalid'))
+    const loadError = query.isError && !hasCode(query.error, 'filter_invalid', 'cursor_invalid')
+    if (loadError && items.length === 0)
       return (
         <ErrorState
           error={query.error}
@@ -307,6 +329,11 @@ export function BankScreen({ search, catalog, setSearch, renderInvite }: Props) 
             </ul>
           </section>
         ))}
+        {loadError ? (
+          <p role="alert" className="type-sm self-center text-danger">
+            {hasCode(query.error, 'bank_page_limit') ? B.bankLimit : errorMessage(query.error)}
+          </p>
+        ) : null}
         {query.hasNextPage ? (
           <Button
             type="button"
@@ -338,7 +365,7 @@ export function BankScreen({ search, catalog, setSearch, renderInvite }: Props) 
       />
       <div className={wide ? 'grid min-w-0 grid-cols-[280px_minmax(0,1fr)] gap-6' : 'min-w-0'}>
         {wide ? (
-          <aside aria-label={B.filters} className="surface-card h-fit min-w-0 p-4">
+          <aside aria-label={B.filters} className="sticky top-20 h-fit min-w-0 self-start">
             <Filters search={search} catalog={catalog} setSearch={setSearch} />
           </aside>
         ) : (

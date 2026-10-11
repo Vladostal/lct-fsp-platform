@@ -26,7 +26,7 @@ function Slots({ data }: { data: BlueprintPreview }) {
       <table className="type-sm w-full min-w-[420px] border-collapse text-left">
         <caption className="type-sm mb-2 text-left font-medium">{T.slots}</caption>
         <thead>
-          <tr className="border-b border-line text-ink-muted">
+          <tr className="text-ink-muted">
             <th scope="col" className="py-2 pr-3 font-medium">
               {T.group}
             </th>
@@ -40,7 +40,7 @@ function Slots({ data }: { data: BlueprintPreview }) {
         </thead>
         <tbody>
           {rows.map((r) => (
-            <tr key={r.group} className="border-b border-line">
+            <tr key={r.group}>
               <td className="min-w-0 break-words py-2 pr-3">{r.group}</td>
               <td className="num py-2 pr-3">{r.standard}</td>
               <td className="num py-2">
@@ -74,7 +74,7 @@ export function BlueprintDemo({ min, max }: { min: number; max: number }) {
   }
 
   return (
-    <div className="surface-card flex min-w-0 flex-col gap-4 p-5">
+    <div className="surface-card flex min-w-0 flex-col gap-4 p-5 md:p-6">
       <h3 className="type-h3">{T.demoTitle}</h3>
       <p className="type-body text-ink-muted">{T.demoLead}</p>
       <ToggleGroup type="single" value={choice} aria-label={T.examplesLabel} onValueChange={(v) => v && setChoice(v)}>
@@ -97,9 +97,7 @@ export function BlueprintDemo({ min, max }: { min: number; max: number }) {
           />
         </div>
       ) : (
-        <blockquote className="type-sm min-w-0 break-words border-l-2 border-line-strong pl-3 text-ink-muted">
-          {example?.text}
-        </blockquote>
+        <blockquote className="type-sm min-w-0 break-words text-ink-muted">{example?.text}</blockquote>
       )}
       {localError ? (
         <p role="alert" className="type-sm text-danger">
@@ -127,7 +125,7 @@ export function BlueprintDemo({ min, max }: { min: number; max: number }) {
             <CoverageTable data={preview.data} />
           </div>
           <Slots data={preview.data} />
-          <p className="type-sm text-ink-muted">{T.slotsNote}</p>
+          <p className="type-caption text-ink-muted">{T.slotsNote}</p>
         </div>
       ) : null}
     </div>

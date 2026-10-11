@@ -9,9 +9,16 @@ import {
   contactViewCandidateInvitationMutation,
   profileGetConditionsOptions,
 } from '@/client/@tanstack/react-query.gen'
-import { CopyButton, ErrorState, PageHeader, SalaryRange, StatusBadge, StickyActionBar } from '@/components/app'
+import {
+  CopyButton,
+  ErrorState,
+  PageHeader,
+  SalaryRange,
+  Section,
+  StatusBadge,
+  StickyActionBar,
+} from '@/components/app'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -305,31 +312,32 @@ function CompanyAside({ inv }: { inv: InvitationCandidateView }) {
   const [full, setFull] = useState(false)
   const c = inv.company
   return (
-    <section className="surface-card flex min-w-0 flex-col gap-3" aria-label="О компании">
-      <h2 className="type-h3 text-ink">О компании</h2>
-      <p className="type-body font-medium [overflow-wrap:anywhere] text-ink">{c.name}</p>
-      <p className="type-sm text-ink-muted">{c.sphere}</p>
-      <p className={`type-sm whitespace-pre-line text-ink [overflow-wrap:anywhere] ${full ? '' : 'line-clamp-6'}`}>
-        {c.description}
-      </p>
-      {c.description.length > 280 ? (
-        <Button variant="link" size="sm" className="self-start" onClick={() => setFull((v) => !v)}>
-          {full ? 'Свернуть' : 'Показать полностью'}
-        </Button>
-      ) : null}
-      {c.site ? (
-        <a
-          className="type-sm text-link min-w-0 [overflow-wrap:anywhere] underline"
-          href={c.site}
-          target="_blank"
-          rel="noreferrer noopener"
-        >
-          {c.site}
-        </a>
-      ) : null}
-      <p className="type-sm text-ink-muted">На платформе с {formatDate(c.on_platform_since)}</p>
-      <p className="type-caption text-ink-muted">{c.trust_label}</p>
-    </section>
+    <Section title="О компании">
+      <div className="flex min-w-0 flex-col gap-2">
+        <p className="type-body font-medium [overflow-wrap:anywhere] text-ink">{c.name}</p>
+        <p className="type-sm text-ink-muted">{c.sphere}</p>
+        <p className={`type-sm whitespace-pre-line text-ink [overflow-wrap:anywhere] ${full ? '' : 'line-clamp-6'}`}>
+          {c.description}
+        </p>
+        {c.description.length > 280 ? (
+          <Button variant="link" size="sm" className="self-start" onClick={() => setFull((v) => !v)}>
+            {full ? 'Свернуть' : 'Показать полностью'}
+          </Button>
+        ) : null}
+        {c.site ? (
+          <a
+            className="type-sm text-link min-w-0 [overflow-wrap:anywhere] underline"
+            href={c.site}
+            target="_blank"
+            rel="noreferrer noopener"
+          >
+            {c.site}
+          </a>
+        ) : null}
+        <p className="type-sm text-ink-muted">На платформе с {formatDate(c.on_platform_since)}</p>
+        <p className="type-caption text-ink-muted">{c.trust_label}</p>
+      </div>
+    </Section>
   )
 }
 
@@ -376,7 +384,6 @@ export function CandidateInvitationDetail({ id }: { id: string }) {
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <StatusBadge status={inv.status} label={inv.status_label} live />
             {actionable ? <span className="type-sm text-ink-muted">{formatDeadline(inv.expires_at)}</span> : null}
-            {inv.is_demo ? <Badge variant="info">демо</Badge> : null}
           </div>
         }
       />
@@ -396,50 +403,49 @@ export function CandidateInvitationDetail({ id }: { id: string }) {
       ) : null}
       <ResultAlert inv={inv} />
       <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="flex min-w-0 flex-col gap-4">
-          <section className="surface-card flex min-w-0 flex-col gap-3" aria-label="Условия">
-            <h2 className="type-h3 text-ink">Условия</h2>
+        <div className="surface-card flex min-w-0 flex-col gap-6 animate-rise-in">
+          <div className="flex min-w-0 flex-col gap-2">
             <SalaryRange from={inv.salary_from} to={inv.salary_to} size="lg" />
-            <div className="flex min-w-0 flex-wrap items-center gap-2">
-              <Badge variant="neutral">{WORK_FORMAT_LABELS[inv.work_format]}</Badge>
-              {inv.city ? <Badge variant="neutral">{inv.city}</Badge> : null}
-              {inv.below_my_min ? <Badge variant="warning">ниже вашего минимума</Badge> : null}
-            </div>
-          </section>
-          <section className="surface-card flex min-w-0 flex-col gap-2" aria-label="Описание предложения">
-            <h2 className="type-h3 text-ink">Описание предложения</h2>
+            <p className="type-sm text-ink-muted [overflow-wrap:anywhere]">
+              {[
+                WORK_FORMAT_LABELS[inv.work_format],
+                inv.city,
+                inv.is_demo ? 'демо' : null,
+                inv.below_my_min ? 'ниже вашего минимума' : null,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </p>
+          </div>
+          <Section title="Описание предложения">
             <p className="type-body max-w-[72ch] whitespace-pre-line [overflow-wrap:anywhere] text-ink">
               {inv.description}
             </p>
-          </section>
+          </Section>
           {inv.message ? (
-            <section className="surface-card flex min-w-0 flex-col gap-2" aria-label="Сообщение от работодателя">
-              <h2 className="type-h3 text-ink">Сообщение от работодателя</h2>
+            <Section title="Сообщение от работодателя">
               <p className="type-body max-w-[72ch] whitespace-pre-line [overflow-wrap:anywhere] text-ink">
                 {inv.message}
               </p>
-            </section>
+            </Section>
           ) : null}
-          <section className="surface-card flex min-w-0 flex-col gap-3" aria-label="Почему вас пригласили">
-            <h2 className="type-h3 text-ink">Почему вас пригласили</h2>
+          <Section title="Почему вас пригласили">
             <WhyInvited why={inv.why} />
-          </section>
-          <section className="surface-card flex min-w-0 flex-col gap-2" aria-label="Способ связи">
-            <h2 className="type-h3 text-ink">Способ связи</h2>
+          </Section>
+          <Section title="Способ связи">
             <p className="type-body flex min-w-0 items-center gap-2 text-ink">
               <span className="min-w-0 [overflow-wrap:anywhere]">
                 {CONTACT_KIND_LABELS[inv.contact_method.kind]}: <span className="num">{inv.contact_method.value}</span>
               </span>
               <CopyButton value={inv.contact_method.value} label="Скопировать способ связи" />
             </p>
-          </section>
+          </Section>
         </div>
-        <aside className="flex min-w-0 flex-col gap-4">
+        <aside className="surface-card flex min-w-0 flex-col gap-6 self-start">
           <CompanyAside inv={inv} />
-          <section className="surface-card flex min-w-0 flex-col gap-3" aria-label="Ход приглашения">
-            <h2 className="type-h3 text-ink">Ход приглашения</h2>
+          <Section title="Ход приглашения">
             <InvitationTimeline events={inv.timeline} />
-          </section>
+          </Section>
         </aside>
       </div>
       {actionable ? (

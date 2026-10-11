@@ -1,6 +1,6 @@
 """Сводки и предпроверка модуля `contact`: квота, состояние пары, воронки, медиана вилок, показатели.
 
-Всё здесь — чтение без блокировок и без `settle` (Арх. 4.4): статусы и слоты считаются через `rules.effective_*`.
+Всё здесь — чтение без блокировок и без `settle` (Арх. 4.4): статусы считаются через `rules.effective_*`.
 Ни одна функция для работодателя не читает минимум кандидата (инвариант I8).
 """
 
@@ -63,11 +63,7 @@ from app.shared.enums import (
 
 
 def _quota_from(ctx: checks.SendContext) -> QuotaView:
-    used, next_release = ctx.slots
     return QuotaView(
-        used=used,
-        limit=ctx.slot_limit,
-        next_release_at=next_release,
         daily_used=len(ctx.daily_created),
         daily_limit=ctx.daily_limit,
         frozen=ctx.frozen,
@@ -75,17 +71,10 @@ def _quota_from(ctx: checks.SendContext) -> QuotaView:
 
 
 def quota(db: Session, now: datetime, employer_id: UUID) -> QuotaView:
-    """Слоты и суточный лимит работодателя (Арх. 4.7). Истёкшее, но не материализованное слот не держит."""
-    from app.modules.company import service as company_service
-
+    """Суточный лимит работодателя (Арх. 4.7)."""
     state = checks.employer_state(db, employer_id)
-    company = company_service.get_company(db, employer_id)
     account = identity_service.users(db, [employer_id]).get(employer_id)
-    used, next_release = rules.slots_used(checks.slot_rows(db, employer_id, now), now)
     return QuotaView(
-        used=used,
-        limit=rules.slot_limit(state.slot_limit_override if state else None, company.trust_level if company else None),
-        next_release_at=next_release,
         daily_used=len(checks.daily_created(db, employer_id, now)),
         daily_limit=c.DEMO_DAILY_SEND_LIMIT if account is not None and account.is_demo else c.DAILY_SEND_LIMIT,
         frozen=bool(state and state.sending_frozen_at is not None),

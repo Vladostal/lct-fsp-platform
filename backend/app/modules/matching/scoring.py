@@ -10,7 +10,7 @@ from __future__ import annotations
 import hashlib
 import math
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from typing import Literal
 from uuid import UUID
@@ -18,7 +18,7 @@ from uuid import UUID
 from app.modules.matching import constants as C
 from app.modules.matching.dto import ShortlistQuery
 from app.modules.matching.features import CONFIRMED_KINDS, CandidateFeatures, SkillEvidence, evidence_preference
-from app.shared.enums import EvidenceKind, FitBand, Relation, TestOutcome
+from app.shared.enums import CategoryBasis, EvidenceKind, FitBand, Relation, TestOutcome
 
 #: `implies_closure(skill) -> frozenset[str]`: навыки, которые следуют из данного (каталог, Арх. 6.2).
 Closure = Callable[[str], frozenset[str]]
@@ -54,8 +54,14 @@ class ScoringParams:
     fit_good_min: int = C.FIT_GOOD_MIN
     w_test: float = C.W_TEST
     w_fsp: float = C.W_FSP
+    w_experience: float = C.W_EXPERIENCE
+    w_skills: float = C.W_SKILLS
     z_lower: float = C.Z_LOWER
     under: float = C.UNDER
+    exp_full_years: Mapping[str, float] = field(default_factory=lambda: dict(C.EXP_FULL_YEARS))
+    exp_full_years_default: float = C.EXP_FULL_YEARS_DEFAULT
+    skills_full: int = C.SKILLS_FULL
+    exp_expected_min: Mapping[str, float] = field(default_factory=lambda: dict(C.EXP_EXPECTED_MIN))
     strength_high_min: int = C.STRENGTH_HIGH_MIN
     strength_medium_min: int = C.STRENGTH_MEDIUM_MIN
     #: Абляция «без роста неопределённости»: нижняя граница считается по `se`, а не по `se_eff`.
@@ -103,13 +109,21 @@ class Coverage:
 
 @dataclass(frozen=True, slots=True)
 class Strength:
-    """Сила подтверждённого профиля (Арх. 6.6): `value` 0.0..100.0, полосы по 10 баллов."""
+    """Сила профиля (версия 3): `value` 0.0..100.0, полосы по 10 баллов.
+
+    `t`, `t_fresh` — доля теста (с давностью и без), `f` — ФСП, `x` — заявленный стаж, `s` — заявленные навыки
+    специализации; все в 0..1. `tested = False` — грейд заявлен, теста не было (`t = t_fresh = 0`).
+    """
 
     t: float
     t_fresh: float
     x10: int
     band: int
     label: StrengthLabel
+    f: float = 0.0
+    x: float = 0.0
+    s: float = 0.0
+    tested: bool = True
 
     @property
     def value(self) -> float:
@@ -256,30 +270,53 @@ def _clip01(value: float) -> float:
 
 
 def strength(features: CandidateFeatures, params: ScoringParams = DEFAULT_PARAMS) -> Strength:
-    """Сила подтверждённого профиля относительно порога своей категории (Арх. 6.6).
+    """Сила профиля: тест, ФСП и заявленные стаж и навыки (версия оценщика `match-3`).
 
     ```
     LB       = theta − Z_LOWER · se_eff                        # нижняя граница уровня, а не точка
-    T        = clip( (LB − cut + UNDER · width) / ((1 + UNDER) · width), 0, 1 )
+    T        = clip( (LB − cut + UNDER · width) / ((1 + UNDER) · width), 0, 1 )   # 0, если грейд заявлен без теста
     T_fresh  = то же при se вместо se_eff
-    F        = fsp_signal
-    strength_x10  = round_half_up( 1000 · (W_TEST · T + W_FSP · F) )
+    F        = clip(fsp_signal, 0, 1)
+    X        = 0, если стаж не указан или скрыт; иначе clip(experience_years / EXP_FULL_YEARS[grade], 0, 1)
+    S        = min(declared_relevant, SKILLS_FULL) / SKILLS_FULL
+    strength_x10  = round_half_up( 1000 · (W_TEST · T + W_FSP · F + W_EXPERIENCE · X + W_SKILLS · S) )
     strength_band = min(9, strength_x10 // 100)                # полосы по 10 баллов
-    strength_label = high при strength ≥ 55; medium при ≥ 30; иначе base
+    strength_label = high при strength ≥ 65; medium при ≥ 35; иначе base
     ```
 
-    `T = 1/3` при `LB = cut`, `T = 1` при `LB = cut + width`, `T = 0` при `LB ≤ cut − width/2`. От потребности
-    сила не зависит. ФСП — добавка с насыщением: без истории `F = 0`, вычитания нет; наибольший вклад — 30 баллов.
-    Свежесть — не прибавка к баллу, а рост `se_eff` (его считает только `assessment`, Арх. 5.6). Заявленные
-    данные в силу не входят.
+    Веса 0.10 / 0.30 / 0.35 / 0.25: подтверждённая часть (тест и ФСП) даёт до 40 баллов, заявленная кандидатом
+    (стаж и навыки) — до 60. `T = 1/3` при `LB = cut`, `T = 1` при `LB = cut + width`. От потребности сила не
+    зависит. ФСП — добавка с насыщением: без истории `F = 0`, вычитания нет. Свежесть — не прибавка к баллу,
+    а рост `se_eff` (его считает только `assessment`, Арх. 5.6).
+
+    Заявленное ограничено насыщением: стаж сверх `EXP_FULL_YEARS` и навыки сверх `SKILLS_FULL` ничего не добавляют,
+    в `S` идут только навыки своей специализации. Одним заявленным без ФСП не набрать больше 60 баллов, то есть
+    подпись `high` (от 65) требует теста или достижений ФСП. В ключе порядка сила стоит третьей — после закрытых
+    обязательных навыков и подтверждённого покрытия, куда заявленное не входит.
     """
     width = features.width if features.width > 0 else 1.0
     scale = (1 + params.under) * width
-    se_used = features.se_eff if params.use_se_eff else features.se
-    t = _clip01((features.theta - params.z_lower * se_used - features.cut + params.under * width) / scale)
-    t_fresh = _clip01((features.theta - params.z_lower * features.se - features.cut + params.under * width) / scale)
-    signal = _clip01(features.fsp_signal)
-    x10 = max(0, min(1000, round_half_up(1000 * (params.w_test * t + params.w_fsp * signal))))
+    tested = (
+        features.basis == CategoryBasis.TEST
+        and features.theta is not None
+        and features.se is not None
+        and features.se_eff is not None
+    )
+    t = t_fresh = 0.0
+    if tested:
+        assert features.theta is not None and features.se is not None and features.se_eff is not None
+        se_used = features.se_eff if params.use_se_eff else features.se
+        t = _clip01((features.theta - params.z_lower * se_used - features.cut + params.under * width) / scale)
+        t_fresh = _clip01((features.theta - params.z_lower * features.se - features.cut + params.under * width) / scale)
+    f = _clip01(features.fsp_signal)
+    x = 0.0
+    if features.experience_years is not None:
+        full = params.exp_full_years.get(features.grade_code, params.exp_full_years_default)
+        x = _clip01(features.experience_years / full) if full > 0 else 1.0
+    skills_full = max(1, params.skills_full)
+    s = min(max(0, features.declared_relevant), skills_full) / skills_full
+    total = params.w_test * t + params.w_fsp * f + params.w_experience * x + params.w_skills * s
+    x10 = max(0, min(1000, round_half_up(1000 * total)))
     value = x10 / 10
     label: StrengthLabel
     if value >= params.strength_high_min:
@@ -288,7 +325,29 @@ def strength(features: CandidateFeatures, params: ScoringParams = DEFAULT_PARAMS
         label = "medium"
     else:
         label = "base"
-    return Strength(t=t, t_fresh=t_fresh, x10=x10, band=min(9, x10 // 100), label=label)
+    return Strength(t=t, t_fresh=t_fresh, x10=x10, band=min(9, x10 // 100), label=label, f=f, x=x, s=s, tested=tested)
+
+
+ExperienceNote = Literal["experience_below_grade", "experience_unknown"]
+
+
+def experience_note(
+    features: CandidateFeatures, params: ScoringParams = DEFAULT_PARAMS
+) -> tuple[ExperienceNote, float] | None:
+    """Пометка «стаж не сходится с грейдом» для объяснения: код и обычный минимум стажа грейда, лет.
+
+    * стаж известен и ниже `EXP_EXPECTED_MIN[grade]` (junior 0, middle 2, senior 5) — `experience_below_grade`;
+    * стаж не указан или скрыт, а грейд заявлен без теста — `experience_unknown`;
+    * иначе `None`.
+
+    Только строка объяснения (Арх. 6.10): категорию, порядок и силу пометка не меняет.
+    """
+    minimum = params.exp_expected_min.get(features.grade_code, 0.0)
+    if features.experience_years is None:
+        return ("experience_unknown", minimum) if features.basis == CategoryBasis.DECLARED else None
+    if features.experience_years < minimum:
+        return ("experience_below_grade", minimum)
+    return None
 
 
 def fit_band(cov: Coverage, params: ScoringParams = DEFAULT_PARAMS) -> FitBand | None:

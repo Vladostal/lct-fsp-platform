@@ -1,9 +1,9 @@
 import type * as React from 'react'
 import { cn } from '@/lib/utils'
 
-/** Поле ввода: высота 44, радиус 12, граница 1 px line-strong (контраст 3,45 на surface), отступ 12 × 14 (E §3.1). */
+/** Поле ввода: высота 44, радиус 8, граница 1 px line-strong (контраст 3,45 на surface), отступ 12 × 14 (E §3.1). */
 const fieldClassName =
-  'w-full min-w-0 rounded-md border border-line-strong bg-surface px-3.5 text-base text-ink transition-colors duration-(--dur-fast) placeholder:text-ink-muted hover:border-ink-muted disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-line-strong read-only:bg-fill read-only:hover:border-line-strong aria-invalid:border-danger aria-invalid:hover:border-danger'
+  'w-full min-w-0 rounded-md border border-line-strong bg-surface px-3.5 text-base text-ink transition-colors duration-(--dur-fast) placeholder:text-ink-subtle hover:border-ink-muted disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-line-strong read-only:bg-fill read-only:hover:border-line-strong aria-invalid:border-danger aria-invalid:hover:border-danger'
 
 function Input({ className, type, ...props }: React.ComponentProps<'input'>) {
   return (

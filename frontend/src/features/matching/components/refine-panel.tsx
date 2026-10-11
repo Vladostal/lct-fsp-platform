@@ -60,7 +60,7 @@ export function RefinePanel({ query, catalog, pending, rateLimited, hiddenByFsp,
   if (requireFsp !== Boolean(query.require_fsp)) diff.require_fsp = requireFsp
   const changed = Object.keys(diff).length > 0
   const options = (catalog?.skills ?? []).map((s) => ({ code: s.code, title: s.title, aliases: s.aliases }))
-  const availableGrades = (catalog?.grades ?? []).filter((g) => g.available)
+  const availableGrades = catalog?.grades ?? []
 
   const move = (tag: TagValue, from: 'must' | 'nice') => {
     if (from === 'must') {

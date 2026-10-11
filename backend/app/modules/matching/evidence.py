@@ -113,7 +113,7 @@ class Pool:
         return C.FSP_SIGNAL_VERSION_FALLBACK
 
     def scorer_version(self) -> str:
-        """`"match-2+{fsp_signal.version}+skills-{SKILLS_VERSION}"` (Арх. 6.10)."""
+        """`"match-3+{fsp_signal.version}+skills-{SKILLS_VERSION}"` (Арх. 6.10)."""
         return f"{C.SCORER_VERSION}+{self.fsp_version()}+skills-{catalog.SKILLS_VERSION}"
 
 
@@ -195,6 +195,13 @@ def load_pool(
         level, item, signal = pool.levels[cid], pool.profiles[cid], pool.signals.get(cid)
         visible_signal = signal if signal and signal.visible else None
         declared = [code for code in item.declared_skills if catalog.is_skill(code)]
+        # В силу идут только навыки своей специализации (общие и софт-навыки не считаются); список уже пуст,
+        # если кандидат скрыл заявленный стек, а стаж — `None`, если скрыт он.
+        relevant = sum(
+            1
+            for code in dict.fromkeys(declared[:DECLARED_LIMIT])
+            if catalog.is_skill_relevant(code, level.specialization_code)
+        )
         pool.features[cid] = CandidateFeatures(
             candidate_id=cid,
             specialization_code=level.specialization_code,
@@ -205,8 +212,10 @@ def load_pool(
             se_eff=level.se_eff,
             cut=level.cut,
             width=level.width,
-            tested_at=clock.to_local_date(level.tested_at),
-            last_evidence_at=clock.to_local_date(level.last_evidence_at),
+            tested_at=clock.to_local_date(level.tested_at) if level.tested_at is not None else None,
+            last_evidence_at=(
+                clock.to_local_date(level.last_evidence_at) if level.last_evidence_at is not None else None
+            ),
             age_days=level.age_days,
             stale=level.stale,
             evidence=collect(test_skills.get(cid, []), fsp_skills.get(cid, []) if visible_signal else [], declared),
@@ -215,5 +224,8 @@ def load_pool(
             fsp_verified=fsp_verified(visible_signal),
             work_formats=frozenset(str(value) for value in item.work_formats),
             exposure_7d=shows.get(cid, 0),
+            basis=level.basis,
+            experience_years=item.experience_years,
+            declared_relevant=relevant,
         )
     return pool

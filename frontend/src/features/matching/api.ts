@@ -38,6 +38,9 @@ export const matchingKeys = {
   bank: (filters: unknown) => ['employer', 'bank', filters] as const,
 }
 
+/** Те же данные потребности под ключами сгенерированного клиента (мастер приглашения, фильтр списка приглашений). */
+export const NEED_OPS = ['matchingGetNeed', 'matchingListNeeds', 'contactPrecheckInvitation'] as const
+
 export const needQuery = (id: string) =>
   queryOptions({
     queryKey: matchingKeys.need(id),

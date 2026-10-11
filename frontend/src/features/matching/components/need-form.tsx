@@ -26,8 +26,17 @@ import { WIZARD_STEPS } from '@/content/common'
 import { applyFieldErrors, errorMessage, errorText, hasCode, hasStatus, isApiError } from '@/lib/api'
 import { formatMoney } from '@/lib/format'
 import { invalidateGuardData } from '@/lib/guards'
-import { needsQuery, queryKeys } from '@/lib/query'
-import { createNeed, createShortlist, matchingKeys, needQuery, parseNeed, salaryHintQuery, updateNeed } from '../api'
+import { invalidateOperations, needsQuery, queryKeys } from '@/lib/query'
+import {
+  createNeed,
+  createShortlist,
+  matchingKeys,
+  NEED_OPS,
+  needQuery,
+  parseNeed,
+  salaryHintQuery,
+  updateNeed,
+} from '../api'
 import { MATCHING, WORK_FORMATS } from '../content'
 import { NeedBlueprint } from './need-blueprint'
 import { noticeKey } from './need-screen'
@@ -139,7 +148,7 @@ function NeedForm({
   const dirty = !savedRef.current && JSON.stringify(draft) !== JSON.stringify(base)
 
   useBlocker({
-    shouldBlockFn: () => dirty && !window.confirm(F.leave),
+    shouldBlockFn: () => !savedRef.current && dirty && !window.confirm(F.leave),
     enableBeforeUnload: () => dirty,
   })
   useEffect(() => {
@@ -219,7 +228,6 @@ function NeedForm({
     const e: Record<string, string> = {}
     if (draft.title.trim().length < 3 || draft.title.trim().length > 100) e.title = F.titleLen
     if (!draft.spec) e.spec = F.specRequired
-    else if (unavailable) e.spec = F.unavailableTitle
     if (!draft.grade) e.grade = F.gradeRequired
     if (draft.formats.length === 0) e.formats = F.formatRequired
     if (needsCity && !draft.city.trim()) e.city = F.cityRequired
@@ -277,6 +285,7 @@ function NeedForm({
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.employer.needs }),
         queryClient.invalidateQueries({ queryKey: matchingKeys.shortlists(saved.id) }),
+        invalidateOperations(queryClient, NEED_OPS),
         invalidateGuardData(queryClient),
       ])
       if (shortlistError) {
@@ -301,8 +310,9 @@ function NeedForm({
         setSalaryError(errorText(error.code, error.params))
         return
       }
-      if (hasCode(error, 'specialization_unavailable', 'specialization_without_test')) {
-        setErrors((e) => ({ ...e, spec: F.unavailableTitle }))
+      // Код остался только для специализации или грейда, которых нет в справочнике.
+      if (hasCode(error, 'specialization_unavailable')) {
+        setErrors((e) => ({ ...e, spec: F.specUnknown }))
         return
       }
       if (isApiError(error) && error.fields.length > 0) {
@@ -339,7 +349,7 @@ function NeedForm({
 
   const chip = (field: string) =>
     meta.fromText.includes(field) ? (
-      <span className="type-caption ml-2 rounded-full bg-brand-50 px-2 py-0.5 font-normal text-brand-700">
+      <span className="type-caption ml-2 font-normal text-ink-muted">
         {F.fromText}
         {meta.low.includes(field) ? ` · ${F.check}` : ''}
       </span>
@@ -371,8 +381,7 @@ function NeedForm({
   }
 
   const availableSpecs = catalog?.specializations ?? []
-  const grades = (catalog?.grades ?? []).filter((g) => g.available)
-  const availableLinks = availableSpecs.filter((s) => s.available)
+  const grades = catalog?.grades ?? []
   const hintValue = hint.data
 
   const header = <PageHeader title={need ? F.editTitle : F.createTitle} description={F.description} />
@@ -387,7 +396,7 @@ function NeedForm({
         </Alert>
       ) : null}
       <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <aside className="surface-card min-w-0 p-5 lg:order-2 lg:sticky lg:top-24 lg:h-fit">
+        <aside className="min-w-0 lg:order-2 lg:sticky lg:top-24 lg:h-fit">
           <h2 className="type-h3 mb-3">{F.help.title}</h2>
           <dl className="flex min-w-0 flex-col gap-3">
             {F.help.items.map(([k, v]) => (
@@ -397,7 +406,7 @@ function NeedForm({
               </div>
             ))}
           </dl>
-          <a href="/how-it-works#matching" className="text-link type-sm mt-3 inline-block">
+          <a href="/how-it-works#matching" className="text-link tap-target type-sm mt-3 inline-block">
             {F.help.link}
           </a>
         </aside>
@@ -420,7 +429,10 @@ function NeedForm({
           {parsed ? <ParseNotes parsed={parsed} /> : null}
 
           {!need ? (
-            <section className="surface-card flex min-w-0 flex-col gap-3 p-5" aria-labelledby="n-text">
+            <section
+              className="flex min-w-0 flex-col gap-3 border-t border-line pt-6 first:border-t-0 first:pt-0"
+              aria-labelledby="n-text"
+            >
               <h2 id="n-text" className="type-h3">
                 {F.textLabel}
               </h2>
@@ -454,7 +466,10 @@ function NeedForm({
           ) : null}
 
           <fieldset disabled={archived} className="contents">
-            <section className="surface-card flex min-w-0 flex-col gap-4 p-5" aria-labelledby="n-whom">
+            <section
+              className="flex min-w-0 flex-col gap-4 border-t border-line pt-6 first:border-t-0 first:pt-0"
+              aria-labelledby="n-whom"
+            >
               <h2 id="n-whom" className="type-h3">
                 {F.whom}
               </h2>
@@ -477,11 +492,12 @@ function NeedForm({
                 </Label>
                 <Select value={draft.spec} onValueChange={(v) => set('spec', v)}>
                   <SelectTrigger id="n-spec" aria-invalid={Boolean(errors.spec)}>
-                    <SelectValue placeholder="Выберите специализацию" />
+                    {/* В поле — только название: пометка «тест готовится» есть в списке и в пояснении ниже. */}
+                    <SelectValue placeholder="Выберите специализацию">{spec?.title}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {availableSpecs.map((s) => (
-                      <SelectItem key={s.code} value={s.code} disabled={!s.available}>
+                      <SelectItem key={s.code} value={s.code}>
                         {s.title}
                         {s.available ? '' : ` — ${F.unavailable}`}
                       </SelectItem>
@@ -494,7 +510,6 @@ function NeedForm({
                     <AlertDescription className="flex min-w-0 flex-col gap-1">
                       <span className="font-medium">{F.unavailableTitle}</span>
                       <span>{F.unavailableText}</span>
-                      <span>{availableLinks.map((s) => s.title).join(', ')}</span>
                     </AlertDescription>
                   </Alert>
                 ) : null}
@@ -519,7 +534,10 @@ function NeedForm({
               </div>
             </section>
 
-            <section className="surface-card flex min-w-0 flex-col gap-4 p-5" aria-labelledby="n-skills">
+            <section
+              className="flex min-w-0 flex-col gap-4 border-t border-line pt-6 first:border-t-0 first:pt-0"
+              aria-labelledby="n-skills"
+            >
               <h2 id="n-skills" className="type-h3">
                 {F.skills}
               </h2>
@@ -533,7 +551,10 @@ function NeedForm({
               </div>
             </section>
 
-            <section className="surface-card flex min-w-0 flex-col gap-4 p-5" aria-labelledby="n-cond">
+            <section
+              className="flex min-w-0 flex-col gap-4 border-t border-line pt-6 first:border-t-0 first:pt-0"
+              aria-labelledby="n-cond"
+            >
               <h2 id="n-cond" className="type-h3">
                 {F.conditions}
               </h2>
@@ -592,7 +613,10 @@ function NeedForm({
               </div>
             </section>
 
-            <section className="surface-card flex min-w-0 flex-col gap-3 p-5" aria-labelledby="n-team">
+            <section
+              className="flex min-w-0 flex-col gap-3 border-t border-line pt-6 first:border-t-0 first:pt-0"
+              aria-labelledby="n-team"
+            >
               <h2 id="n-team" className="type-h3">
                 {F.team}
               </h2>
@@ -614,8 +638,9 @@ function NeedForm({
             </section>
           </fieldset>
 
-          {draft.spec && draft.grade && mustCodes.length + niceCodes.length > 0 ? (
-            <details className="surface-card min-w-0 p-5" open>
+          {/* Покрытие требований тестом имеет смысл только там, где тест есть. */}
+          {draft.spec && draft.grade && !unavailable && mustCodes.length + niceCodes.length > 0 ? (
+            <details className="min-w-0 border-t border-line pt-6" open>
               <summary className="tap-target type-h3 cursor-pointer">{F.blueprint}</summary>
               <div className="mt-3">
                 <NeedBlueprint specialization={draft.spec} grade={draft.grade} must={mustCodes} nice={niceCodes} />

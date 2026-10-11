@@ -14,7 +14,7 @@ from datetime import timedelta
 from pydantic_settings import BaseSettings
 
 from app.core.config import module_env
-from app.shared.enums import DemoPersona, TrustLevel
+from app.shared.enums import DemoPersona
 
 
 class ContactConstants(BaseSettings):
@@ -23,11 +23,8 @@ class ContactConstants(BaseSettings):
     model_config = module_env("CONTACT_")
 
     invitation_ttl_days: int = 7
-    slot_limit_basic: int = 10
-    slot_limit_verified: int = 30
     daily_send_limit: int = 20
     candidate_inbox_capacity: int = 5
-    bounce_slot_hold_hours: int = 72
     pair_retry_days: int = 30
     revision_window_days: int = 7
     silence_strikes: int = 2
@@ -51,18 +48,13 @@ _c = ContactConstants()
 #: Срок ответа кандидата.
 INVITATION_TTL_DAYS: int = _c.invitation_ttl_days
 INVITATION_TTL = timedelta(days=INVITATION_TTL_DAYS)
-#: Одновременно занятых слотов по уровню доверия компании.
-SLOT_LIMIT: dict[TrustLevel, int] = {TrustLevel.BASIC: _c.slot_limit_basic, TrustLevel.VERIFIED: _c.slot_limit_verified}
 #: Попыток отправки за скользящие 24 часа, включая `bounced`; к демо-аккаунтам не применяется (Арх. 4.14).
 DAILY_SEND_LIMIT: int = _c.daily_send_limit
 DAILY_WINDOW = timedelta(hours=24)
-#: Что показывает квота демо-аккаунту вместо суточного лимита: «практически без лимита», как и его слоты.
+#: Что показывает квота демо-аккаунту вместо суточного лимита: «практически без лимита».
 DEMO_DAILY_SEND_LIMIT: int = 10_000
 #: Неотвеченных приглашений у кандидата.
 CANDIDATE_INBOX_CAPACITY: int = _c.candidate_inbox_capacity
-#: Сколько недоставленная попытка держит слот.
-BOUNCE_SLOT_HOLD_HOURS: int = _c.bounce_slot_hold_hours
-BOUNCE_SLOT_HOLD = timedelta(hours=BOUNCE_SLOT_HOLD_HOURS)
 #: Пауза перед новым приглашением той же паре.
 PAIR_RETRY_DAYS: int = _c.pair_retry_days
 PAIR_RETRY = timedelta(days=PAIR_RETRY_DAYS)
@@ -115,14 +107,13 @@ DEMO_EXPENSIVE_FACTOR_PCT: int = 115
 DEMO_EXPENSIVE_ROUND_TO: int = 20_000
 
 #: Версия правил контакта: попадает в отчёт валидации (`versions`).
-RULES_VERSION = "1.2"
+RULES_VERSION = "1.3"
 
 #: Числа для `Catalog.limits` (их собирает `app.wiring.publish_limits`). Первые семь названы планом работ;
 #: длительность автопаузы и кратность суммы в условии отказа нужны текстам экранов C8, C9.
 PUBLIC_LIMITS: dict[str, int | float] = {
     "invitation_ttl_days": INVITATION_TTL_DAYS,
     "pair_retry_days": PAIR_RETRY_DAYS,
-    "bounce_slot_hold_hours": BOUNCE_SLOT_HOLD_HOURS,
     "revision_window_days": REVISION_WINDOW_DAYS,
     "contact_sla_hours": CONTACT_SLA_HOURS,
     "candidate_inbox_capacity": CANDIDATE_INBOX_CAPACITY,

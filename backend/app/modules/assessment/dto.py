@@ -12,44 +12,55 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from app.shared.enums import EvidenceSource, ItemKind, SlotRole, TestOutcome
+from app.shared.enums import CategoryBasis, EvidenceSource, ItemKind, SlotRole, TestOutcome
 from app.shared.schemas import CategoryRef, Ref
 
 
 class CategoryDTO(BaseModel):
-    """Действующая категория кандидата «специализация × подтверждённый грейд»."""
+    """Действующая категория кандидата «специализация × грейд».
+
+    `basis = test` — грейд подтверждён тестом; `declared` — грейд заявлен кандидатом (тест по специализации
+    готовится): `verdict` и `level_session_id` тогда `None`.
+    """
 
     specialization_code: str
     grade_code: str
     #: «backend:middle».
     category_code: str
-    verdict: TestOutcome
+    basis: CategoryBasis = CategoryBasis.TEST
+    verdict: TestOutcome | None = None
     assigned_at: datetime
-    level_session_id: UUID
+    level_session_id: UUID | None = None
     change_available_at: datetime | None = None
     #: Категория получена быстрым демо-тестом (Арх. 13.5): в отчётах платформы не учитывается.
     is_demo_result: bool = False
 
 
 class LevelDTO(BaseModel):
-    """Уровень кандидата для подбора (Арх. 5.6): оценка на общей шкале и пороги грейда."""
+    """Уровень кандидата для подбора (Арх. 5.6): оценка на общей шкале и пороги грейда.
+
+    Для заявленного грейда (`basis = declared`) теста не было: `verdict`, `theta`, `se`, `se_eff`, `tested_at`,
+    `last_evidence_at` и `age_days` равны `None`, `stale = False`; пороги грейда заполнены из конфигурации.
+    """
 
     candidate_id: UUID
     specialization_code: str
     grade_code: str
-    verdict: TestOutcome
-    theta: float
-    se: float
+    basis: CategoryBasis = CategoryBasis.TEST
+    verdict: TestOutcome | None = None
+    theta: float | None = None
+    se: float | None = None
     #: Неопределённость с учётом давности: `min(sqrt(se² + DRIFT² · d / 180), SE_EFF_MAX)`.
-    se_eff: float
+    se_eff: float | None = None
     #: Порог грейда `THETA_CUT[grade]`, порог следующего грейда и ширина грейда.
     cut: float
     cut_next: float
     width: float
-    tested_at: datetime
-    last_evidence_at: datetime
-    age_days: int
-    stale: bool
+    tested_at: datetime | None = None
+    last_evidence_at: datetime | None = None
+    #: Давность подтверждения в сутках; `None` — подтверждения тестом не было (не «только что»).
+    age_days: int | None = None
+    stale: bool = False
 
 
 class LevelThreshold(BaseModel):

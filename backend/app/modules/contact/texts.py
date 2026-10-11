@@ -95,6 +95,8 @@ EVENT_LABELS: dict[EventCode, tuple[str, str]] = {
 
 #: Что работодатель видел до согласия — запасной список для приглашения без сохранённого объяснения (Арх. 4.9).
 DEFAULT_EMPLOYER_SAW: tuple[str, ...] = ("категорию и интервал уровня", "подтверждённые навыки")
+#: То же для кандидата с заявленным грейдом (уровня по тесту нет): «категории» и «интервала уровня» он не имеет.
+DECLARED_EMPLOYER_SAW: tuple[str, ...] = ("профиль и заявленный грейд",)
 
 #: Заглушка вместо свободного текста живого кандидата для демо-компании (Арх. 4.14).
 MASKED_TEXT = "Скрыто в демо-режиме"
@@ -113,7 +115,6 @@ MESSAGES: dict[str, str] = {
     "conditions_mismatch": "Условия не совпали с ожиданиями кандидата. Повторить попытку можно с {until}",
     "pair_cooldown": "Новое приглашение этому кандидату можно отправить с {until}",
     "daily_limit_exceeded": "Достигнут суточный лимит приглашений. Следующее можно отправить через {retry_after}",
-    "quota_exceeded": "Все слоты заняты: {used} из {limit}. Ближайший освободится {next_release_at}",
     "demo_sender_restricted": "Демо-компания не приглашает настоящих пользователей. Зарегистрируйте свою компанию",
     "invitation_not_actionable": "Действие недоступно: приглашение в статусе «{status_label}»",
     "disclose_invalid": "Выберите хотя бы один способ связи, указанный в профиле",
@@ -162,7 +163,7 @@ def message(code: str, params: Mapping[str, Any] | None = None) -> str:
             values[key] = _duration(value)
         elif isinstance(value, datetime):
             values[key] = fmt_date(value)
-        elif isinstance(value, str) and key in {"until", "next_release_at"}:
+        elif isinstance(value, str) and key == "until":
             try:
                 values[key] = fmt_date(datetime.fromisoformat(value))
             except ValueError:

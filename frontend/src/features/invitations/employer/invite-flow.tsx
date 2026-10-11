@@ -2,7 +2,14 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ContactKind, InvitationEmployerView, InvitationPrecheckView, NeedView, WorkFormat } from '@/client'
+import type {
+  CategoryRef,
+  ContactKind,
+  InvitationEmployerView,
+  InvitationPrecheckView,
+  NeedView,
+  WorkFormat,
+} from '@/client'
 import {
   companyGetCompanyOptions,
   contactCreateInvitationMutation,
@@ -11,7 +18,13 @@ import {
   matchingGetNeedOptions,
   matchingListNeedsOptions,
 } from '@/client/@tanstack/react-query.gen'
-import { CategoryChip, ErrorState, SalaryRangeInput, validateSalaryRange } from '@/components/app'
+import {
+  CandidateCategoryChip,
+  CategoryChip,
+  ErrorState,
+  SalaryRangeInput,
+  validateSalaryRange,
+} from '@/components/app'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   AlertDialog,
@@ -33,7 +46,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { WORK_FORMAT_LABELS } from '@/content/common'
 import { errorMessage, errorText, isApiError } from '@/lib/api'
 import { formatDate, formatDateTime, formatMoney, formatSalaryRange } from '@/lib/format'
-import { CONTACT_KIND_LABELS, formatSlotRelease, InvitationPreview, tidy, useCatalogLimits } from '../shared'
+import { CONTACT_KIND_LABELS, InvitationPreview, tidy, useCatalogLimits } from '../shared'
 import { BlockerPanel } from './blocker-panel'
 import { useRefreshEmployerInvitations } from './hooks'
 
@@ -42,6 +55,8 @@ export type InviteFlowProps = {
   /** Код кандидата для мини-шапки. */
   candidateCode: string
   categoryTitle: string
+  /** Категория кандидата целиком: по ней ставится пометка «заявлен». */
+  category?: CategoryRef
   needId?: string | null
   /** Пересмотренное приглашение: исходное, отклонённое с условием. */
   revisesId?: string | null
@@ -181,7 +196,8 @@ function Wizard({
       revision && condition?.kind === 'salary_from'
         ? Math.max(revision.salary_from, Number(condition.value))
         : revision
-          ? revision.salary_from
+          ? // После недоставки вилку нужно поднять: сервер ждёт «от» строго больше исходной.
+            revision.salary_from + (revision.status === 'bounced' ? 1 : 0)
           : limits.salary_min
     return {
       salary_min: Math.max(limits.salary_min, minFrom),
@@ -255,7 +271,10 @@ function Wizard({
             if (salaryCodes.includes(error.code)) {
               setServerSalary(errorText(error.code, error.params))
             } else if (error.code === 'format_not_accepted') next.workFormat = errorText(error.code)
-            else if (error.code === 'revision_below_condition') setServerSalary(errorText(error.code))
+            else if (error.code === 'revision_below_condition') {
+              if (formatLocked) next.workFormat = errorText(error.code)
+              else setServerSalary(errorText(error.code))
+            }
             for (const f of error.fields) {
               if (f.name.startsWith('salary')) setServerSalary(f.message)
               else if (f.name === 'title') next.title = f.message
@@ -295,7 +314,11 @@ function Wizard({
       </Button>
       <div className="flex min-w-0 flex-wrap items-center gap-2">
         <span className="num type-sm text-ink-muted">{props.candidateCode}</span>
-        <CategoryChip title={props.categoryTitle} />
+        {props.category ? (
+          <CandidateCategoryChip category={props.category} />
+        ) : (
+          <CategoryChip title={props.categoryTitle} />
+        )}
       </div>
       <h2 className="type-h2 text-ink">{stepTitle}</h2>
 
@@ -307,7 +330,7 @@ function Wizard({
             <Alert variant="warning" live>
               <AlertDescription>
                 {tidy(
-                  `Не доставлено: условия не совпали с ожиданиями кандидата. Слот занят до ${formatSlotRelease(result.slot.release_at)}. Повторить попытку можно с ${result.pair_block_until ? formatDate(result.pair_block_until) : 'позже'}.`,
+                  `Не доставлено: условия не совпали с ожиданиями кандидата. Повторить попытку можно с ${result.pair_block_until ? formatDate(result.pair_block_until) : 'позже'}.`,
                 )}
               </AlertDescription>
             </Alert>
@@ -317,8 +340,7 @@ function Wizard({
           <div className="flex min-w-0 flex-col gap-4">
             <Alert variant="success" live>
               <AlertDescription>
-                Приглашение отправлено. Ответ не позже {formatDateTime(result.expires_at)}. Занято слотов{' '}
-                {Math.min(precheck.quota.used + 1, precheck.quota.limit)} из {precheck.quota.limit}.
+                Приглашение отправлено. Ответ не позже {formatDateTime(result.expires_at)}.
               </AlertDescription>
             </Alert>
             <ResultActions needId={props.needId} invitationId={result.id} />
@@ -399,6 +421,7 @@ function Wizard({
               onChange={(v) => {
                 setForm((prev) => ({ ...prev, from: v.from, to: v.to }))
                 setServerSalary(null)
+                setErrors((prev) => ({ ...prev, salary: undefined }))
               }}
               limits={salaryLimits}
               serverError={serverSalary ?? errors.salary ?? null}
@@ -512,7 +535,7 @@ function Wizard({
         </form>
       ) : (
         <div className="flex min-w-0 flex-col gap-4">
-          <h3 className="type-h3 text-ink">Так приглашение увидит кандидат</h3>
+          <h3 className="type-eyebrow">Так приглашение увидит кандидат</h3>
           <InvitationPreview
             companyName="Ваша компания"
             title={form.title}
@@ -526,16 +549,13 @@ function Wizard({
           />
           <ul className="num type-sm flex min-w-0 flex-col gap-1 text-ink">
             <li>Ответ не позже {formatDateTime(precheck.expires_at_preview)}</li>
-            <li>
-              Свободно слотов {precheck.quota.limit - precheck.quota.used} из {precheck.quota.limit}
-            </li>
             <li>Условия после отправки не изменить</li>
           </ul>
           <Alert variant="warning">
             <AlertDescription>
               Нижняя граница вилки сверяется с ожиданиями кандидата один раз — при отправке. Если условия не совпадут,
-              приглашение не будет доставлено: слот останется занят {limits.holdHours} часа, а повторить попытку этому
-              кандидату можно через {limits.pairRetryDays} дней.
+              приглашение не будет доставлено, а повторить попытку этому кандидату можно через {limits.pairRetryDays}{' '}
+              дней.
             </AlertDescription>
           </Alert>
           {mutation.isError && !blocker ? (
@@ -598,6 +618,8 @@ function ResultActions({ needId, invitationId }: { needId?: string | null; invit
   )
 }
 
+const PAIR_BLOCK_CODES = ['pair_cooldown', 'conditions_mismatch']
+
 /**
  * E6. Отправка приглашения: предпроверка, условия, проверка перед отправкой, результат.
  * Показывается вместо содержимого панели или страницы E5; идентификатор запроса отправки стабилен, пока форма не менялась.
@@ -639,12 +661,13 @@ export function InviteFlow(props: InviteFlowProps) {
     )
 
   const pre = opened.current ?? precheck.data
-  if (!pre.can_invite) {
-    const first = pre.blockers[0]
+  // Пересмотр после отказа или недоставки: блокировку пары сервер при отправке пропускает (Арх. 4.8),
+  // а предпроверка о пересмотре не знает и возвращает её как блокер.
+  const revising = !!revisesId && pre.pair.can_revise && pre.pair.revises_id === revisesId
+  const blockers = revising ? pre.blockers.filter((b) => !PAIR_BLOCK_CODES.includes(b.code)) : pre.blockers
+  if (blockers.length > 0 || (!pre.can_invite && !revising)) {
+    const first = blockers[0]
     const params: Record<string, string | number> = {
-      used: pre.quota.used,
-      limit: pre.quota.limit,
-      ...(pre.quota.next_release_at ? { next_release_at: pre.quota.next_release_at } : {}),
       ...(pre.pair.block_until ? { until: pre.pair.block_until } : {}),
       ...(first?.params ?? {}),
     }
@@ -688,7 +711,11 @@ export function InviteFlow(props: InviteFlowProps) {
       description: orig.description,
       from: orig.salary_from,
       to: orig.salary_to,
-      workFormat: orig.work_format,
+      // Условие кандидата по формату: сервер примет пересмотр только с названным форматом.
+      workFormat:
+        orig.decline?.condition?.kind === 'work_format'
+          ? (String(orig.decline.condition.value) as WorkFormat)
+          : orig.work_format,
       city: orig.city ?? '',
       contactKind: orig.contact_method.kind,
       contactValue: orig.contact_method.value,

@@ -8,6 +8,7 @@ export const Route = createFileRoute('/_public/how-it-works')({
 })
 
 function Screen() {
-  const { catalog } = Route.useRouteContext()
-  return <HowItWorks limits={catalog?.limits ?? {}} demo={isDemoEnabled(catalog)} />
+  const { catalog, me } = Route.useRouteContext()
+  // Предпросмотр плана сервер отдаёт гостю и работодателю; кандидату — 403, ему показываем готовый пример.
+  return <HowItWorks limits={catalog?.limits ?? {}} demo={isDemoEnabled(catalog) && me?.role !== 'candidate'} />
 }

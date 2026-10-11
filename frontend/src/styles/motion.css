@@ -1,0 +1,127 @@
+/* Движение и навигация: переходы страниц (View Transitions), стекло шапки, индикатор маршрута. */
+:root {
+  --dur-page: 220ms;
+  --ease-move: cubic-bezier(0.3, 0, 0, 1);
+  --glass-bg: rgb(255 255 255 / 0.78);
+  --shadow-float: 0 8px 32px 0 rgb(24 20 112 / 0.1);
+  --tabbar-h: 64px;
+}
+
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: saturate(1.6) blur(16px);
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .glass {
+    background: var(--color-surface);
+  }
+}
+.shadow-float {
+  box-shadow: var(--shadow-float);
+}
+
+html {
+  scroll-padding-top: 72px;
+  scroll-padding-bottom: calc(var(--action-bar-space, 16px) + var(--tabbar-space, 0px));
+}
+
+[data-tabbar] {
+  view-transition-name: tabbar;
+}
+
+/* Таб-бар занимает место внизу только пока виден: ниже xl и без липкой панели действий. */
+@media (max-width: 1279.98px) {
+  html:has([data-tabbar]):not(:has([data-slot="sticky-action-bar"])) {
+    --tabbar-space: 88px;
+  }
+  /* Место под таб-бар; без слоя, чтобы не проигрывать md:py-8 у main. */
+  html:has([data-tabbar]) main {
+    padding-bottom: 112px;
+  }
+}
+html:has([data-slot="sticky-action-bar"]) [data-tabbar] {
+  display: none;
+}
+
+/* Переходы страниц: шапка и таб-бар остаются на месте, меняется только содержимое. */
+main {
+  view-transition-name: page;
+}
+[data-sticky="top"] {
+  view-transition-name: header;
+}
+::view-transition-group(root) {
+  animation: none;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(page) {
+  animation: var(--dur-fast) var(--ease-exit) both vt-out;
+}
+::view-transition-new(page) {
+  animation: var(--dur-page) var(--ease-enter) both vt-in;
+}
+html:active-view-transition-type(forward)::view-transition-new(page) {
+  --vt-x: 16px;
+}
+html:active-view-transition-type(back)::view-transition-new(page) {
+  --vt-x: -16px;
+}
+@keyframes vt-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes vt-in {
+  from {
+    opacity: 0;
+    transform: translate(var(--vt-x, 0), 8px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/* Скользящий индикатор пилюли навигации. */
+.nav-indicator {
+  transition:
+    transform var(--dur-slow) var(--ease-move),
+    width var(--dur-slow) var(--ease-move);
+}
+.nav-indicator:not([data-ready]) {
+  transition: none;
+}
+
+/* Полоса загрузки маршрута: растёт к 70 % за 8 с, по завершении долетает до края и гаснет. */
+.route-progress {
+  transform-origin: left;
+  animation: route-grow 8s cubic-bezier(0.1, 0.6, 0.2, 1) both;
+}
+.route-progress[data-done] {
+  animation: route-done var(--dur-slow) var(--ease-enter) both;
+}
+@keyframes route-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(0.7);
+  }
+}
+@keyframes route-done {
+  from {
+    transform: scaleX(0.7);
+    opacity: 1;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 0;
+  }
+}

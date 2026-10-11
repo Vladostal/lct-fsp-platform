@@ -37,7 +37,7 @@ from app.modules.assessment.engine.skills import GroupVerdict, skill_proofs
 from app.modules.assessment.groups import SKILL_GROUP_MAP
 from app.modules.assessment.models import AssessmentProfile, CategoryRow, SkillEvidenceRow, SurveyResponse
 from app.modules.catalog import service as _catalog
-from app.shared.enums import EvidenceSource, SkillVerdict, TestOutcome
+from app.shared.enums import CategoryBasis, EvidenceSource, SkillVerdict, TestOutcome
 
 _DIRECT: dict[str, tuple[str, ...]] = {group: skills.direct for group, skills in SKILL_GROUP_MAP.items()}
 
@@ -47,7 +47,8 @@ def _category_dto(row: CategoryRow) -> CategoryDTO:
         specialization_code=row.specialization_code,
         grade_code=row.grade_code,
         category_code=f"{row.specialization_code}:{row.grade_code}",
-        verdict=TestOutcome(row.verdict),
+        basis=CategoryBasis(row.basis),
+        verdict=TestOutcome(row.verdict) if row.verdict else None,
         assigned_at=row.assigned_at,
         level_session_id=row.level_session_id,
         change_available_at=row.change_available_at,
@@ -56,7 +57,7 @@ def _category_dto(row: CategoryRow) -> CategoryDTO:
 
 
 def get_category(db: Session, candidate_id: UUID) -> CategoryDTO | None:
-    """Действующая категория кандидата; `None` — грейд ещё не подтверждён."""
+    """Действующая категория кандидата; `None` — грейд ещё не подтверждён и не заявлен (`basis` различает их)."""
     row = db.get(CategoryRow, candidate_id)
     return _category_dto(row) if row else None
 
@@ -77,7 +78,12 @@ def get_levels(
     candidate_ids: Collection[UUID] | None = None,
     now: datetime,
 ) -> list[LevelDTO]:
-    """Уровни кандидатов с категорией для подбора (Арх. 5.6): `se_eff` считает только этот модуль."""
+    """Уровни кандидатов с категорией для подбора (Арх. 5.6): `se_eff` считает только этот модуль.
+
+    У заявленной категории (`basis = declared`) полей теста и давности нет (`None`), `stale = False`; пороги грейда
+    `cut`, `cut_next`, `width` берутся из конфигурации.
+    """
+    cfg = get_config()
     stmt = select(CategoryRow)
     if specialization_code is not None:
         stmt = stmt.where(CategoryRow.specialization_code == specialization_code)
@@ -89,6 +95,26 @@ def get_levels(
         stmt = stmt.where(CategoryRow.candidate_id.in_(list(candidate_ids)))
     result = []
     for row in db.scalars(stmt.order_by(CategoryRow.candidate_id)):
+        if (
+            row.basis != CategoryBasis.TEST.value
+            or row.theta is None
+            or row.se is None
+            or row.verdict is None
+            or row.last_evidence_at is None
+        ):
+            cut = cfg.theta_cut[row.grade_code]
+            result.append(
+                LevelDTO(
+                    candidate_id=row.candidate_id,
+                    specialization_code=row.specialization_code,
+                    grade_code=row.grade_code,
+                    basis=CategoryBasis.DECLARED,
+                    cut=cut,
+                    cut_next=cut + cfg.grade_width,
+                    width=cfg.grade_width,
+                )
+            )
+            continue
         numbers = _level.level_numbers(row.theta, row.se, row.grade_code, row.last_evidence_at, now)
         result.append(
             LevelDTO(
@@ -112,11 +138,12 @@ def get_levels(
 
 
 def level_views(db: Session, candidate_ids: Collection[UUID], now: datetime) -> dict[UUID, LevelView]:
-    """Уровень на шкале экрана для карточек; единиц θ в нём нет."""
+    """Уровень на шкале экрана для карточек; единиц θ в нём нет. Кандидатов с заявленным грейдом в словаре нет."""
     if not candidate_ids:
         return {}
     rows = db.scalars(select(CategoryRow).where(CategoryRow.candidate_id.in_(list(candidate_ids))))
-    return {row.candidate_id: _candidate.category_level_view(row, now) for row in rows}
+    views = ((row.candidate_id, _candidate.category_level_view(row, now)) for row in rows)
+    return {candidate_id: view for candidate_id, view in views if view is not None}
 
 
 def _detail(skill: str, group: str, row: SkillEvidenceRow, pulse: bool) -> str:
@@ -244,6 +271,28 @@ def seed_result(db: Session, result: SeedResult) -> None:
     _seeding.seed_result(db, result)
 
 
+def seed_declared(
+    db: Session,
+    *,
+    candidate_id: UUID,
+    specialization_code: str,
+    grade_code: str,
+    now: datetime,
+    main_language: str | None = None,
+    experience_band: str = "2_4",
+) -> None:
+    """Записать заявленный грейд в специализации без теста — только для сида."""
+    _seeding.seed_declared(
+        db,
+        candidate_id=candidate_id,
+        specialization_code=specialization_code,
+        grade_code=grade_code,
+        now=now,
+        main_language=main_language,
+        experience_band=experience_band,
+    )
+
+
 def seed_session_in_progress(db: Session, candidate_id: UUID, grade_code: str, answered: int, now: datetime) -> UUID:
     """Создать идущий тест с `answered` подставленными ответами — сид (`nina`) и быстрый демо-тест."""
     return _seeding.seed_session_in_progress(db, candidate_id, grade_code, answered, now)
@@ -261,6 +310,7 @@ __all__ = [
     "level_views",
     "pick_pulse_item",
     "record_pulse_result",
+    "seed_declared",
     "seed_result",
     "seed_session_in_progress",
     "skill_evidence",

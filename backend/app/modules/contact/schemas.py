@@ -3,7 +3,7 @@
 Одна модель данных — две проекции. Поля, которых сторона видеть не должна, отсутствуют в схеме физически:
 
 * у схем работодателя нет `below_my_min`, минимума кандидата, счётчика молчания, жалоб, заполненности входящих;
-* у схем кандидата нет позиции, полосы совпадения, вкладов, риска и занятости слотов работодателя; статуса
+* у схем кандидата нет позиции, полосы совпадения, вкладов и риска; статуса
   `bounced` кандидат не видит никогда.
 
 Типы нижних модулей включаются как поля, без копирования (Арх. 2.4, п. 1): `InvitationWhy` и `RelaxationHint` —
@@ -124,13 +124,6 @@ class InvitationStrikes(BaseModel):
     limit: int
 
 
-class SlotView(BaseModel):
-    """Слот работодателя по приглашению: занят ли сейчас и когда освободится (освободился)."""
-
-    occupied: bool
-    release_at: datetime | None = None
-
-
 class InvitationCandidateRef(BaseModel):
     """Кандидат в проекции работодателя: имя — только у раскрытой пары."""
 
@@ -184,7 +177,7 @@ class OutcomeCandidateView(BaseModel):
 
 
 class InvitationEmployerBrief(BaseModel):
-    """Строка списка приглашений работодателя: слот, срок, исход."""
+    """Строка списка приглашений работодателя: срок, исход."""
 
     id: UUID
     status: InvitationStatus
@@ -201,7 +194,6 @@ class InvitationEmployerBrief(BaseModel):
     sent_at: datetime
     updated_at: datetime
     expires_at: datetime
-    slot: SlotView
     pair_block_until: datetime | None = None
     revises_id: UUID | None = None
     can_revise: bool
@@ -226,7 +218,6 @@ class InvitationEmployerView(OfferTerms):
     sent_at: datetime
     updated_at: datetime
     expires_at: datetime
-    slot: SlotView
     pair_block_until: datetime | None = None
     revises_id: UUID | None = None
     revision_id: UUID | None = None
@@ -386,11 +377,8 @@ class FunnelView(BaseModel):
 
 
 class QuotaView(BaseModel):
-    """Слоты и суточный лимит работодателя."""
+    """Суточный лимит работодателя."""
 
-    used: int
-    limit: int
-    next_release_at: datetime | None = None
     daily_used: int
     daily_limit: int
     frozen: bool

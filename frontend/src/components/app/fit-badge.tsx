@@ -6,7 +6,7 @@ import { FIT_BAND_LABELS, STRENGTH_LABELS, type StrengthLabel } from '@/content/
 export type FitBadgeProps = {
   /** Полоса совпадения с потребностью; null — вне контекста потребности (банк). */
   band: FitBand | null
-  /** Сила подтверждённого профиля — показывается, когда полосы нет. */
+  /** Сила профиля (тест, ФСП, заявленные стаж и навыки) — показывается, когда полосы нет. */
   strength?: StrengthLabel
   size?: 'sm' | 'md'
   className?: string

@@ -24,15 +24,16 @@ from app.modules.matching.dto import InvitationWhy, ShortlistQuery, UnconfirmedS
 from app.modules.matching.features import CONFIRMED_KINDS, KIND_ORDER, CandidateFeatures, SkillEvidence, nominal_weight
 from app.modules.matching.ranking import Scored
 from app.modules.matching.schemas import (
+    Contribution,
     CoverageView,
     EvidenceRefView,
     MatchExplanationEmployerView,
     ReasonView,
     RiskView,
 )
-from app.modules.matching.scoring import DEFAULT_PARAMS, ScoringParams, Strength, round1
-from app.shared.enums import EvidenceKind, FitBand, Relation, TestOutcome, WorkFormat
-from app.shared.schemas import CategoryRef, Contribution, EvidenceItem, Ref
+from app.modules.matching.scoring import DEFAULT_PARAMS, ScoringParams, Strength, experience_note, round1
+from app.shared.enums import CategoryBasis, EvidenceKind, FitBand, Relation, TestOutcome, WorkFormat
+from app.shared.schemas import CategoryRef, EvidenceItem, Ref
 from app.shared.text import NBSP, count_phrase, fmt_date, join_titles
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -125,7 +126,7 @@ class ExplCoverage(BaseModel):
 
 
 class ExplStrength(BaseModel):
-    """Сила подтверждённого профиля на момент создания версии."""
+    """Сила профиля на момент создания версии."""
 
     value: float
     band: int
@@ -133,14 +134,19 @@ class ExplStrength(BaseModel):
 
 
 class ExplLevel(BaseModel):
-    """Уровень категории кандидата на момент создания версии."""
+    """Уровень категории кандидата на момент создания версии.
+
+    У заявленного грейда (`basis = declared`) вердикта, дат и давности нет. `basis` по умолчанию `test`:
+    объяснения прежней версии оценщика поля не содержат и читаются как подтверждённые тестом.
+    """
 
     grade_code: str
-    verdict: TestOutcome
-    tested_at: date
-    last_evidence_at: date
-    age_days: int
-    stale: bool
+    basis: CategoryBasis = CategoryBasis.TEST
+    verdict: TestOutcome | None = None
+    tested_at: date | None = None
+    last_evidence_at: date | None = None
+    age_days: int | None = None
+    stale: bool = False
 
 
 class ExplRequirement(BaseModel):
@@ -211,32 +217,42 @@ class ExplainContext:
 # --------------------------------------------------------------------------------------------------------------------
 
 
-def strength_contributions(
-    strength: Strength, fsp_signal: float, params: ScoringParams = DEFAULT_PARAMS
-) -> list[Contribution]:
-    """Вклады в силу профиля (Арх. 6.10).
+def strength_contributions(strength: Strength, params: ScoringParams = DEFAULT_PARAMS) -> list[Contribution]:
+    """Вклады в силу профиля (версия оценщика `match-3`); сумма строк равна силе с точностью до округления.
 
-    `test = round1(100·W_TEST·T_fresh)` (макс. 70), `freshness = round1(100·W_TEST·(T − T_fresh)) ≤ 0`,
-    `fsp = round1(100·W_FSP·F)` (макс. 30). Строка ФСП при нуле не создаётся: отрицательных меток для
-    кандидатов без ФСП нет (Арх. 15.1, № 14).
+    | Код | Баллы | Макс. | Источник | Когда |
+    |---|---|---|---|---|
+    | `test` | `round1(100·W_TEST·T_fresh)` | 10 | `confirmed` | всегда; у заявленного грейда — 0 баллов |
+    | `freshness` | `round1(100·W_TEST·(T − T_fresh)) ≤ 0` | 0 | `confirmed` | только после теста |
+    | `fsp` | `round1(100·W_FSP·F)` | 30 | `confirmed` | только при вкладе больше нуля |
+    | `experience` | `round1(100·W_EXPERIENCE·X)` | 35 | `declared` | всегда |
+    | `skills` | `round1(100·W_SKILLS·S)` | 25 | `declared` | всегда |
+
+    Строка ФСП при нуле не создаётся: отрицательных меток для кандидатов без ФСП нет (Арх. 15.1, № 14).
+    Поле `source` позволяет экрану сложить «подтверждено» (тест и ФСП, до 40) и «заявлено кандидатом» (до 60).
     """
     rows = [
         Contribution(
             group="strength",
             code="test",
-            label="Результат теста (нижняя граница)",
+            label="Результат теста (нижняя граница)" if strength.tested else "Тест по специализации готовится",
             points=round1(100 * params.w_test * strength.t_fresh),
             max_points=round1(100 * params.w_test),
-        ),
-        Contribution(
-            group="strength",
-            code="freshness",
-            label="Давность подтверждения",
-            points=min(0.0, round1(100 * params.w_test * (strength.t - strength.t_fresh))),
-            max_points=0.0,
-        ),
+            source="confirmed",
+        )
     ]
-    fsp_points = round1(100 * params.w_fsp * max(0.0, min(1.0, fsp_signal)))
+    if strength.tested:
+        rows.append(
+            Contribution(
+                group="strength",
+                code="freshness",
+                label="Давность подтверждения",
+                points=min(0.0, round1(100 * params.w_test * (strength.t - strength.t_fresh))),
+                max_points=0.0,
+                source="confirmed",
+            )
+        )
+    fsp_points = round1(100 * params.w_fsp * strength.f)
     if fsp_points > 0:
         rows.append(
             Contribution(
@@ -245,8 +261,29 @@ def strength_contributions(
                 label="Достижения ФСП",
                 points=fsp_points,
                 max_points=round1(100 * params.w_fsp),
+                source="confirmed",
             )
         )
+    rows.append(
+        Contribution(
+            group="strength",
+            code="experience",
+            label="Стаж (заявлен кандидатом)",
+            points=round1(100 * params.w_experience * strength.x),
+            max_points=round1(100 * params.w_experience),
+            source="declared",
+        )
+    )
+    rows.append(
+        Contribution(
+            group="strength",
+            code="skills",
+            label="Навыки по специализации (заявлены кандидатом)",
+            points=round1(100 * params.w_skills * strength.s),
+            max_points=round1(100 * params.w_skills),
+            source="declared",
+        )
+    )
     return rows
 
 
@@ -337,19 +374,79 @@ def _requirements(scored: Scored, ctx: ExplainContext) -> list[ExplRequirement]:
     return rows
 
 
+def _years_text(years: float) -> str:
+    """«3 года», «1,5 года»: стаж словами."""
+    if float(years).is_integer():
+        return count_phrase(int(years), "год", "года", "лет")
+    return f"{years:.1f}".replace(".", ",") + f"{NBSP}года"
+
+
+def _years_from_text(years: float) -> str:
+    """«от 2 лет», «от 1 года»: обычный минимум стажа грейда."""
+    number = f"{int(years)}" if float(years).is_integer() else f"{years:.1f}".replace(".", ",")
+    return f"от {number}{NBSP}{'года' if years == 1 or not float(years).is_integer() else 'лет'}"
+
+
+def _experience_row(features: CandidateFeatures, ctx: ExplainContext) -> tuple[str, dict[str, Any], str] | None:
+    """Пометка «стаж не сходится с грейдом»: код, параметры и текст (правило — `scoring.experience_note`).
+
+    Это оговорка, а не довод «за»: она занимает место риска, если другого риска нет, иначе идёт строкой сразу
+    после довода об уровне. На категорию, порядок и силу не влияет.
+    """
+    note = experience_note(features, ctx.params)
+    if note is None:
+        return None
+    code, minimum = note
+    grade = ctx.grade_title(features.grade_code)
+    if code == "experience_unknown":
+        return code, {"grade": grade}, "Стаж не указан: грейд заявлен без подтверждения"
+    years = features.experience_years or 0.0
+    return (
+        code,
+        {"grade": grade, "years": years, "min": minimum},
+        f"Заявленный стаж {_years_text(years)} — ниже обычного для грейда {grade} ({_years_from_text(minimum)})",
+    )
+
+
 def _reasons(
-    features: CandidateFeatures, scored: Scored, requirements: Sequence[ExplRequirement], ctx: ExplainContext
+    features: CandidateFeatures,
+    scored: Scored,
+    requirements: Sequence[ExplRequirement],
+    ctx: ExplainContext,
+    *,
+    experience_as_reason: bool = False,
 ) -> list[ExplReason]:
-    """Доводы «за» — первые три применимых по порядку таблицы Арх. 6.10."""
+    """Доводы «за» — первые три применимых по порядку таблицы Арх. 6.10.
+
+    У заявленного грейда первым всегда идёт `level_declared`: работодатель видит это раньше любых доводов.
+    `experience_as_reason` — место риска занято другим риском, и пометка о стаже выводится строкой здесь.
+    """
     params = ctx.params
     must = [item for item in requirements if item.priority == "must"]
     nice = [item for item in requirements if item.priority == "nice"]
     grade = ctx.grade_title(features.grade_code)
-    tested = fmt_date(features.tested_at)
+    declared_basis = features.basis == CategoryBasis.DECLARED or features.tested_at is None
     level_ref = SourceRef(type="level", id=None)
     profile_ref = SourceRef(type="profile", id=None)
     fsp_ref = SourceRef(type="fsp_fact", id=ctx.fsp_fact_id)
     reasons: list[ExplReason] = []
+    experience_row = _experience_row(features, ctx) if experience_as_reason else None
+
+    def add_experience() -> None:
+        if experience_row is not None:
+            code, row_params, text = experience_row
+            reasons.append(ExplReason(code=code, params=row_params, text=text, evidence_ref=profile_ref))
+
+    if declared_basis:
+        reasons.append(
+            ExplReason(
+                code="level_declared",
+                params={"grade": grade},
+                text=f"Грейд {grade} заявлен кандидатом: тест по специализации готовится",
+                evidence_ref=profile_ref,
+            )
+        )
+        add_experience()
 
     full_test = [item for item in must if _is_full_test(item, params)]
     if full_test:
@@ -367,24 +464,27 @@ def _reasons(
             )
         )
 
-    if features.verdict == TestOutcome.CONFIRMED_WITH_MARGIN:
-        reasons.append(
-            ExplReason(
-                code="level_margin",
-                params={"grade": grade, "date": features.tested_at.isoformat()},
-                text=f"Грейд {grade} подтверждён с запасом, тест {tested}",
-                evidence_ref=level_ref,
+    if not declared_basis and features.tested_at is not None:
+        tested = fmt_date(features.tested_at)
+        if features.verdict == TestOutcome.CONFIRMED_WITH_MARGIN:
+            reasons.append(
+                ExplReason(
+                    code="level_margin",
+                    params={"grade": grade, "date": features.tested_at.isoformat()},
+                    text=f"Грейд {grade} подтверждён с запасом, тест {tested}",
+                    evidence_ref=level_ref,
+                )
             )
-        )
-    else:
-        reasons.append(
-            ExplReason(
-                code="level_confirmed",
-                params={"grade": grade, "date": features.tested_at.isoformat()},
-                text=f"Грейд {grade} подтверждён тестом {tested}",
-                evidence_ref=level_ref,
+        else:
+            reasons.append(
+                ExplReason(
+                    code="level_confirmed",
+                    params={"grade": grade, "date": features.tested_at.isoformat()},
+                    text=f"Грейд {grade} подтверждён тестом {tested}",
+                    evidence_ref=level_ref,
+                )
             )
-        )
+        add_experience()
 
     if features.fsp_band in ("medium", "high") and ctx.fsp_line:
         reasons.append(
@@ -434,7 +534,8 @@ def _reasons(
             )
         )
 
-    if features.age_days <= 30:
+    # «Подтверждён недавно» — только про тест: у заявленного грейда давности нет вовсе.
+    if not declared_basis and features.age_days is not None and features.age_days <= 30:
         reasons.append(
             ExplReason(
                 code="fresh",
@@ -470,7 +571,7 @@ def _reasons(
             ExplReason(
                 code="strength_high",
                 params={},
-                text="Высокая сила подтверждённого профиля в категории",
+                text="Высокая сила профиля в категории",
                 evidence_ref=level_ref,
             )
         )
@@ -500,19 +601,20 @@ def _risk(
             params={"skills": _codes(declared)},
             text=f"{_titles(declared)} — заявлено кандидатом, тестом не проверено",
         )
-    if features.verdict in (TestOutcome.BORDERLINE, TestOutcome.NOT_CONFIRMED):
+    tested = features.basis == CategoryBasis.TEST
+    if tested and features.verdict in (TestOutcome.BORDERLINE, TestOutcome.NOT_CONFIRMED):
         return ExplRisk(
             code="verdict_weakened",
             params={},
             text="Повторный тест не подтвердил уровень: результат на границе грейда",
         )
-    if features.stale:
+    if tested and features.stale and features.age_days is not None:
         return ExplRisk(
             code="stale",
             params={"n": features.age_days},
             text=f"Уровень давно не подтверждался: {days_ago(features.age_days)}",
         )
-    if scored.relation == Relation.LOWER_WITH_MARGIN:
+    if tested and scored.relation == Relation.LOWER_WITH_MARGIN:
         return ExplRisk(
             code="grade_lower",
             params={"grade": grade},
@@ -537,7 +639,15 @@ def build_explanation(
     cov = scored.coverage
     requirements = _requirements(scored, ctx)
     contributions = _coverage_contributions(requirements, ctx.params) if requirements else []
-    contributions += strength_contributions(scored.strength, features.fsp_signal, ctx.params)
+    contributions += strength_contributions(scored.strength, ctx.params)
+    # Риск один. Пометка о стаже — самая младшая: занимает место риска, только если оно свободно, иначе идёт
+    # строкой среди доводов. В обоих случаях она видна ровно один раз.
+    risk = _risk(features, scored, requirements, ctx)
+    experience_as_reason = risk is not None
+    if risk is None:
+        row = _experience_row(features, ctx)
+        if row is not None:
+            risk = ExplRisk(code=row[0], params=row[1], text=row[2])
     query_formats = {str(item) for item in query.work_formats}
     return MatchExplanation(
         scorer_version=ctx.scorer_version,
@@ -559,6 +669,7 @@ def build_explanation(
         strength=ExplStrength(value=scored.strength.value, band=scored.strength.band, label=scored.strength.label),
         level=ExplLevel(
             grade_code=features.grade_code,
+            basis=features.basis,
             verdict=features.verdict,
             tested_at=features.tested_at,
             last_evidence_at=features.last_evidence_at,
@@ -567,8 +678,8 @@ def build_explanation(
         ),
         requirements=requirements,
         contributions=contributions,
-        reasons=_reasons(features, scored, requirements, ctx),
-        risk=_risk(features, scored, requirements, ctx),
+        reasons=_reasons(features, scored, requirements, ctx, experience_as_reason=experience_as_reason),
+        risk=risk,
         formats_common=sorted(features.work_formats & query_formats),
     )
 
@@ -584,6 +695,8 @@ class ReadRules:
 
     #: Кандидат сейчас выключил `show_declared_stack`: заявленное из сохранённой версии не отдаётся.
     declared_hidden: bool = False
+    #: Кандидат сейчас выключил `show_experience`: пометка о стаже и вклад стажа из сохранённой версии не отдаются.
+    experience_hidden: bool = False
     #: Сигнал ФСП сейчас видим (ФСП ID привязан, достижения не скрыты); иначе доводы и подтверждения `fsp` убираются.
     fsp_visible: bool = True
     #: Подробные тексты фактов для раскрытой пары с `fsp_details` (`fsp.render_evidence`); `None` — пара не раскрыта.
@@ -613,6 +726,8 @@ def apply_read_rules(expl: MatchExplanation, rules: ReadRules) -> MatchExplanati
       `declared_match` не выводится, риск `must_declared_only` заменяется на `must_missing` с теми же навыками.
       Довод «есть данные по всем обязательным» и счётчики покрытия пересчитываются без заявленного — иначе они
       выдавали бы скрытое. Сохранённые порядок и полоса совпадения не меняются.
+    * Кандидат выключил `show_experience`: пометка `experience_below_grade` (в ней названо число лет) не выводится,
+      вклад стажа отдаётся нулём; при скрытом стеке нулём отдаётся и вклад заявленных навыков.
     * Сведения ФСП недоступны (отвязка, скрытие, факта больше нет): требования `fsp` отдаются как `none`, доводы
       `fsp` и `fsp_low` не выводятся; на их место следующий по порядку довод не подставляется.
     * Раскрытая пара с `fsp_details`: в доводе и детали требования — подробный текст факта.
@@ -642,6 +757,8 @@ def apply_read_rules(expl: MatchExplanation, rules: ReadRules) -> MatchExplanati
             continue
         if reason.code == "must_all_covered" and declared_must_hidden:
             continue
+        if reason.code == "experience_below_grade" and rules.experience_hidden:
+            continue
         if reason.code in ("fsp", "fsp_low"):
             if not rules.fsp_visible:
                 continue
@@ -670,6 +787,8 @@ def apply_read_rules(expl: MatchExplanation, rules: ReadRules) -> MatchExplanati
     # Риск — первый применимый: если после перепроверки обязательных без данных стало больше, это `must_missing`
     # (для скрытого заявленного — с теми же навыками, что были в `must_declared_only`).
     risk = expl.risk
+    if risk is not None and risk.code == "experience_below_grade" and rules.experience_hidden:
+        risk = None
     missing_now = [item for item in requirements if item.priority == "must" and item.kind == EvidenceKind.NONE]
     missing_before = [item for item in expl.requirements if item.priority == "must" and item.kind == EvidenceKind.NONE]
     if len(missing_now) != len(missing_before):
@@ -682,7 +801,12 @@ def apply_read_rules(expl: MatchExplanation, rules: ReadRules) -> MatchExplanati
             text=f"Нет данных по желательным: {_titles(nice_missing)}",
         )
 
-    if requirements == expl.requirements and reasons == expl.reasons and risk == expl.risk:
+    hidden_strength = {
+        code
+        for code, hidden in (("experience", rules.experience_hidden), ("skills", rules.declared_hidden))
+        if hidden and any(row.group == "strength" and row.code == code and row.points for row in expl.contributions)
+    }
+    if requirements == expl.requirements and reasons == expl.reasons and risk == expl.risk and not hidden_strength:
         return expl
 
     must = [item for item in requirements if item.priority == "must"]
@@ -698,7 +822,8 @@ def apply_read_rules(expl: MatchExplanation, rules: ReadRules) -> MatchExplanati
     by_code = {f"req:{item.skill_code}": item for item in requirements}
     contributions = [
         row.model_copy(update={"points": 0.0})
-        if row.group == "coverage" and row.code in by_code and by_code[row.code].kind == EvidenceKind.NONE
+        if (row.group == "coverage" and row.code in by_code and by_code[row.code].kind == EvidenceKind.NONE)
+        or (row.group == "strength" and row.code in hidden_strength)
         else row
         for row in expl.contributions
     ]

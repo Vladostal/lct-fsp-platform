@@ -45,7 +45,10 @@ def get_survey(user: Candidate, db: Db) -> SurveySchema:
 @router.put("/survey", response_model=SurveySchema, responses=error_responses(401, 403, 409, 422))
 def put_survey(payload: SurveyUpdate, user: Candidate, db: Db, now: Now) -> SurveySchema:
     """Сохранить ответы опроса. 409: `survey_version_mismatch`, `session_active`,
-    `specialization_change_requires_confirm`, `cooldown_active`; 422: `specialization_unavailable`.
+    `specialization_change_requires_confirm`, `cooldown_active`; 422 — ошибки полей и
+    `specialization_unavailable` (тест по специализации написан, но сейчас недоступен).
+
+    Специализация без теста принимается: категория в ней будет заявленной (`PUT /assessment/claim`).
     """
     return candidate.put_survey(
         db, user.id, payload.version, dict(payload.answers), payload.confirm_specialization_change, now
@@ -54,7 +57,12 @@ def put_survey(payload: SurveyUpdate, user: Candidate, db: Db, now: Now) -> Surv
 
 @router.put("/claim", response_model=AssessmentStateView, responses=error_responses(401, 403, 409, 422))
 def put_claim(payload: ClaimRequest, user: Candidate, db: Db, now: Now) -> AssessmentStateView:
-    """Заявить грейд. 409: `survey_required`, `claim_locked`; 422: `grade_unavailable`."""
+    """Заявить грейд. 409: `survey_required`, `claim_locked`, `cooldown_active`; 422: `grade_unavailable`.
+
+    В специализации без теста заявление сразу даёт категорию `basis = declared`. Первую смену заявленного грейда
+    можно сделать сразу, следующие — раз в 90 дней: иначе 409 `cooldown_active` с `params.reason = grade_change`
+    и `params.available_at`.
+    """
     return candidate.put_claim(db, user.id, payload.grade_code, now)
 
 
@@ -66,7 +74,10 @@ def get_state(user: Candidate, db: Db, now: Now) -> AssessmentStateView:
 
 @router.get("/blueprints", response_model=list[TestBlueprintView], responses=error_responses(401, 403, 409))
 def get_blueprints(user: Candidate, db: Db) -> list[TestBlueprintView]:
-    """Планы теста по грейдам своей специализации. 409 `survey_required`."""
+    """Планы теста по грейдам своей специализации. 409 `survey_required`.
+
+    Пустой список — теста по специализации пока нет.
+    """
     return candidate.blueprint_views(db, user.id)
 
 

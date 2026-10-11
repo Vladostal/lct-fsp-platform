@@ -51,6 +51,10 @@ def test_relevance_scale() -> None:
 def test_world_is_deterministic_and_scorer_sees_only_features() -> None:
     first, second = build_world(11, REGIMES[MAIN_REGIME]), build_world(11, REGIMES[MAIN_REGIME])
     assert [item.features for item in first.observed] == [item.features for item in second.observed]
+    # Специализация без теста: в пуле все 400 человек, у каждого грейд заявлен и оценки теста нет.
+    assert len(first.declared_pool) == 400
+    assert all(item.features.basis == "declared" and item.features.theta is None for item in first.declared_pool)
+    assert all(item.features.basis == "test" and item.features.experience_years is not None for item in first.observed)
     assert [need.query for need in first.needs] == [need.query for need in second.needs]
     assert len(first.latents) == 400 and len(first.needs) == 30 and 200 < len(first.observed) <= 400
     latent_only = {"theta_true", "skills", "min_salary", "name", "gender", "birth_year"}
@@ -81,10 +85,24 @@ def test_quick_run_report(tmp_path: Path, capsys: pytest.CaptureFixture[str]) ->
     )
     assert "median_position_shift_v11" in report["twins"]
     assert {"order_v10", "order_v11", "order_v12", "strength3"} <= set(report["ablations"])
-    # Накрутка заявленным: прежний порядок «сила первой» к ней глух, но по релевантности в топ-10 уступает
+    # Накрутка заявленным: прежний порядок «сила первой» устойчивее к ней, но по релевантности в топ-10 уступает
     # действующему даже после накрутки; бейзлайн заявленного стека страдает от неё сильнее нашего порядка.
     stuffing = report["stuffing"]
     assert stuffing["order_v12"]["displaced"] == 0
+    assert stuffing["order_v12"]["entered"] < stuffing["ours"]["entered"]
+    # Ключи у накрутивших: подтверждённое покрытие накрутка не меняет никогда; накрутка одной силы (стаж и число
+    # навыков) не меняет ни одного из ключей 1–2; полоса силы от добавленных навыков растёт не больше чем на 3.
+    keys = stuffing["keys"]
+    assert keys["key_confirmed_changed_share"] == 0 and keys["profile_only_keys_changed_share"] == 0
+    assert 0 <= keys["strength_band_gain"] == stuffing["strength_band_gain"] and keys["strength_band_gain_max"] <= 3
+    assert {"no_declared", "match2_strength", "no_fsp"} <= set(report["ablations"])
+    names = [row["name"] for row in report["criteria"]]
+    assert any("match-2" in name for name in names) and any("ключи 1–2" in name for name in names)
+    block = report["declared_basis"]
+    assert block["status"] == "измерено" and block["n"] == 90 and block["pool"] == 1200
+    # Без теста подбор всё ещё заметно лучше случайного порядка в категории.
+    assert block["diff_random"]["ci_low"] > 0
+    assert {"W_EXPERIENCE ×0.8", "W_SKILLS ×1.2"} <= {row["name"] for row in report["sensitivity"]}
     assert stuffing["ours"]["p10_stuffed"] > stuffing["order_v12"]["p10"]
     assert stuffing["ours"]["p10_stuffed"] >= stuffing["declared"]["p10_stuffed"]
     assert stuffing["declared"]["entered"] > stuffing["ours"]["entered"]
@@ -95,6 +113,7 @@ def test_quick_run_report(tmp_path: Path, capsys: pytest.CaptureFixture[str]) ->
     assert any("только сила" in row["name"] for row in report["criteria"])
     text = (tmp_path / "report.md").read_text(encoding="utf-8")
     assert "Ручной слой не проводился" in text and "Угрозы валидности" in text and "Критерии успеха" in text
+    assert "Специализации без теста" in text and "match-3" in text
 
 
 def test_export_pairs_and_import_labels(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:

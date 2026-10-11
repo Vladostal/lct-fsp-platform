@@ -16,7 +16,7 @@ export type StepperProps = {
 }
 
 /**
- * Шаги мастера (E §3.3). В широком контейнере — строка шагов, соединённых линией-пайплайном: круг 28 px,
+ * Шаги мастера (E §3.3). В широком контейнере — строка шагов, соединённых линией-пайплайном: круг 24 px,
  * пройденный — заливка и галочка, текущий — кольцо и номер (aria-current="step"), будущий — серое кольцо.
  * В узком (шагу не хватает 72 px) — «Шаг i из n · название» и полоса из n сегментов.
  * Вид переключается по ширине контейнера, а не окна.
@@ -37,7 +37,7 @@ export function Stepper({ steps, current, linkCompleted = true, label = 'Шаг�
           const circle = (
             <span
               className={cn(
-                'num grid size-7 shrink-0 place-items-center rounded-full border-2 text-sm leading-none font-medium',
+                'num grid size-6 shrink-0 place-items-center rounded-full border text-xs leading-none font-medium',
                 state === 'done' && 'border-brand-600 bg-brand-600 text-white',
                 state === 'current' && 'border-brand-600 bg-surface text-brand-700',
                 state === 'todo' && 'border-line-strong bg-surface text-ink-muted',
@@ -49,8 +49,8 @@ export function Stepper({ steps, current, linkCompleted = true, label = 'Шаг�
           const text = (
             <span
               className={cn(
-                'min-w-[72px] px-1 text-center text-sm leading-5 font-medium',
-                state === 'todo' ? 'text-ink-muted' : 'text-ink',
+                'min-w-[72px] px-1 text-center text-[13px] leading-5',
+                state === 'current' ? 'font-medium text-ink' : 'text-ink-muted',
               )}
             >
               {step.label}
@@ -82,8 +82,8 @@ export function Stepper({ steps, current, linkCompleted = true, label = 'Шаг�
                 <span
                   aria-hidden="true"
                   className={cn(
-                    'absolute top-[13px] right-[calc(-50%+18px)] left-[calc(50%+18px)] border-t-2',
-                    index < currentIndex ? 'border-brand-600' : 'border-line-strong',
+                    'absolute top-[12px] right-[calc(-50%+16px)] left-[calc(50%+16px)] border-t',
+                    index < currentIndex ? 'border-brand-600' : 'border-line',
                   )}
                 />
               ) : null}
@@ -108,7 +108,7 @@ export function Stepper({ steps, current, linkCompleted = true, label = 'Шаг�
           {steps.map((step, index) => (
             <span
               key={step.id}
-              className={cn('h-1 flex-1 rounded-full', index <= currentIndex ? 'bg-brand-600' : 'bg-line-strong')}
+              className={cn('h-0.5 flex-1 rounded-full', index <= currentIndex ? 'bg-brand-600' : 'bg-line')}
             />
           ))}
         </div>

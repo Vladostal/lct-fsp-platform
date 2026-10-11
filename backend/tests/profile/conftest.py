@@ -26,7 +26,7 @@ from app.modules.profile import service as profile
 from app.modules.profile.dto import ConditionsData, ProfileData
 from app.modules.textparse import service as textparse
 from app.modules.textparse.dto import SkillMention
-from app.shared.enums import ConsentKind, ContactKind, TestOutcome, WorkFormat
+from app.shared.enums import CategoryBasis, ConsentKind, ContactKind, TestOutcome, WorkFormat
 from app.shared.schemas import ContactMethod, Ref
 
 NOW = datetime(2026, 10, 6, 12, 0, tzinfo=UTC)
@@ -70,8 +70,18 @@ class World:
     unknown_terms: list[str] = field(default_factory=list)
     #: Кандидаты, получившие категорию быстрым демо-тестом (`is_demo_result = true`), аккаунт при этом живой.
     demo_results: set[UUID] = field(default_factory=set)
+    #: Кандидаты с заявленным грейдом в специализации без теста (`basis = declared`).
+    declared: set[UUID] = field(default_factory=set)
 
     def category(self, candidate_id: UUID) -> CategoryDTO | None:
+        if candidate_id in self.declared:
+            return CategoryDTO(
+                specialization_code="qa",
+                grade_code="middle",
+                category_code="qa:middle",
+                basis=CategoryBasis.DECLARED,
+                assigned_at=NOW,
+            )
         if candidate_id not in self.categories:
             return None
         return CategoryDTO(

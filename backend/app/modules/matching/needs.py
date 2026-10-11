@@ -79,7 +79,9 @@ def normalize(data: NeedData) -> NeedData:
         fields.append(field_error("city", "city_required", "Для офиса и гибрида укажите город"))
     if fields:
         raise ApiException(422, "validation_error", fields=fields)
-    if not catalog.is_available(data.specialization_code, data.grade_code):
+    # Потребность можно завести по любой специализации справочника: там, где теста ещё нет, в подборку попадают
+    # кандидаты с заявленным грейдом (это видно на каждой строке). Ошибка — только для кода вне справочника.
+    if data.specialization_code not in support.specialization_codes() or data.grade_code not in support.grade_codes():
         raise support.api_error(422, "specialization_unavailable", field="specialization_code")
     must, nice = _unique(data.must_skills), _unique(data.nice_skills)
     _check_skills(must, nice)

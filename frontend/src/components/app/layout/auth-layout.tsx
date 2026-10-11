@@ -9,7 +9,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col bg-canvas">
       <SkipLink />
-      <header className="page-container flex h-14 items-center md:h-16">
+      <header className="page-container flex h-14 items-center">
         <AppLogo href="/" />
       </header>
       <main
@@ -28,7 +28,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
                 <Link
                   to="/legal/$doc"
                   params={{ doc: item.doc }}
-                  className="inline-flex min-h-11 items-center text-sm text-ink-muted underline decoration-1 underline-offset-3 hover:text-ink"
+                  className="inline-flex min-h-11 items-center text-sm text-ink-muted transition-colors duration-(--dur-fast) hover:text-ink"
                 >
                   {item.label}
                 </Link>

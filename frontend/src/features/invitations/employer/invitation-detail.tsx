@@ -8,7 +8,7 @@ import {
   contactWithdrawEmployerInvitationMutation,
   profileGetContactsOptions,
 } from '@/client/@tanstack/react-query.gen'
-import { CopyButton, ErrorState, PageHeader, StatusBadge } from '@/components/app'
+import { CopyButton, ErrorState, PageHeader, RevealOnce, Section, StatusBadge } from '@/components/app'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   AlertDialog,
@@ -29,7 +29,7 @@ import { candidateTitle, formatDate, formatDateTime, formatMoney } from '@/lib/f
 import { polling } from '@/lib/query'
 import { InvitationPreview, InvitationTimeline, tidy, useCatalogLimits } from '../shared'
 import { useRefreshEmployerInvitations } from './hooks'
-import { slotLine } from './slot-line'
+import { statusLine } from './status-line'
 
 function Contacts({ candidateId, until }: { candidateId: string; until?: string | null }) {
   const contacts = useQuery(profileGetContactsOptions({ path: { candidate_id: candidateId } }))
@@ -54,7 +54,7 @@ function Contacts({ candidateId, until }: { candidateId: string; until?: string 
     ['Ссылка', c.link],
   ].filter((r): r is [string, string] => !!r[1])
   return (
-    <div className="flex min-w-0 flex-col gap-3">
+    <RevealOnce storageKey={`contacts-revealed:${candidateId}`} className="flex min-w-0 flex-col gap-3 p-3 -m-3">
       <ul className="flex min-w-0 flex-col gap-2">
         {rows.map(([label, value]) => (
           <li key={label} className="flex min-w-0 items-center justify-between gap-2">
@@ -72,11 +72,11 @@ function Contacts({ candidateId, until }: { candidateId: string; until?: string 
           <FileDown aria-hidden="true" /> Скачать PDF-профиль
         </a>
       </Button>
-    </div>
+    </RevealOnce>
   )
 }
 
-/** E7. Экран приглашения: слот, срок, исход, действие по статусу. */
+/** E7. Экран приглашения: срок, исход, действие по статусу. */
 export function EmployerInvitationDetail({ id }: { id: string }) {
   const query = useQuery({ ...contactGetEmployerInvitationOptions({ path: { invitation_id: id } }), ...polling })
   const withdraw = useMutation(contactWithdrawEmployerInvitationMutation())
@@ -129,16 +129,21 @@ export function EmployerInvitationDetail({ id }: { id: string }) {
             >
               {name}
             </Link>
-            <StatusBadge status={inv.status} label={inv.status_label} live />
+            <StatusBadge
+              status={inv.status}
+              label={inv.status_label}
+              // Отказ красный, как в списке и сводке приглашений.
+              tone={inv.status === 'declined' ? 'danger' : undefined}
+              live
+            />
             {inv.is_demo ? <Badge variant="info">демо</Badge> : null}
-            <span className="type-sm text-ink-muted [overflow-wrap:anywhere]">{slotLine(inv)}</span>
+            <span className="type-sm text-ink-muted [overflow-wrap:anywhere]">{statusLine(inv)}</span>
           </div>
         }
       />
       <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="flex min-w-0 flex-col gap-4">
-          <section className="surface-card flex min-w-0 flex-col gap-3" aria-label="Статус">
-            <h2 className="type-h3 text-ink">Статус</h2>
+        <div className="flex min-w-0 flex-col gap-8">
+          <Section title="Статус" className="surface-card">
             {(inv.status === 'sent' || inv.status === 'viewed') && inv.can_withdraw ? (
               <div>
                 <Button variant="secondary" onClick={() => setConfirm(true)}>
@@ -197,9 +202,8 @@ export function EmployerInvitationDetail({ id }: { id: string }) {
             {inv.status === 'withdrawn' ? (
               <p className="type-body text-ink">{tidy(`Вы отозвали приглашение ${formatDate(inv.updated_at)}.`)}</p>
             ) : null}
-          </section>
-          <section className="flex min-w-0 flex-col gap-3" aria-label="Что видит кандидат">
-            <h2 className="type-h3 text-ink">Что видит кандидат</h2>
+          </Section>
+          <Section title="Что видит кандидат">
             <InvitationPreview
               companyName="Ваша компания"
               title={inv.title}
@@ -211,16 +215,17 @@ export function EmployerInvitationDetail({ id }: { id: string }) {
               contactMethod={inv.contact_method}
               message={inv.message}
             />
-          </section>
+          </Section>
         </div>
-        <aside className="flex min-w-0 flex-col gap-4">
-          <section className="surface-card flex min-w-0 flex-col gap-3" aria-label="Ход приглашения">
-            <h2 className="type-h3 text-ink">Ход приглашения</h2>
+        <aside className="flex min-w-0 flex-col gap-8">
+          <Section title="Ход приглашения">
             <InvitationTimeline events={inv.timeline} />
             <p className="type-caption text-ink-muted">Отправлено {formatDateTime(inv.sent_at)}</p>
-          </section>
-          <section className="surface-card flex min-w-0 flex-col gap-2" aria-label="Связанное">
-            <h2 className="type-h3 text-ink">Связанное</h2>
+          </Section>
+          <Section
+            title="Связанное"
+            className="[&>div:last-child]:flex [&>div:last-child]:flex-col [&>div:last-child]:gap-2"
+          >
             {inv.need ? (
               <Link
                 to="/employer/needs/$needId"
@@ -250,7 +255,7 @@ export function EmployerInvitationDetail({ id }: { id: string }) {
                 Пересмотренное приглашение
               </Link>
             ) : null}
-          </section>
+          </Section>
         </aside>
       </div>
       <AlertDialog open={confirm} onOpenChange={setConfirm}>
@@ -258,8 +263,7 @@ export function EmployerInvitationDetail({ id }: { id: string }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Отозвать приглашение?</AlertDialogTitle>
             <AlertDialogDescription>
-              Слот останется занят до {formatDate(inv.expires_at)}, новое приглашение этому кандидату — через{' '}
-              {limits.pairRetryDays} дней.
+              Кандидат больше не сможет ответить. Новое приглашение этому кандидату — через {limits.pairRetryDays} дней.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogBody>

@@ -171,7 +171,8 @@ class ShortlistItemView(BaseModel):
     evidence_more: int = 0
     fsp_summary: str | None = None
     formats_common: list[WorkFormat] = []
-    freshness_days: int = 0
+    #: Давность подтверждения тестом, сутки; `None` — грейд заявлен, подтверждения не было.
+    freshness_days: int | None = None
     stale: bool = False
     risk: str | None = None
     diff_mark: DiffMark = DiffMark.SAME

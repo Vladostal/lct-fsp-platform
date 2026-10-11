@@ -23,7 +23,6 @@ def test_eval_contact_report(tmp_path, capsys):
     for line in (
         "Доля недоставленных в целом",
         "сильнейшая четверть по силе профиля",
-        "Доля слото-дней, занятых недоставленными",
         "Доля пересмотров после недоставки, приведших к доставке",
         "Адаптивный перебор: k = 1",
         "k = 3",
@@ -35,7 +34,7 @@ def test_eval_contact_report(tmp_path, capsys):
     document = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
     summary = ContactSummary.model_validate(document["summary"])  # лишние и недостающие ключи — ошибка
     assert summary.n == 300 and summary.seed == 7 and summary.delivered_share is not None
-    assert set(document["modes"]) == {"A", "B", "C"} and len(document["sensitivity"]) == 12
+    assert set(document["modes"]) == {"A", "B"} and len(document["sensitivity"]) == 12
     assert (tmp_path / "report.md").read_text(encoding="utf-8").startswith("# Валидация механики контакта")
 
 
@@ -52,7 +51,7 @@ def test_adaptive_search_cost_and_revision_pass():
 
 def test_modes_share_population_and_limits_reduce_volume():
     a = sim.run_once(11, "A", 0.3, 0.1, 300)
-    c_mode = sim.run_once(11, "C", 0.3, 0.1, 300)
+    c_mode = sim.run_once(11, "B", 0.3, 0.1, 300)
     assert a.feasible_at_10 == c_mode.feasible_at_10  # одна популяция и одни подборки
     assert a.sent + a.bounced > c_mode.sent + c_mode.bounced
     assert c_mode.accepted + c_mode.declined + c_mode.expired <= c_mode.sent

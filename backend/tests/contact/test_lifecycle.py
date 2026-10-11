@@ -35,13 +35,11 @@ def _dump(db):
     """Снимок строк состояния модуля — чтобы показать, что чтение ничего не меняет."""
     db.expire_all()
     invitations = [
-        (i.id, i.status, i.resolved_at, i.slot_release_at, i.pair_block_until, i.viewed_at, i.updated_at)
+        (i.id, i.status, i.resolved_at, i.pair_block_until, i.viewed_at, i.updated_at)
         for i in db.scalars(select(Invitation).order_by(Invitation.id))
     ]
     candidates = [(s.candidate_id, s.consecutive_expired) for s in db.scalars(select(CandidateContactState))]
-    employers = [
-        (s.employer_id, s.slot_limit_override, s.sending_frozen_at) for s in db.scalars(select(EmployerContactState))
-    ]
+    employers = [(s.employer_id, s.sending_frozen_at) for s in db.scalars(select(EmployerContactState))]
     return (
         invitations,
         sorted(candidates),
@@ -53,9 +51,7 @@ def _dump(db):
 # --- ответы кандидата -----------------------------------------------------------------------------------------------
 
 
-def test_view_accept_discloses_and_frees_slot(
-    db, client, make_client, login_as, actors, world, now, freeze_now, mailbox
-):
+def test_view_accept_discloses(db, client, make_client, login_as, actors, world, now, freeze_now, mailbox):
     pair = actors.pair()
     sent = send(db, now, pair.employer.id, pair.candidate.id)
     login_as(pair.candidate)
@@ -93,10 +89,8 @@ def test_view_accept_discloses_and_frees_slot(
     assert len(world.disclosures) == 1 and _events(db, sent.id) == ["sent", "viewed", "accepted"]
 
     employer = login_as(pair.employer, client=make_client())
-    quota = employer.get(f"{API}/employer/invitations/quota").json()
-    assert quota["used"] == 0  # согласие освобождает слот сразу
     view = employer.get(f"{API}/employer/invitations/{sent.id}").json()
-    assert view["status"] == "accepted" and view["is_new_for_employer"] is True and view["slot"]["occupied"] is False
+    assert view["status"] == "accepted" and view["is_new_for_employer"] is True
     assert employer.get(f"{API}/employer/invitations/{sent.id}").json()["is_new_for_employer"] is False
     assert view["pair_block_until"].startswith((now + timedelta(hours=2, days=30)).isoformat()[:19])
 
@@ -137,7 +131,7 @@ def test_decline_conditions(db, client, make_client, login_as, actors, world, no
     }
     employer_view = login_as(pair.employer, client=make_client()).get(f"{API}/employer/invitations/{sent.id}").json()
     assert employer_view["decline"]["comment"] == "Мало" and employer_view["can_revise"] is True
-    assert employer_view["revise_until"] and employer_view["slot"]["occupied"] is False
+    assert employer_view["revise_until"]
 
 
 def test_masked_pair_hides_decline_details_and_access_log(db, client, login_as, actors, world, now):
@@ -190,7 +184,7 @@ def test_accept_one_second_before_deadline_and_at_deadline(db, client, make_clie
     db.expire_all()
     row = db.get(Invitation, second.id)
     # Истечение материализовано, хотя запрос завершился ошибкой.
-    assert (row.status, row.resolved_at, row.slot_release_at) == ("expired", second.expires_at, second.expires_at)
+    assert (row.status, row.resolved_at) == ("expired", second.expires_at)
     assert row.pair_block_until == second.expires_at + timedelta(days=30)
     assert _events(db, second.id) == ["sent", "expired"]
     view = late_client.get(f"{API}/candidate/invitations/{second.id}").json()
@@ -214,7 +208,7 @@ def test_double_settle_creates_one_event_i5(db, actors, now):
 
 
 def test_reads_do_not_settle_or_write(db, client, make_client, login_as, actors, world, now, freeze_now, monkeypatch):
-    """Читающие эндпоинты не вызывают `settle` и не меняют статусы, слоты и счётчики (Арх. 4.4, 10.1)."""
+    """Читающие эндпоинты не вызывают `settle` и не меняют статусы и счётчики (Арх. 4.4, 10.1)."""
     pair = actors.pair()
     need_id = world.add_need(pair.employer.id)
     sent = send(db, now, pair.employer.id, pair.candidate.id, need_id=str(need_id))
@@ -255,12 +249,11 @@ def test_reads_do_not_settle_or_write(db, client, make_client, login_as, actors,
     assert _dump(db) == before
     assert db.scalar(select(func.count()).where(Invitation.employer_seen_at.is_not(None))) == 0
 
-    # Истёкшее, но не материализованное: отдаётся как expired и слот не занимает.
+    # Истёкшее, но не материализованное: отдаётся как expired.
     assert db.get(Invitation, sent.id).status == "sent"
-    assert employer.get(f"{API}/employer/invitations/quota").json()["used"] == 0
     listed = employer.get(f"{API}/employer/invitations?status=expired").json()["items"]
     assert {item["id"] for item in listed} == {str(sent.id), str(other.id)}
-    assert all(item["status"] == "expired" and item["slot"]["occupied"] is False for item in listed)
+    assert all(item["status"] == "expired" for item in listed)
     assert employer.get(f"{API}/employer/invitations?status=awaiting").json()["items"] == []
     summary = candidate.get(f"{API}/candidate/invitations/summary").json()
     assert (summary["awaiting"], summary["archived"]) == (0, 1)
@@ -277,7 +270,7 @@ def test_reads_do_not_settle_or_write(db, client, make_client, login_as, actors,
     assert db.scalar(select(func.count()).where(Invitation.employer_seen_at.is_not(None))) == 1
 
 
-def test_withdraw_holds_slot_until_original_deadline(db, client, make_client, login_as, actors, now, freeze_now):
+def test_withdraw_closes_invitation_for_both_sides(db, client, make_client, login_as, actors, now, freeze_now):
     pair = actors.pair()
     sent = send(db, now, pair.employer.id, pair.candidate.id)
     employer = login_as(pair.employer)
@@ -285,16 +278,12 @@ def test_withdraw_holds_slot_until_original_deadline(db, client, make_client, lo
     withdrawn = employer.post(f"{API}/employer/invitations/{sent.id}/withdraw")
     body = withdrawn.json()
     assert withdrawn.status_code == 200 and body["status"] == "withdrawn" and body["can_withdraw"] is False
-    assert body["slot"] == {"occupied": True, "release_at": sent.expires_at.isoformat().replace("+00:00", "Z")}
     assert employer.post(f"{API}/employer/invitations/{sent.id}/withdraw").status_code == 200
-    assert employer.get(f"{API}/employer/invitations/quota").json()["used"] == 1
     candidate = login_as(pair.candidate, client=make_client())
     refused = candidate.post(f"{API}/candidate/invitations/{sent.id}/accept")
     assert (refused.status_code, refused.json()["params"]) == (409, {"status": "withdrawn"})
     assert candidate.get(f"{API}/candidate/invitations/{sent.id}").json()["status_label"] == "Отозвано работодателем"
     assert _strikes(db, pair.candidate.id) == 0
-    freeze_now(sent.expires_at)
-    assert employer.get(f"{API}/employer/invitations/quota").json()["used"] == 0
     stranger = login_as(actors.employer(), client=make_client())
     assert stranger.post(f"{API}/employer/invitations/{sent.id}/withdraw").status_code == 404
     assert stranger.get(f"{API}/employer/invitations/{sent.id}").status_code == 404

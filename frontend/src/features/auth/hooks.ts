@@ -65,7 +65,8 @@ export function useLogout() {
     // Даже если запрос не прошёл (сеть), локально сеанс считаем завершённым: кабинет закрыт, cookie истечёт сама.
     onSettled: async () => {
       resetSessionCache(queryClient, null)
-      await router.navigate({ to: '/' })
+      // Сеанса уже нет: вопрос о несохранённой форме не должен оставить гостя внутри кабинета.
+      await router.navigate({ to: '/', ignoreBlocker: true })
       toast.info(AUTH.loggedOut)
     },
   })
@@ -78,7 +79,7 @@ export function useDeleteAccount() {
     mutationFn: authApi.deleteAccount,
     onSuccess: async () => {
       resetSessionCache(queryClient, null)
-      await router.navigate({ to: '/' })
+      await router.navigate({ to: '/', ignoreBlocker: true })
       toast.success(AUTH.account.deleted)
     },
   })

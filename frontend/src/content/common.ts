@@ -4,6 +4,7 @@
  * Подписи, которые сервер отдаёт готовыми (`*_label`, `text`, `headline`), выводятся как пришли —
  * словари ниже нужны только как запасной вариант.
  */
+import { Award, LayoutDashboard, Mail, Send, Target, User, Users } from 'lucide-react'
 import type { EvidenceKind, FitBand, InvitationStatus, Role, TestOutcome, VisibilityState, WorkFormat } from '@/client'
 
 export const COMMON = {
@@ -57,15 +58,15 @@ export const ROLE_LABELS: Record<Role, string> = {
 /** Навигация кабинетов (E §1.5). */
 export const NAV = {
   candidate: [
-    { to: '/candidate', label: 'Обзор', exact: true },
-    { to: '/candidate/invitations', label: 'Приглашения', counter: 'awaiting' },
-    { to: '/candidate/category', label: 'Категория и тесты' },
-    { to: '/candidate/profile', label: 'Профиль' },
+    { to: '/candidate', label: 'Обзор', short: 'Обзор', icon: LayoutDashboard, exact: true },
+    { to: '/candidate/invitations', label: 'Приглашения', short: 'Приглашения', icon: Mail, counter: 'awaiting' },
+    { to: '/candidate/category', label: 'Категория и тесты', short: 'Тесты', icon: Award },
+    { to: '/candidate/profile', label: 'Профиль', short: 'Профиль', icon: User },
   ],
   employer: [
-    { to: '/employer/needs', label: 'Потребности' },
-    { to: '/employer/search', label: 'Банк кандидатов' },
-    { to: '/employer/invitations', label: 'Приглашения' },
+    { to: '/employer/needs', label: 'Потребности', short: 'Потребности', icon: Target },
+    { to: '/employer/search', label: 'Банк кандидатов', short: 'Банк', icon: Users },
+    { to: '/employer/invitations', label: 'Приглашения', short: 'Приглашения', icon: Send },
   ],
 } as const
 
@@ -102,6 +103,25 @@ export const WORK_FORMAT_LABELS: Record<WorkFormat, string> = {
   hybrid: 'гибрид',
   remote: 'удалённо',
 }
+
+/** Пометки заявленного грейда: тест по специализации готовится, грейд назвал сам кандидат. */
+export const CATEGORY_DECLARED = {
+  badge: 'заявлен',
+  title: 'Грейд заявлен кандидатом, тест по специализации готовится',
+  line: 'Заявленный грейд · тест готовится',
+  card: 'Грейд заявлен, тест готовится',
+} as const
+
+/**
+ * Итог под вкладами в силу профиля (оценщик match-3): тест — до 10 баллов и ФСП — до 30 подтверждены платформой,
+ * стаж — до 35 и навыки по специализации — до 25 заявлены кандидатом.
+ */
+export const STRENGTH_SUMMARY = {
+  confirmed: 'Подтверждено',
+  confirmedOf: 'из 40 (тест и ФСП)',
+  declared: 'Заявлено кандидатом',
+  declaredOf: 'из 60 (стаж и навыки)',
+} as const
 
 export const VISIBILITY_LABELS: Record<VisibilityState, string> = {
   visible: 'Профиль виден',
@@ -152,7 +172,7 @@ export const FIT_BAND_LABELS: Record<FitBand, string> = {
   partial: 'Частичное совпадение',
 }
 
-/** Сила подтверждённого профиля (`strength_label`, Арх. 9.11): в схеме API это перечисление без собственного имени. */
+/** Сила профиля (`strength_label`, Арх. 9.11): в схеме API это перечисление без собственного имени. */
 export type StrengthLabel = 'high' | 'medium' | 'base'
 
 export const STRENGTH_LABELS: Record<StrengthLabel, string> = {

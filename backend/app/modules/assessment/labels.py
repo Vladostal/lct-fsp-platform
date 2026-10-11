@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from app.modules.assessment.groups import GROUPS
 from app.modules.catalog import service as catalog
-from app.shared.enums import TestOutcome
+from app.shared.enums import CategoryBasis, TestOutcome
 from app.shared.schemas import CategoryRef, Ref
 
 OUTCOME_TEMPLATES: dict[TestOutcome, str] = {
@@ -39,8 +39,10 @@ def grade_ref(code: str) -> Ref:
     return Ref(code=code, title=code.capitalize())
 
 
-def category_ref(specialization: str, grade: str) -> CategoryRef:
-    return catalog.category_ref(f"{specialization}:{grade}")
+def category_ref(specialization: str, grade: str, basis: CategoryBasis | str | None = None) -> CategoryRef:
+    """Ссылка на категорию; `basis` задаётся только для категории кандидата (подтверждена тестом или заявлена)."""
+    ref = catalog.category_ref(f"{specialization}:{grade}")
+    return ref if basis is None else ref.model_copy(update={"basis": CategoryBasis(basis)})
 
 
 #: Тест закрыт по времени и грейд не подтверждён: «на границе» здесь означало бы оценку, которой кандидат не дал.

@@ -26,8 +26,8 @@ export const STATUS_ERROR_TEXTS = {
 /** `cooldown_active` различается по `params.reason` (Арх. 5.7). */
 export const COOLDOWN_ERROR_TEXTS: Record<string, ErrorTemplate> = {
   grade_change: {
-    text: 'Сменить подтверждённый грейд можно с {available_at}',
-    bare: 'Сменить подтверждённый грейд пока нельзя',
+    text: 'Сменить грейд можно с {available_at}',
+    bare: 'Сменить грейд пока нельзя',
   },
   retry_same_grade: {
     text: 'Повторить тест на этот грейд можно с {available_at}',
@@ -36,6 +36,10 @@ export const COOLDOWN_ERROR_TEXTS: Record<string, ErrorTemplate> = {
   session_limit: {
     text: 'Лимит тестов за 30 дней исчерпан. Следующий — с {available_at}',
     bare: 'Лимит тестов за 30 дней исчерпан',
+  },
+  specialization_change: {
+    text: 'Сменить специализацию можно с {available_at}',
+    bare: 'Сменить специализацию пока нельзя',
   },
 }
 
@@ -63,14 +67,15 @@ export const ERROR_TEXTS: Record<string, ErrorTemplate> = {
   claim_required: 'Сначала выберите грейд',
   claim_locked: 'Грейд уже заявлен: теперь он меняется только тестом',
   survey_version_mismatch: 'Опрос обновился. Проверьте ответы',
-  specialization_change_requires_confirm: 'Смена специализации сбросит заявленный грейд. Подтвердите смену',
+  specialization_change_requires_confirm:
+    'Смена специализации сбросит заявленный грейд или заменит прежнюю категорию. Подтвердите смену',
   session_active: 'У вас уже идёт тест',
   cooldown_active: 'Тест на этот грейд пока недоступен',
   item_already_answered: 'Ответ на это задание уже принят',
   session_finished: 'Тест уже завершён',
   session_expired: 'Время теста истекло',
   answer_malformed: 'Ответ не отправлен. Обновите страницу и ответьте ещё раз',
-  specialization_unavailable: 'Тест для этого выбора готовится',
+  specialization_unavailable: 'Тест по этой специализации временно недоступен. Попробуйте позже',
   grade_unavailable: 'Тест для этого выбора готовится',
   grade_not_allowed: 'Тест на этот грейд сейчас недоступен',
   invalid_transition: 'Такая смена статуса недопустима',
@@ -92,7 +97,7 @@ export const ERROR_TEXTS: Record<string, ErrorTemplate> = {
   resume_timeout: 'Не удалось прочитать файл. Заполните форму вручную',
   resume_rate_limited: 'Слишком много загрузок. Повторите через час',
   min_salary_not_on_ladder: 'Выберите значение из списка',
-  no_category: 'Сначала подтвердите грейд тестом',
+  no_category: 'Сначала подтвердите грейд тестом или заявите его, если тест готовится',
   profile_incomplete: 'Укажите имя и фамилию в профиле',
   consent_version_outdated: 'Текст согласия обновился. Прочитайте его ещё раз',
   publication_consent_required: 'Сначала дайте согласие на публикацию профиля',
@@ -154,10 +159,6 @@ export const ERROR_TEXTS: Record<string, ErrorTemplate> = {
   conditions_mismatch: {
     text: 'Условия не совпали с ожиданиями кандидата. Повторить попытку можно с {until}',
     bare: 'Условия не совпали с ожиданиями кандидата',
-  },
-  quota_exceeded: {
-    text: 'Все слоты заняты: {used} из {limit}. Ближайший освободится {next_release_at}',
-    bare: 'Все слоты заняты. Дождитесь ответа кандидатов или отзовите приглашение',
   },
   revision_not_allowed: 'Пересмотренное приглашение этому кандидату уже отправлено или срок вышел',
   invitation_not_actionable: {

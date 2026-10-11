@@ -11,7 +11,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Collection, Iterable, Sequence
+from collections.abc import Collection, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Literal, Protocol
@@ -25,7 +25,6 @@ from app.shared.enums import (
     DiscloseField,
     FitBand,
     InvitationStatus,
-    TrustLevel,
     WorkFormat,
 )
 from app.shared.salary import SALARY_MAX
@@ -55,8 +54,6 @@ class InvitationFacts(Protocol):
     def expires_at(self) -> datetime: ...  # noqa: D102
     @property
     def resolved_at(self) -> datetime | None: ...  # noqa: D102
-    @property
-    def slot_release_at(self) -> datetime | None: ...  # noqa: D102
     @property
     def pair_block_until(self) -> datetime | None: ...  # noqa: D102
 
@@ -151,7 +148,7 @@ def counts_for_candidate(*, invitation_is_demo: bool, candidate_is_demo: bool) -
 
 
 # --------------------------------------------------------------------------------------------------------------------
-# Статус, слоты, пара (Арх. 4.4, 4.7)
+# Статус, пара (Арх. 4.4, 4.7)
 # --------------------------------------------------------------------------------------------------------------------
 
 
@@ -183,55 +180,6 @@ def effective_pair_block_until(inv: InvitationFacts, now: datetime) -> datetime 
     if inv.status in ACTIVE_STATUSES:
         return inv.expires_at + c.PAIR_RETRY if inv.expires_at <= now else None
     return inv.pair_block_until
-
-
-def slot_occupied(inv: InvitationFacts, now: datetime) -> bool:
-    """Занимает ли приглашение слот работодателя (Арх. 4.7).
-
-    `sent` и `viewed` держат слот до `expires_at` — истёкшее, но ещё не материализованное слот не держит;
-    остальные статусы — пока `now < slot_release_at`: принятое и отклонённое освобождают слот сразу, истёкшее —
-    в момент срока, отозванное — в исходный срок (отзыв не ускоряет оборот слотов), недоставленное — через
-    `BOUNCE_SLOT_HOLD_HOURS` после попытки.
-    """
-    if inv.status in ACTIVE_STATUSES:
-        return now < inv.expires_at
-    return inv.slot_release_at is not None and now < inv.slot_release_at
-
-
-def slot_release_at(inv: InvitationFacts, now: datetime) -> datetime | None:
-    """Когда приглашение освободит (или освободило) слот: `expires_at` для ждущих ответа, иначе `slot_release_at`."""
-    if inv.status in ACTIVE_STATUSES:
-        return inv.expires_at
-    return inv.slot_release_at
-
-
-def slot_limit(override: int | None, trust_level: TrustLevel | str | None) -> int:
-    """Лимит слотов работодателя (Арх. 4.7): `slot_limit_override or SLOT_LIMIT[company.trust_level]`.
-
-    Без профиля компании действует базовый уровень доверия.
-    """
-    if override:
-        return override
-    level = TrustLevel(trust_level) if trust_level is not None else TrustLevel.BASIC
-    return c.SLOT_LIMIT[level]
-
-
-def slots_used(invitations: Iterable[InvitationFacts], now: datetime) -> tuple[int, datetime | None]:
-    """Занятые слоты и ближайшее освобождение (Арх. 4.7).
-
-    `used` — число приглашений работодателя, для которых `slot_occupied`; `next_release_at` — минимум
-    `expires_at` у ждущих ответа и `slot_release_at` у остальных занятых; `None`, если занятых нет.
-    """
-    used = 0
-    next_release: datetime | None = None
-    for inv in invitations:
-        if not slot_occupied(inv, now):
-            continue
-        used += 1
-        release = slot_release_at(inv, now)
-        if release is not None and (next_release is None or release < next_release):
-            next_release = release
-    return used, next_release
 
 
 def pair_block(invitations_of_pair: Sequence[InvitationFacts], now: datetime) -> PairBlock | None:

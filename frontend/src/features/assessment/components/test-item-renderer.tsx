@@ -103,7 +103,7 @@ export function CodeBlock({ code }: { code: { language: string; text: string } }
       tabIndex={0}
       className="max-w-full overflow-x-auto rounded-md border border-line bg-fill"
     >
-      <pre className="num type-sm w-max min-w-full py-2">
+      <pre className="type-sm w-max min-w-full py-2">
         {lines.map((line, i) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: строки кода позиционные
           <div key={i} className="flex gap-3 px-3">
@@ -144,7 +144,7 @@ export function TestItemRenderer({ item, value, onChange, onSubmit, disabled }: 
           <div className="flex min-w-0 items-center gap-3">
             <Input
               id={inputId}
-              className={cn('min-w-0 max-w-sm', item.kind === 'text_input' && 'num')}
+              className={cn('min-w-0 max-w-sm', item.kind === 'text_input' && 'font-mono')}
               inputMode={item.kind === 'numeric_input' ? 'decimal' : undefined}
               autoComplete="off"
               maxLength={item.kind === 'text_input' ? (item.input?.max_length ?? undefined) : undefined}
@@ -239,7 +239,7 @@ function PickLine({
             // biome-ignore lint/suspicious/noArrayIndexKey: строки кода позиционные
             key={i}
             className={cn(
-              'num type-sm flex w-max min-w-full cursor-pointer items-center gap-3 border-l-[3px] border-l-transparent px-3 py-1.5 font-normal hover:bg-fill',
+              'type-sm flex w-max min-w-full cursor-pointer whitespace-nowrap font-mono items-center gap-3 border-l-[3px] border-l-transparent px-3 py-1.5 font-normal hover:bg-fill',
               selected && 'border-l-brand-600 bg-brand-50',
             )}
           >

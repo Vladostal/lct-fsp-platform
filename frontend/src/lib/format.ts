@@ -61,6 +61,7 @@ export const PLURALS = {
   skill: ['навык', 'навыка', 'навыков'],
   profile: ['профиль', 'профиля', 'профилей'],
   test: ['тест', 'теста', 'тестов'],
+  year: ['год', 'года', 'лет'],
 } as const satisfies Record<string, PluralForms>
 
 /** Форма слова для числа: plural(3, PLURALS.day) → «дня». */
@@ -76,6 +77,12 @@ export function pluralize(count: number, forms: PluralForms): string {
   return `${formatNumber(count)}${NBSP}${plural(count, forms)}`
 }
 
+/** Стаж в годах: «1 год», «3 года», «5 лет»; дробное число — «2,5 года». */
+export function formatYears(years: number): string {
+  if (!Number.isInteger(years)) return `${formatDecimal(years)}${NBSP}${PLURALS.year[1]}`
+  return pluralize(years, PLURALS.year)
+}
+
 function toDate(value: string | Date): Date {
   return value instanceof Date ? value : new Date(value)
 }
@@ -86,7 +93,8 @@ const hourMinute = new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '
 
 function cleanDate(text: string): string {
   // «12 окт. 2025 г.» → «12 окт. 2025»; пробелы внутри даты — неразрывные.
-  return text.replace(/\s?г\.$/, '').replace(/\s/g, NBSP)
+  // Год обязателен в шаблоне: иначе «21 авг.» теряло окончание и становилось «21 ав».
+  return text.replace(/(\d{4})\s?г\.$/, '$1').replace(/\s/g, NBSP)
 }
 
 /** Дата: «12 окт.»; с годом, если год не текущий: «12 окт. 2025». Часовой пояс — браузера. */

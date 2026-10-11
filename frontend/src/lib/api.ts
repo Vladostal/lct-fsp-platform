@@ -18,7 +18,7 @@ import {
   STATUS_ERROR_TEXTS,
 } from '@/content/errors'
 import { API_PREFIX } from '@/lib/config'
-import { formatDate, formatDateTime, formatDuration, formatNumber, PLURALS, pluralize } from '@/lib/format'
+import { formatDate, formatDuration, formatNumber, PLURALS, pluralize } from '@/lib/format'
 
 export type ErrorParams = Record<string, string | number>
 export type ApiFieldError = { name: string; code: string; message: string }
@@ -105,7 +105,7 @@ const ISO_DATE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/
 function formatParam(name: string, value: string | number): string {
   if (name === 'retry_after' && typeof value === 'number') return formatDuration(value)
   if (typeof value === 'number') return formatNumber(value)
-  if (ISO_DATE.test(value)) return name === 'next_release_at' ? formatDateTime(value) : formatDate(value)
+  if (ISO_DATE.test(value)) return formatDate(value)
   return value
 }
 

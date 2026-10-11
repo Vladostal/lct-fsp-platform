@@ -11,7 +11,7 @@ from app.core.logging import setup_logging
 from app.modules.fsp import service as fsp
 from app.modules.identity import service as identity
 from app.seed import common as C
-from app.seed import companies, demo, population, scenario
+from app.seed import companies, declared, demo, population, scenario
 
 
 def _catalog_check() -> int:
@@ -46,7 +46,13 @@ def main(argv: list[str] | None = None) -> int:
                 for user_id in identity.demo_user_ids(db):
                     identity.delete_user(db, user_id)
         if args.command == "demo":
-            print({"population": population.seed_population(), "companies": companies.seed_companies()})
+            print(
+                {
+                    "population": population.seed_population(),
+                    "declared": declared.seed_declared(),
+                    "companies": companies.seed_companies(),
+                }
+            )
         elif args.command == "scenario":
             print({"named": scenario.seed_named(), "orbita": scenario.seed_orbita()})
         else:

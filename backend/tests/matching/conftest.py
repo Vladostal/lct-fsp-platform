@@ -37,7 +37,7 @@ from app.modules.profile import service as profile
 from app.modules.profile.dto import ContactsDTO, PoolProfile, PrivacySettingsDTO, ProfilePdfModel, VisibilityDTO
 from app.modules.textparse import service as textparse
 from app.modules.textparse.dto import NeedDraft
-from app.shared.enums import EvidenceSource, PauseReason, TestOutcome, VisibilityState, WorkFormat
+from app.shared.enums import CategoryBasis, EvidenceSource, PauseReason, TestOutcome, VisibilityState, WorkFormat
 from app.shared.schemas import CategoryRef, Ref
 
 GRADES = ["junior", "middle", "senior"]
@@ -53,7 +53,18 @@ SKILLS = {
     "react": "React",
 }
 IMPLIES = {"postgresql": frozenset({"sql"})}
-#: Пара без теста: потребность на неё — 422 `specialization_unavailable`.
+#: Навыки по специализациям (`catalog.is_skill_relevant`); `algorithms` — общий навык, ни к одной не привязан.
+SKILL_SPECS = {
+    "python": ("backend",),
+    "sql": ("backend",),
+    "postgresql": ("backend",),
+    "kafka": ("backend",),
+    "docker": ("backend", "mobile"),
+    "redis": ("backend",),
+    "algorithms": (),
+    "react": ("frontend", "mobile"),
+}
+#: Пары без теста: потребность по ним создаётся, кандидаты там — с заявленным грейдом (`Cand.basis = declared`).
 UNAVAILABLE = {("mobile", "junior"), ("mobile", "middle"), ("mobile", "senior")}
 FSP_FULL_TEXT = "1 место, Кубок России по спортивному программированию 2025"
 
@@ -66,6 +77,8 @@ class Cand:
     public_code: str
     spec: str = "backend"
     grade: str = "middle"
+    #: `declared` — грейд заявлен, теста не было: уровня, вердикта и давности у кандидата нет.
+    basis: CategoryBasis = CategoryBasis.TEST
     verdict: TestOutcome = TestOutcome.CONFIRMED
     theta: float = 0.9
     se: float = 0.4
@@ -158,6 +171,19 @@ class World:
                 continue
             if candidate_ids is not None and cand.id not in candidate_ids:
                 continue
+            if cand.basis == CategoryBasis.DECLARED:
+                rows.append(
+                    LevelDTO(
+                        candidate_id=cand.id,
+                        specialization_code=cand.spec,
+                        grade_code=cand.grade,
+                        basis=CategoryBasis.DECLARED,
+                        cut=cand.cut,
+                        cut_next=cand.cut + cand.width,
+                        width=cand.width,
+                    )
+                )
+                continue
             tested = now - timedelta(days=cand.age_days)
             rows.append(
                 LevelDTO(
@@ -183,7 +209,8 @@ class World:
         result = {}
         for cid in candidate_ids:
             cand = self.cands.get(cid)
-            if cand is None:
+            # Как в боевом фасаде: у заявленного грейда уровня по тесту нет, записи не будет.
+            if cand is None or cand.basis == CategoryBasis.DECLARED:
                 continue
             tested = now - timedelta(days=cand.age_days)
             result[cid] = LevelView(
@@ -417,6 +444,7 @@ def world(db: Session, make_user: Callable[..., Any], monkeypatch: pytest.Monkey
     monkeypatch.setattr(catalog, "SKILLS_VERSION", "test")
     monkeypatch.setattr(catalog, "skill_ref", _skill_ref)
     monkeypatch.setattr(catalog, "is_skill", lambda code: code in SKILLS)
+    monkeypatch.setattr(catalog, "is_skill_relevant", lambda code, spec: spec in SKILL_SPECS.get(code, ()))
     monkeypatch.setattr(catalog, "implies_closure", lambda code: IMPLIES.get(code, frozenset()))
     monkeypatch.setattr(catalog, "grades_ordered", lambda: grades)
     monkeypatch.setattr(catalog, "category_ref", _category_ref)

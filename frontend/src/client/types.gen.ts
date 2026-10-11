@@ -243,7 +243,7 @@ export type BankItemView = {
     /**
      * Freshness Days
      */
-    freshness_days?: number;
+    freshness_days?: number | null;
     /**
      * Fsp Summary
      */
@@ -256,7 +256,7 @@ export type BankItemView = {
      * Is Demo
      */
     is_demo?: boolean;
-    level: LevelView;
+    level?: LevelView | null;
     /**
      * Public Code
      */
@@ -486,7 +486,7 @@ export type CandidateCardEmployerView = {
      * Is Demo
      */
     is_demo: boolean;
-    level: LevelView;
+    level?: LevelView | null;
     match?: MatchExplanationEmployerView | null;
     /**
      * Pinned
@@ -789,11 +789,19 @@ export type CatalogFeatures = {
 };
 
 /**
+ * CategoryBasis
+ *
+ * Основание категории кандидата: подтверждена тестом или грейд заявлен (тест по специализации готовится).
+ */
+export type CategoryBasis = 'test' | 'declared';
+
+/**
  * CategoryRef
  *
  * Категория «специализация × грейд»: `code` — «backend:middle», `title` — «Backend · Middle».
  */
 export type CategoryRef = {
+    basis?: CategoryBasis | null;
     /**
      * Code
      */
@@ -1166,7 +1174,10 @@ export type ContactSummary = {
 /**
  * Contribution
  *
- * Вклад в покрытие требований или в силу профиля (Арх. 6.10).
+ * Строка вклада с источником данных: по нему экран складывает «подтверждено» и «заявлено кандидатом».
+ *
+ * `confirmed` — тест и достижения ФСП (в сумме до 40 баллов силы); `declared` — стаж и навыки из профиля
+ * (до 60 баллов). У вкладов покрытия и у объяснений прежней версии оценщика — `None`.
  */
 export type Contribution = {
     /**
@@ -1189,6 +1200,10 @@ export type Contribution = {
      * Points
      */
     points: number;
+    /**
+     * Source
+     */
+    source?: 'confirmed' | 'declared' | null;
 };
 
 /**
@@ -2631,7 +2646,7 @@ export type InvitationCreate = {
 /**
  * InvitationEmployerBrief
  *
- * Строка списка приглашений работодателя: слот, срок, исход.
+ * Строка списка приглашений работодателя: срок, исход.
  */
 export type InvitationEmployerBrief = {
     /**
@@ -2680,7 +2695,6 @@ export type InvitationEmployerBrief = {
      * Sent At
      */
     sent_at: string;
-    slot: SlotView;
     status: InvitationStatus;
     /**
      * Status Label
@@ -2780,7 +2794,6 @@ export type InvitationEmployerView = {
      * Sent At
      */
     sent_at: string;
-    slot: SlotView;
     status: InvitationStatus;
     /**
      * Status Label
@@ -4223,7 +4236,7 @@ export type PublicationConsentRequest = {
 /**
  * QuotaView
  *
- * Слоты и суточный лимит работодателя.
+ * Суточный лимит работодателя.
  */
 export type QuotaView = {
     /**
@@ -4238,18 +4251,6 @@ export type QuotaView = {
      * Frozen
      */
     frozen: boolean;
-    /**
-     * Limit
-     */
-    limit: number;
-    /**
-     * Next Release At
-     */
-    next_release_at?: string | null;
-    /**
-     * Used
-     */
-    used: number;
 };
 
 /**
@@ -4558,7 +4559,7 @@ export type ShortlistItemView = {
     /**
      * Freshness Days
      */
-    freshness_days?: number;
+    freshness_days?: number | null;
     /**
      * Fsp Summary
      */
@@ -4866,22 +4867,6 @@ export type SkillDto = {
 export type SkillVerdict = 'confirmed' | 'partial' | 'not_confirmed';
 
 /**
- * SlotView
- *
- * Слот работодателя по приглашению: занят ли сейчас и когда освободится (освободился).
- */
-export type SlotView = {
-    /**
-     * Occupied
-     */
-    occupied: boolean;
-    /**
-     * Release At
-     */
-    release_at?: string | null;
-};
-
-/**
  * SnapshotCategory
  *
  * Раздел версии: рекомендованная категория и число её кандидатов (Арх. 6.3).
@@ -5000,6 +4985,7 @@ export type StateCategory = {
      * Assigned At
      */
     assigned_at: string;
+    basis?: CategoryBasis | null;
     /**
      * Change Available At
      */
@@ -5012,7 +4998,7 @@ export type StateCategory = {
     /**
      * Level Session Id
      */
-    level_session_id: string;
+    level_session_id?: string | null;
     specialization: Ref;
     /**
      * Title
@@ -5052,7 +5038,7 @@ export type StatedSalary = {
 /**
  * StrengthView
  *
- * Сила подтверждённого профиля: подпись с абсолютными порогами и вклады (тест, давность, ФСП).
+ * Сила профиля: подпись с абсолютными порогами и вклады (тест, давность, ФСП, заявленные стаж и навыки).
  */
 export type StrengthView = {
     /**

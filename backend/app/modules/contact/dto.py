@@ -75,7 +75,6 @@ class InvitationDTO(BaseModel):
     expires_at: datetime
     viewed_at: datetime | None = None
     resolved_at: datetime | None = None
-    slot_release_at: datetime | None = None
     pair_block_until: datetime | None = None
     decline_reason: DeclineReason | None = None
     updated_at: datetime

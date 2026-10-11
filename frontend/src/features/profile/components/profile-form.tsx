@@ -6,9 +6,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { type FieldPath, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import type { CandidateProfileView, Catalog, ConditionsView, ResumeParseResult } from '@/client'
-import { StickyActionBar, TagInput, type TagOption, type TagValue } from '@/components/app'
+import { Section, StickyActionBar, TagInput, type TagOption, type TagValue } from '@/components/app'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -20,7 +19,7 @@ import { WORK_FORMAT_LABELS } from '@/content/common'
 import { applyFieldErrors, errorMessage } from '@/lib/api'
 import { formatTime } from '@/lib/format'
 import { invalidateGuardData } from '@/lib/guards'
-import { saveConditions, saveProfile, uploadResume } from '../api'
+import { conditionsQuery, saveConditions, saveProfile, uploadResume } from '../api'
 import { PROFILE } from '../content'
 import {
   defaultValues,
@@ -80,7 +79,7 @@ function FromResumeMark({ confidence }: { confidence?: Confidence }) {
   if (!confidence) return null
   return (
     <span className="inline-flex flex-wrap items-center gap-1.5">
-      <Badge variant="info">{PROFILE.resume.chip}</Badge>
+      <span className="type-caption text-brand-600">{PROFILE.resume.chip}</span>
       {confidence === 'low' ? <span className="type-caption text-warning">{PROFILE.resume.check}</span> : null}
     </span>
   )
@@ -237,7 +236,9 @@ export function ProfileForm({ mode, profile, conditions, catalog, userId, catego
         return
       }
       try {
-        await saveConditions(toConditionsUpdate(values))
+        // Кэш условий обновляется сразу: иначе при возврате на экран форма открылась бы с прежними значениями
+        // и следующее сохранение вернуло бы их на сервер.
+        queryClient.setQueryData(conditionsQuery().queryKey, await saveConditions(toConditionsUpdate(values)))
       } catch (error) {
         setConditionsError(error)
         return
@@ -252,7 +253,7 @@ export function ProfileForm({ mode, profile, conditions, catalog, userId, catego
     setRetrying(true)
     try {
       const values = form.getValues()
-      await saveConditions(toConditionsUpdate(values))
+      queryClient.setQueryData(conditionsQuery().queryKey, await saveConditions(toConditionsUpdate(values)))
       setConditionsError(null)
       await finish(values)
     } catch (error) {
@@ -348,43 +349,35 @@ export function ProfileForm({ mode, profile, conditions, catalog, userId, catego
 
       <Form {...form}>
         <form id="profile-form" onSubmit={onSubmit} noValidate className="flex min-w-0 flex-col gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>{T.sections.main}</CardTitle>
-            </CardHeader>
-            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
-              {textField('last_name', { required: true, autoComplete: 'family-name', maxLength: 60 })}
-              {textField('first_name', { required: true, autoComplete: 'given-name', maxLength: 60 })}
-              {textField('middle_name', { autoComplete: 'additional-name', maxLength: 60 })}
-              {textField('city', { autoComplete: 'address-level2', maxLength: 80 })}
-            </div>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex flex-wrap items-center gap-2">
-                <Lock className="size-4 text-ink-muted" aria-hidden="true" />
-                {T.sections.contacts}
-                <span className="type-sm font-normal text-ink-muted">· {T.sections.contactsNote}</span>
-              </CardTitle>
-            </CardHeader>
-            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
-              <div className="flex min-w-0 flex-col gap-1.5">
-                <span className="type-sm font-medium text-ink">{T.fields.email}</span>
-                <Input value={profile.email} readOnly aria-readonly="true" className="bg-fill" />
-                <span className="type-caption text-ink-muted">{T.fields.emailNote}</span>
+          <Card className="gap-8">
+            <Section title={T.sections.main}>
+              <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+                {textField('last_name', { required: true, autoComplete: 'family-name', maxLength: 60 })}
+                {textField('first_name', { required: true, autoComplete: 'given-name', maxLength: 60 })}
+                {textField('middle_name', { autoComplete: 'additional-name', maxLength: 60 })}
+                {textField('city', { autoComplete: 'address-level2', maxLength: 80 })}
               </div>
-              {textField('phone', { type: 'tel', inputMode: 'tel', autoComplete: 'tel' })}
-              {textField('telegram', { autoComplete: 'off' })}
-              {textField('link', { inputMode: 'url', autoComplete: 'url' })}
-            </div>
+            </Section>
+
+            <Section title={`${T.sections.contacts} · ${T.sections.contactsNote}`}>
+              <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+                <div className="flex min-w-0 flex-col gap-1.5">
+                  <span className="type-sm font-medium text-ink">{T.fields.email}</span>
+                  <Input value={profile.email} readOnly aria-readonly="true" className="bg-fill" />
+                  <span className="type-caption text-ink-muted">{T.fields.emailNote}</span>
+                </div>
+                {textField('phone', { type: 'tel', inputMode: 'tel', autoComplete: 'tel' })}
+                {textField('telegram', { autoComplete: 'off' })}
+                {textField('link', { inputMode: 'url', autoComplete: 'url' })}
+              </div>
+            </Section>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex flex-wrap items-center gap-2">
+              <CardTitle className="flex flex-wrap items-baseline gap-2">
                 {T.sections.experience}
-                <Badge variant="outline">{T.sections.declared}</Badge>
+                <span className="type-sm font-normal text-ink-muted">· {T.sections.declared}</span>
               </CardTitle>
             </CardHeader>
             <div className="flex min-w-0 flex-col gap-4">

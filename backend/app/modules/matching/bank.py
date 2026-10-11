@@ -152,7 +152,7 @@ def _cursor(position: dict[str, object] | None, filters: BankFilters, today: dat
     return day, offset
 
 
-def _row(db_names: dict[UUID, str | None], pool: Pool, row: BankRanked, level: LevelView) -> BankItemView:
+def _row(db_names: dict[UUID, str | None], pool: Pool, row: BankRanked, level: LevelView | None) -> BankItemView:
     features = row.features
     cid = features.candidate_id
     person = pool.profiles[cid]
@@ -162,7 +162,7 @@ def _row(db_names: dict[UUID, str | None], pool: Pool, row: BankRanked, level: L
         public_code=person.public_code,
         display_name=db_names.get(cid),
         is_demo=person.is_demo,
-        category=support.category_ref(features.specialization_code, features.grade_code),
+        category=support.category_ref(features.specialization_code, features.grade_code, features.basis),
         grade_margin=features.verdict == TestOutcome.CONFIRMED_WITH_MARGIN,
         strength_label=row.strength.label,
         level=level,
@@ -230,7 +230,8 @@ def page(
         exposure.record_shown(db, employer_id, ids, pool.today, ExposureSource.BANK)
     has_more = offset + limit < len(ranked)
     return BankPage(
-        items=[_row(names, pool, row, levels[row.features.candidate_id]) for row in rows],
+        # У заявленного грейда уровня по тесту нет: `level_views` такого кандидата не возвращает.
+        items=[_row(names, pool, row, levels.get(row.features.candidate_id)) for row in rows],
         next_cursor=(
             encode_cursor({"d": day.isoformat(), "o": offset + limit, "f": filters.digest()}) if has_more else None
         ),

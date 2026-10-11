@@ -9,16 +9,20 @@ import {
   EvidenceChip,
   LevelScale,
   PageHeader,
+  Section,
   StatusBadge,
 } from '@/components/app'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { hasTest, isDeclared } from '@/lib/category'
 import { formatAgo, formatDate, formatDuration } from '@/lib/format'
 import { assessmentStateQuery } from '@/lib/query'
-import { evidenceQuery, historyQuery, surveyQuery } from '../api'
+import { consentsQuery, evidenceQuery, historyQuery, surveyQuery } from '../api'
 import { ASSESSMENT } from '../content'
+import { DeclaredGradeForm } from './declared-grade-form'
 import { NextActionList } from './next-actions'
+import { PublishCard } from './publish-panel'
 
 function HistoryRows({ items }: { items: HistoryItem[] }) {
   if (items.length === 0) return <p className="type-sm text-ink-muted">{ASSESSMENT.category.historyEmpty}</p>
@@ -105,6 +109,7 @@ export function CategoryScreen({ catalog }: { catalog: Catalog | null }) {
   const history = useQuery(historyQuery)
   const evidence = useQuery(evidenceQuery)
   const survey = useQuery(surveyQuery)
+  const consents = useQuery(consentsQuery)
 
   const failure = state.error ?? history.error
   if (failure) {
@@ -142,6 +147,13 @@ export function CategoryScreen({ catalog }: { catalog: Catalog | null }) {
   const retryDays = Number(catalog?.limits.assessment_retry_same_grade_days ?? 14)
   const changeDays = Number(catalog?.limits.assessment_grade_change_cooldown_days ?? 90)
 
+  // Грейд заявлен (теста по специализации нет): уровня и шкалы нет, вместо пересдачи — форма заявленного грейда.
+  const D = ASSESSMENT.category.declared
+  const declared = isDeclared(s.category, catalog)
+  const specialization = s.specialization ?? s.category?.specialization ?? null
+  const noTest = specialization != null && !hasTest(catalog, specialization.code)
+  const declaredHere = declared && s.category?.specialization.code === specialization?.code
+
   const actionsNode = s.active_session ? (
     <Button variant="primary" asChild>
       <Link to="/candidate/test/$sessionId" params={{ sessionId: s.active_session.id }}>
@@ -165,14 +177,27 @@ export function CategoryScreen({ catalog }: { catalog: Catalog | null }) {
     : []
 
   return (
-    <div className="flex min-w-0 max-w-[1040px] flex-col gap-6">
+    <div className="flex min-w-0 max-w-[1040px] flex-col gap-8">
       <PageHeader title={ASSESSMENT.category.title} actions={actionsNode} />
 
-      <section className="surface-card flex min-w-0 flex-col gap-3 p-4 md:p-6" aria-labelledby="c-current">
-        <h2 id="c-current" className="type-h3">
-          {ASSESSMENT.category.current}
+      <section className="surface-card flex min-w-0 flex-col gap-3" aria-labelledby="c-current">
+        <h2 id="c-current" className="type-eyebrow">
+          {declared ? D.current : ASSESSMENT.category.current}
         </h2>
-        {s.category && level ? (
+        {s.category && declared ? (
+          <>
+            <div className="flex min-w-0 flex-wrap items-center gap-3">
+              <CategoryChip title={s.category.title} size="lg" declared />
+              <span className="type-sm min-w-0 text-ink-muted">
+                {[s.direction?.title, s.category.specialization.title].filter(Boolean).join(' · ')}
+              </span>
+            </div>
+            <p className="type-body min-w-0">{D.line(formatDate(s.category.assigned_at))}</p>
+            <p className="type-sm min-w-0 text-ink-muted">
+              {D.noLevel}. {D.explain}
+            </p>
+          </>
+        ) : s.category && level ? (
           <>
             <div className="flex min-w-0 flex-wrap items-center gap-3">
               <CategoryChip title={s.category.title} size="lg" />
@@ -180,7 +205,8 @@ export function CategoryScreen({ catalog }: { catalog: Catalog | null }) {
                 {[s.direction?.title, s.category.specialization.title].filter(Boolean).join(' · ')}
               </span>
               {level.stale ? (
-                <span className="type-caption rounded-full bg-warning-bg px-2 py-0.5 text-warning">
+                <span className="type-sm flex items-center gap-1.5 text-warning">
+                  <span aria-hidden="true" className="size-1.5 rounded-full bg-warning" />
                   {ASSESSMENT.category.stale}
                 </span>
               ) : null}
@@ -197,7 +223,7 @@ export function CategoryScreen({ catalog }: { catalog: Catalog | null }) {
             title={ASSESSMENT.category.none}
             text={ASSESSMENT.category.noneText}
             action={
-              actions.length === 0 && !s.active_session && s.claimed_grade ? (
+              actions.length === 0 && !s.active_session && s.claimed_grade && !noTest ? (
                 <Button variant="primary" asChild>
                   <Link to="/candidate/test/new" search={{ grade: s.claimed_grade.code }}>
                     Пройти тест на {s.claimed_grade.title}
@@ -209,64 +235,100 @@ export function CategoryScreen({ catalog }: { catalog: Catalog | null }) {
         )}
       </section>
 
-      {s.category ? (
-        <section className="surface-card flex min-w-0 flex-col gap-3 p-4 md:p-6" aria-labelledby="c-strength">
-          <h2 id="c-strength" className="type-h3">
-            {ASSESSMENT.category.strength}
-          </h2>
-          {evidence.isError ? (
-            <ErrorState compact error={evidence.error} onRetry={() => evidence.refetch()} />
-          ) : !evidence.data ? (
-            <Skeleton className="h-16 w-full" />
-          ) : (
-            <>
-              {evidence.data.strength ? (
-                <p className="type-body">
-                  Сила профиля: <strong>{ASSESSMENT.category.strengthLabels[evidence.data.strength.label]}</strong>
-                </p>
-              ) : null}
-              <ContributionBars items={strengthItems} />
-              <p className="type-caption min-w-0 text-ink-muted">{ASSESSMENT.category.strengthTips}</p>
-            </>
-          )}
-        </section>
+      {declared && consents.data?.visibility.state === 'unpublished' ? (
+        <PublishCard
+          declared
+          version={consents.data.publication.current_version ?? null}
+          refetchConsents={() => consents.refetch()}
+        />
       ) : null}
 
       {s.category ? (
-        <section className="surface-card flex min-w-0 flex-col gap-3 p-4 md:p-6" aria-labelledby="c-skills">
-          <h2 id="c-skills" className="type-h3">
-            {ASSESSMENT.category.skills}
-          </h2>
-          {evidence.data && evidence.data.skills.length > 0 ? (
-            <ul className="flex min-w-0 flex-wrap gap-2">
-              {evidence.data.skills.map((sk) => (
-                <li key={sk.skill.code} className="min-w-0 max-w-full">
-                  <EvidenceChip kind={sk.kind} skill={sk.skill.title} label={sk.kind_label} detail={sk.detail} />
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="type-sm text-ink-muted">{evidence.data ? 'Подтверждённых навыков пока нет' : 'Загрузка…'}</p>
-          )}
-        </section>
+        <div className="surface-card flex min-w-0 flex-col gap-8">
+          <Section title={ASSESSMENT.category.strength}>
+            {evidence.isError ? (
+              <ErrorState compact error={evidence.error} onRetry={() => evidence.refetch()} />
+            ) : !evidence.data ? (
+              <Skeleton className="h-16 w-full" />
+            ) : (
+              <>
+                {evidence.data.strength ? (
+                  <p className="type-body">
+                    Сила профиля: <strong>{ASSESSMENT.category.strengthLabels[evidence.data.strength.label]}</strong>
+                  </p>
+                ) : null}
+                <ContributionBars items={strengthItems} summary />
+                <p className="type-caption min-w-0 text-ink-muted">{ASSESSMENT.category.strengthTips}</p>
+              </>
+            )}
+          </Section>
+          <Section title={ASSESSMENT.category.skills}>
+            {evidence.data && evidence.data.skills.length > 0 ? (
+              <ul className="flex min-w-0 flex-wrap gap-2">
+                {evidence.data.skills.map((sk) => (
+                  <li key={sk.skill.code} className="min-w-0 max-w-full">
+                    <EvidenceChip kind={sk.kind} skill={sk.skill.title} label={sk.kind_label} detail={sk.detail} />
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="type-sm text-ink-muted">
+                {!evidence.data ? 'Загрузка…' : declared ? D.skillsEmpty : 'Подтверждённых навыков пока нет'}
+              </p>
+            )}
+          </Section>
+        </div>
       ) : null}
 
-      <section className="surface-card flex min-w-0 flex-col gap-3 p-4 md:p-6" aria-labelledby="c-change">
-        <h2 id="c-change" className="type-h3">
-          {ASSESSMENT.category.change}
+      <section className="surface-card flex min-w-0 flex-col gap-3" aria-labelledby="c-change">
+        <h2 id="c-change" className="type-eyebrow">
+          {noTest ? D.formTitle : ASSESSMENT.category.change}
         </h2>
-        <NextActionList actions={actions} />
-        <p className="type-caption min-w-0 text-ink-muted">
-          Сменить подтверждённый грейд можно раз в {changeDays} дн.; повторить тест на тот же грейд — через {retryDays}{' '}
-          дн.
-        </p>
+        {noTest && specialization ? (
+          <DeclaredGradeForm
+            key={`${s.category?.code ?? 'none'}:${s.category?.change_available_at ?? ''}`}
+            catalog={catalog}
+            specialization={specialization.title}
+            current={
+              declaredHere && s.category
+                ? {
+                    gradeCode: s.category.grade.code,
+                    assignedAt: s.category.assigned_at,
+                    changeAvailableAt: s.category.change_available_at,
+                  }
+                : null
+            }
+            replaces={s.category != null && !declaredHere}
+          />
+        ) : (
+          <>
+            {/* Специализацию сменили, грейд ещё не выбран: действий сервер не предлагает, а шаг выбора доступен. */}
+            {s.survey_completed && !s.claimed_grade && !s.active_session && actions.length === 0 ? (
+              <Button variant="primary" className="self-start" asChild>
+                <Link to="/candidate/onboarding/grade">Выбрать грейд</Link>
+              </Button>
+            ) : null}
+            <NextActionList actions={actions} />
+            <p className="type-caption min-w-0 text-ink-muted">
+              Сменить подтверждённый грейд можно раз в {changeDays} дн.; повторить тест на тот же грейд — через{' '}
+              {retryDays} дн.
+            </p>
+          </>
+        )}
       </section>
 
       {surveyRows.length > 0 ? (
-        <section className="surface-card flex min-w-0 flex-col gap-3 p-4 md:p-6" aria-labelledby="c-survey">
-          <h2 id="c-survey" className="type-h3">
-            {ASSESSMENT.category.survey}
-          </h2>
+        <Section
+          title={ASSESSMENT.category.survey}
+          action={
+            // Опрос недоступен, пока идёт тест: охрана всё равно вернула бы на экран теста.
+            s.active_session ? undefined : (
+              <Link to="/candidate/onboarding/survey" className="text-link type-sm">
+                {ASSESSMENT.category.changeSpecialization}
+              </Link>
+            )
+          }
+        >
           <dl className="grid min-w-0 gap-x-6 gap-y-2 sm:grid-cols-[minmax(0,240px)_minmax(0,1fr)]">
             {surveyRows.map((r) => (
               <div key={r.id} className="contents">
@@ -275,15 +337,12 @@ export function CategoryScreen({ catalog }: { catalog: Catalog | null }) {
               </div>
             ))}
           </dl>
-        </section>
+        </Section>
       ) : null}
 
-      <section className="surface-card flex min-w-0 flex-col gap-3 p-4 md:p-6" aria-labelledby="c-history">
-        <h2 id="c-history" className="type-h3">
-          {ASSESSMENT.category.history}
-        </h2>
+      <Section title={ASSESSMENT.category.history}>
         <HistoryRows items={history.data} />
-      </section>
+      </Section>
     </div>
   )
 }

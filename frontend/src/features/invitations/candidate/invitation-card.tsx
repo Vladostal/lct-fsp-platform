@@ -2,7 +2,6 @@ import { Link } from '@tanstack/react-router'
 import { Clock } from 'lucide-react'
 import type { InvitationCandidateBrief } from '@/client'
 import { SalaryRange, StatusBadge } from '@/components/app'
-import { Badge } from '@/components/ui/badge'
 import { WORK_FORMAT_LABELS } from '@/content/common'
 import { formatDate, formatDeadline, formatRemaining } from '@/lib/format'
 import { msUntil } from '@/lib/time'
@@ -17,14 +16,11 @@ export function InvitationCard({ item }: InvitationCardProps) {
     <Link
       to="/candidate/invitations/$invitationId"
       params={{ invitationId: item.id }}
-      className="surface-row flex min-w-0 flex-col gap-3 p-4 transition-colors hover:border-line-strong focus-visible:outline-2 focus-visible:outline-offset-2"
+      className="surface-card flex min-w-0 flex-col gap-2 transition-colors hover:bg-fill focus-visible:outline-2 focus-visible:outline-offset-2"
     >
       <div className="flex min-w-0 items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="type-eyebrow flex min-w-0 items-center gap-2 text-ink-muted">
-            {item.status === 'sent' ? (
-              <span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-brand-600" />
-            ) : null}
             <span className="truncate">{item.company_name}</span>
           </p>
           <h3 className="type-h3 line-clamp-2 [overflow-wrap:anywhere] text-ink">{item.title}</h3>
@@ -34,26 +30,16 @@ export function InvitationCard({ item }: InvitationCardProps) {
         </div>
       </div>
       <SalaryRange from={item.salary_from} to={item.salary_to} size="md" />
-      <div className="flex min-w-0 flex-wrap items-center gap-2">
-        <Badge variant="neutral" size="sm">
-          {WORK_FORMAT_LABELS[item.work_format]}
-        </Badge>
-        {item.city ? (
-          <Badge variant="neutral" size="sm">
-            {item.city}
-          </Badge>
-        ) : null}
-        {item.is_demo ? (
-          <Badge variant="info" size="sm">
-            демо
-          </Badge>
-        ) : null}
-        {item.below_my_min ? (
-          <Badge variant="warning" size="sm">
-            ниже вашего минимума
-          </Badge>
-        ) : null}
-      </div>
+      <p className="type-sm text-ink-muted [overflow-wrap:anywhere]">
+        {[
+          WORK_FORMAT_LABELS[item.work_format],
+          item.city,
+          item.is_demo ? 'демо' : null,
+          item.below_my_min ? 'ниже вашего минимума' : null,
+        ]
+          .filter(Boolean)
+          .join(' · ')}
+      </p>
       {waiting ? (
         <p className={`type-sm flex items-center gap-1.5 ${soon ? 'text-warning' : 'text-ink-muted'}`}>
           {soon ? <Clock className="size-4 shrink-0" aria-hidden="true" /> : null}

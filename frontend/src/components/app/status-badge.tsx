@@ -47,15 +47,51 @@ export type StatusBadgeProps = {
   /** Переопределить тон. */
   tone?: StatusTone
   size?: 'sm' | 'md'
+  /** `dot` — точка и подпись без фона (по умолчанию); `pill` — плашка с иконкой: accepted и индикатор в шапке. */
+  appearance?: 'dot' | 'pill'
   /** Объявлять смену статуса скринридеру (при обновлении опросом). */
   live?: boolean
   className?: string
 }
 
-/** Статус различим без цвета: у каждого бейджа иконка и подпись (Арх. 11.7, п. 2). */
-export function StatusBadge({ status, label, tone, size = 'md', live = false, className }: StatusBadgeProps) {
+/** Статус различим без цвета: подпись всегда, точка или иконка дублируют (Арх. 11.7, п. 2). */
+const DOT_TONE: Record<StatusTone, string> = {
+  info: 'bg-brand-600',
+  success: 'bg-success',
+  warning: 'bg-warning',
+  neutral: 'bg-ink-subtle',
+  danger: 'bg-danger',
+}
+
+export function StatusBadge({
+  status,
+  label,
+  tone,
+  size = 'md',
+  appearance = 'dot',
+  live = false,
+  className,
+}: StatusBadgeProps) {
   const view = STATUS_VIEW[status] ?? { icon: Circle, tone: 'neutral' as const }
   const Icon = view.icon
+  if (appearance === 'dot') {
+    return (
+      <span
+        key={status}
+        data-slot="status-badge"
+        data-status={status}
+        data-tone={tone ?? view.tone}
+        role={live ? 'status' : undefined}
+        className={cn(
+          'inline-flex max-w-full items-center gap-2 text-[13px] leading-5 text-ink animate-fade-in',
+          className,
+        )}
+      >
+        <span aria-hidden="true" className={cn('size-1.5 shrink-0 rounded-full', DOT_TONE[tone ?? view.tone])} />
+        {label}
+      </span>
+    )
+  }
   return (
     <Badge
       // key: при смене статуса бейдж проявляется заново (E §5).

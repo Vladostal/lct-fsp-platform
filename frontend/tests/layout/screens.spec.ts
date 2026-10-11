@@ -1,5 +1,15 @@
 import { expect, type Page, test } from '@playwright/test'
-import { apiError, CANDIDATE, EMPLOYER, json, type MockOptions, mockApi } from '../utils/api-mock'
+import {
+  apiError,
+  CANDIDATE,
+  DECLARED_CATEGORY,
+  DECLARED_CONTRIBUTIONS,
+  DECLARED_STATE,
+  EMPLOYER,
+  json,
+  type MockOptions,
+  mockApi,
+} from '../utils/api-mock'
 import { expectCleanLayout } from '../utils/layout'
 import { STRESS } from '../utils/stress'
 import { VIEWPORTS } from '../utils/viewports'
@@ -71,8 +81,52 @@ const WIZARD_STATE: MockOptions['handlers'] = {
     }),
 }
 
+/** Кандидат с заявленным грейдом: теста по специализации нет, профиль ещё не опубликован. */
+const DECLARED_CANDIDATE: MockOptions['handlers'] = {
+  'GET /assessment/state': (route) => json(route, DECLARED_STATE),
+  'GET /assessment/history': (route) => json(route, []),
+  'GET /assessment/survey': (route) => json(route, { version: 'v1', questions: [], answers: {} }),
+  'GET /candidate/evidence': (route) =>
+    json(route, { strength: { label: 'medium', contributions: DECLARED_CONTRIBUTIONS }, skills: [] }),
+  'GET /candidate/consents': (route) =>
+    json(route, {
+      processing: { current_version: '2026-10-01', granted: true, granted_at: '2026-10-05T09:00:00Z' },
+      publication: { current_version: '2026-10-01', granted: false, granted_at: null },
+      fsp_data: null,
+      visibility: { state: 'unpublished', pause_reason: null, auto_paused_until: null },
+    }),
+}
+
+/** Карточка кандидата с заявленным грейдом глазами работодателя: `level` отсутствует. */
+const DECLARED_CARD_ID = '33333333-3333-4333-8333-333333333333'
+const DECLARED_CARD: MockOptions['handlers'] = {
+  [`GET /employer/candidates/${DECLARED_CARD_ID}`]: (route) =>
+    json(route, {
+      candidate_id: DECLARED_CARD_ID,
+      public_code: 'К-20417',
+      display_name: null,
+      category: DECLARED_CATEGORY,
+      level: null,
+      strength: { label: 'medium', contributions: DECLARED_CONTRIBUTIONS },
+      skills: [
+        { skill: { code: 'react', title: 'React' }, kind: 'declared', kind_label: 'заявлено кандидатом', detail: null },
+      ],
+      custom_skills: [],
+      declared: { city: 'Казань', experience_years: 3, roles: [], about: null },
+      fsp: { mode: 'none', neutral_text: 'Достижений ФСП нет или кандидат их не открыл.' },
+      work_formats: ['remote'],
+      relocation_ready: false,
+      available: true,
+      disclosed: false,
+      is_demo: false,
+      match: null,
+      pinned: null,
+    }),
+  'GET /employer/invitations/pair-states': (route) => json(route, { items: [] }),
+}
+
 const SCREENS: Screen[] = [
-  { name: 'P1 лендинг', path: '/', heading: /Работодатель приходит к вам с вилкой/ },
+  { name: 'P1 лендинг', path: '/', heading: /Платформа ИТ-специалистов, проверенных ФСП/ },
   { name: 'P2 регистрация', path: '/signup?role=employer', heading: 'Регистрация' },
   {
     name: 'P2 регистрация: ошибки полей',
@@ -177,6 +231,169 @@ const SCREENS: Screen[] = [
     path: '/candidate/test/session-1',
     mock: { me: CANDIDATE, handlers: TEST_SESSION },
     heading: TEST_PROMPT,
+  },
+  {
+    name: 'C10 заявленный грейд: пометка, форма смены грейда, публикация',
+    path: '/candidate/category',
+    mock: { me: CANDIDATE, handlers: DECLARED_CANDIDATE },
+    heading: 'Категория и тесты',
+    prepare: async (page) => {
+      // Грейд не выдаётся за подтверждённый: пометка «заявлен», шкалы уровня нет.
+      await expect(page.locator('[data-slot="category-chip-declared"]').first()).toContainText('заявлен')
+      await expect(page.getByText(/Грейд заявлен .* · тест готовится/)).toBeVisible()
+      await expect(page.locator('[data-slot="level-scale"]')).toHaveCount(0)
+      // Первая смена заявленного грейда свободна; кнопка активна после выбора другого грейда.
+      const change = page.getByRole('button', { name: 'Сменить заявленный грейд' })
+      await expect(change).toBeDisabled()
+      await page.getByRole('radio', { name: 'Senior' }).click()
+      await expect(change).toBeEnabled()
+      await expect(page.getByRole('button', { name: 'Опубликовать профиль' })).toBeVisible()
+      // Итог под полосами: тест и ФСП — подтверждено, стаж и навыки — заявлено.
+      await expect(page.locator('[data-slot="contribution-summary"]')).toHaveText(
+        /Подтверждено: 0 из 40 \(тест и ФСП\) · Заявлено кандидатом: 33,5 из 60 \(стаж и навыки\)/,
+      )
+      // Нажатие прокрутило страницу: флажок согласия ушёл под липкую шапку, и axe счёл бы его область нажатия
+      // перекрытой. Раскладка проверяется с начала страницы, как на остальных экранах.
+      await page.evaluate(() => window.scrollTo(0, 0))
+    },
+  },
+  {
+    name: 'C2 опрос: специализация без теста выбирается',
+    path: '/candidate/onboarding/survey',
+    mock: {
+      me: CANDIDATE,
+      handlers: {
+        ...WIZARD_STATE,
+        'GET /candidate/profile': (route) =>
+          json(route, {
+            public_code: 'К-10042',
+            first_name: 'Анна',
+            last_name: 'Петрова',
+            hints: { grade_hint: null, specialization_hint: null },
+          }),
+        'GET /assessment/survey': (route) =>
+          json(route, {
+            version: 'v1',
+            answers: {},
+            questions: [
+              {
+                id: 'specialization',
+                title: 'Специализация',
+                kind: 'single',
+                required: true,
+                depends_on: null,
+                max: null,
+                options: [
+                  { code: 'backend', title: 'Backend-разработка', parent: null, available: true },
+                  { code: 'frontend', title: 'Frontend-разработка', parent: null, available: false },
+                ],
+              },
+            ],
+          }),
+      },
+    },
+    heading: 'Направление и специализация',
+    prepare: async (page) => {
+      const option = page.getByRole('radio', { name: /Frontend-разработка/ })
+      await expect(option).toBeEnabled()
+      await expect(page.getByText('тест готовится — грейд будет заявленным')).toBeVisible()
+      await option.click()
+      await expect(page.getByRole('button', { name: 'Продолжить' })).toBeEnabled()
+      await page.evaluate(() => window.scrollTo(0, 0))
+    },
+  },
+  {
+    name: 'C3 грейд без теста: грейд заявляется, тест пропускается',
+    path: '/candidate/onboarding/grade',
+    mock: {
+      me: CANDIDATE,
+      handlers: {
+        'GET /assessment/state': (route) => json(route, { ...DECLARED_STATE, claimed_grade: null, category: null }),
+        'GET /assessment/survey': (route) => json(route, { version: 'v1', questions: [], answers: {} }),
+        // Состав теста для специализации без теста пуст, а его сбой экран не блокирует.
+        'GET /assessment/blueprints': (route) => apiError(route, 503, 'bank_unavailable'),
+        'GET /candidate/profile': (route) =>
+          json(route, {
+            public_code: 'К-10042',
+            first_name: 'Анна',
+            last_name: 'Петрова',
+            hints: { grade_hint: null, specialization_hint: null },
+          }),
+      },
+    },
+    heading: 'Заявите грейд',
+    prepare: async (page) => {
+      await expect(page.getByText(/Тест по специализации «Frontend-разработка» готовится/)).toBeVisible()
+      // Все грейды доступны, хотя теста нет.
+      await expect(page.getByRole('radio', { name: /Senior/ })).toBeEnabled()
+      await page.getByRole('radio', { name: /Middle/ }).click()
+      await expect(page.getByRole('button', { name: 'Заявить грейд' })).toBeEnabled()
+      await page.evaluate(() => window.scrollTo(0, 0))
+    },
+  },
+  {
+    name: 'E3 потребность: специализация без теста выбирается, показано предупреждение',
+    path: '/employer/needs/new',
+    mock: { me: EMPLOYER },
+    heading: 'Описание потребности',
+    prepare: async (page) => {
+      await page.getByRole('combobox', { name: /Специализация/ }).click()
+      const option = page.getByRole('option', { name: /Frontend-разработка — тест готовится, грейд заявленный/ })
+      await expect(option).toBeEnabled()
+      await option.click()
+      // Список закрылся и вернул фокус в поле: дальше страница не прокручивается сама.
+      await expect(page.getByRole('listbox')).toHaveCount(0)
+      await expect(page.getByRole('combobox', { name: /Специализация/ })).toHaveText('Frontend-разработка')
+      await expect(page.getByText('По этой специализации тест готовится')).toBeVisible()
+      await expect(page.getByText(/кандидаты с заявленным грейдом/)).toBeVisible()
+      await page.evaluate(() => window.scrollTo(0, 0))
+    },
+  },
+  {
+    name: 'C10 заявленный грейд: после смены форма закрыта до даты',
+    path: '/candidate/category',
+    mock: {
+      me: CANDIDATE,
+      handlers: {
+        ...DECLARED_CANDIDATE,
+        'GET /assessment/state': (route) =>
+          json(route, {
+            ...DECLARED_STATE,
+            category: { ...DECLARED_STATE.category, change_available_at: '2026-12-30T10:00:00Z' },
+          }),
+      },
+    },
+    heading: 'Категория и тесты',
+    prepare: async (page) => {
+      await expect(page.getByText(/Сменить заявленный грейд можно с 30\sдек/)).toBeVisible()
+      await expect(page.getByRole('radio', { name: 'Senior' })).toBeDisabled()
+      await expect(page.getByRole('button', { name: 'Сменить заявленный грейд' })).toBeDisabled()
+    },
+  },
+  {
+    name: 'C7 обзор: заявленный грейд ведёт на экран категории',
+    path: '/candidate',
+    mock: { me: CANDIDATE, handlers: DECLARED_CANDIDATE },
+    heading: 'Обзор',
+    prepare: async (page) => {
+      await expect(page.getByText('Грейд заявлен, профиль не опубликован')).toBeVisible()
+      await expect(page.getByRole('link', { name: 'Опубликовать профиль' })).toHaveAttribute(
+        'href',
+        '/candidate/category#publish',
+      )
+    },
+  },
+  {
+    name: 'E5 карточка кандидата без уровня: грейд заявлен',
+    path: `/employer/candidates/${DECLARED_CARD_ID}`,
+    mock: { me: EMPLOYER, handlers: DECLARED_CARD },
+    heading: 'Карточка кандидата',
+    prepare: async (page) => {
+      await expect(page.locator('[data-slot="category-chip-declared"]')).toContainText('заявлен')
+      await expect(page.getByText('Грейд заявлен, тест готовится')).toBeVisible()
+      await page.getByRole('button', { name: 'Вклад в оценку' }).click()
+      await expect(page.locator('[data-slot="contribution-summary"]')).toBeVisible()
+    },
   },
   { name: 'E2 каркас кабинета работодателя', path: '/employer/needs', mock: { me: EMPLOYER }, heading: 'Потребности' },
   { name: 'E10 аккаунт работодателя', path: '/employer/settings/account', mock: { me: EMPLOYER }, heading: 'Аккаунт' },
@@ -356,7 +573,7 @@ test.describe('сеанс', () => {
     await expect(page.getByRole('menu')).toContainText('anna@example.com')
     await page.getByRole('menuitem', { name: 'Выйти' }).click()
     await expect(page).toHaveURL(/\/$/)
-    await expect(page.getByRole('heading', { level: 1, name: /Работодатель приходит к вам с вилкой/ })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: /Платформа ИТ-специалистов, проверенных ФСП/ })).toBeVisible()
     await expect(page.getByText('Вы вышли из аккаунта')).toBeVisible()
   })
 
@@ -385,22 +602,16 @@ test.describe('сеанс', () => {
     await expect(page.getByText('Аккаунт удалён')).toBeVisible()
   })
 
-  test('меню навигации на узком экране: панель, индикатор роли первой строкой, Esc возвращает фокус', async ({
-    page,
-  }) => {
+  test('нижний таб-бар на узком экране: активный пункт, переход по пункту', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
     await mockApi(page, { me: CANDIDATE })
     await page.goto('/candidate')
-    const menuButton = page.getByRole('button', { name: 'Меню', exact: true })
-    await menuButton.click()
-    const sheet = page.getByRole('dialog', { name: 'Меню' })
-    await expect(sheet.getByRole('link', { name: /Приглашения/ })).toBeVisible()
-    await expect(sheet.getByText('Профиль виден')).toBeVisible()
-    await expect(sheet.getByRole('link', { name: 'Обзор' })).toHaveAttribute('aria-current', 'page')
+    const tabbar = page.getByRole('navigation', { name: 'Основная навигация' })
+    await expect(tabbar.getByRole('link', { name: 'Обзор' })).toHaveAttribute('aria-current', 'page')
+    await expect(tabbar.getByRole('link', { name: /Приглашения/ })).toBeVisible()
     await expectCleanLayout(page, { tapTargets: true })
-    await page.keyboard.press('Escape')
-    await expect(sheet).toBeHidden()
-    await expect(menuButton).toBeFocused()
+    await tabbar.getByRole('link', { name: 'Профиль' }).click()
+    await expect(page).toHaveURL(/\/candidate\/profile/)
   })
 })
 

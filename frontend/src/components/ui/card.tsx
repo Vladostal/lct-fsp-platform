@@ -1,13 +1,13 @@
 import type * as React from 'react'
 import { cn } from '@/lib/utils'
 
-/** Карточка: фон surface, радиус 24 (16 при < 768), отступ 24 (16), мягкая тень без границы (E §3.1). */
+/** Карточка: фон surface, радиус 12/16, отступ 20/24, линия вместо тени (E §3.1). */
 function Card({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       data-slot="card"
       className={cn(
-        'flex min-w-0 flex-col gap-4 rounded-lg bg-surface p-4 text-ink shadow-card md:gap-6 md:rounded-xl md:p-6',
+        'flex min-w-0 flex-col gap-4 rounded-lg bg-surface p-5 text-ink shadow-card md:rounded-xl md:p-6',
         className,
       )}
       {...props}

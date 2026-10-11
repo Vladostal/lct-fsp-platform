@@ -1,4 +1,3 @@
-import { Clock } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { formatTimer } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -33,13 +32,7 @@ export function TestTimer({ remainingMs }: { remainingMs: number }) {
           {hint}
         </span>
       ) : null}
-      <span
-        className={cn(
-          'num type-body flex items-center gap-1.5 font-medium tabular-nums',
-          hint ? 'text-warning' : 'text-ink',
-        )}
-      >
-        <Clock className="size-4" aria-hidden="true" />
+      <span className={cn('num type-body font-medium tabular-nums', hint ? 'text-warning' : 'text-ink')}>
         <span className="sr-only">Осталось </span>
         {formatTimer(remainingMs)}
       </span>

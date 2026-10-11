@@ -11,7 +11,7 @@ export type InvitationTimelineProps = {
 export function InvitationTimeline({ events, className }: InvitationTimelineProps) {
   if (events.length === 0) return null
   return (
-    <ol data-slot="invitation-timeline" className={cn('flex min-w-0 flex-col gap-3', className)}>
+    <ol data-slot="invitation-timeline" className={cn('flex min-w-0 flex-col gap-2', className)}>
       {events.map((event, index) => (
         <li key={`${event.code}-${event.at}-${event.label}`} className="flex min-w-0 gap-3">
           <span
@@ -22,8 +22,9 @@ export function InvitationTimeline({ events, className }: InvitationTimelineProp
             )}
           />
           <div className="min-w-0">
-            <p className="type-sm text-ink [overflow-wrap:anywhere]">{event.label}</p>
-            <p className="type-caption num text-ink-muted">{formatDateTime(event.at)}</p>
+            <p className="type-sm text-ink [overflow-wrap:anywhere]">
+              {event.label} <span className="num text-ink-muted">· {formatDateTime(event.at)}</span>
+            </p>
             {event.note ? <p className="type-sm text-ink-muted [overflow-wrap:anywhere]">{event.note}</p> : null}
           </div>
         </li>

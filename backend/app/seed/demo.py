@@ -10,7 +10,7 @@ from __future__ import annotations
 from app.core.db import session_scope
 from app.modules.identity import service as identity
 from app.seed import common as C
-from app.seed import companies, population, scenario
+from app.seed import companies, declared, population, scenario
 
 
 def scenario_ready() -> bool:
@@ -20,11 +20,16 @@ def scenario_ready() -> bool:
 
 
 def run_all() -> dict[str, int | bool]:
-    """Популяция, именованные кандидаты, демо-компании, `orbita`; каждый шаг идемпотентен."""
+    """Популяция, кандидаты с заявленным грейдом, именованные кандидаты, демо-компании, `orbita`.
+
+    Каждый шаг идемпотентен. `declared` идёт сразу после `population`: ему нужны спортсмены ФСП, оставшиеся
+    свободными, а демо-компаниям — уже готовые кандидаты для версий подборки.
+    """
     if not C.ensure_ready():
         return {}
     result: dict[str, int | bool] = {}
     result["population"] = population.seed_population()
+    result["declared"] = declared.seed_declared()
     result["named"] = scenario.seed_named()
     result["companies"] = companies.seed_companies()
     result["orbita"] = scenario.seed_orbita()

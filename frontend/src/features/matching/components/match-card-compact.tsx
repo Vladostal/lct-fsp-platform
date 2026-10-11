@@ -1,7 +1,9 @@
 import { Pin, TriangleAlert } from 'lucide-react'
+import { useRef } from 'react'
 import type { BankItemView, PairStateItem, ShortlistItemView } from '@/client'
-import { CategoryChip, DemoChip, EvidenceChip, FitBadge, LevelScale, StatusBadge } from '@/components/app'
+import { CandidateCategoryChip, DemoChip, EvidenceChip, FitBadge, LevelScale, StatusBadge } from '@/components/app'
 import { Button } from '@/components/ui/button'
+import { CATEGORY_DECLARED, INVITATION_STATUS_LABELS } from '@/content/common'
 import { formatDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { MATCHING } from '../content'
@@ -16,6 +18,8 @@ export type MatchCardCompactProps = {
   onOpen: (candidateId: string) => void
   onPinToggle?: (candidateId: string, pinned: boolean) => void
   pinPending?: boolean
+  /** Прогрев карточки при наведении мыши или фокусе; срабатывает один раз на кандидата. */
+  onWarm?: (candidateId: string) => void
 }
 
 const INVITATION_LABELS: Record<string, string> = {
@@ -29,7 +33,21 @@ const INVITATION_LABELS: Record<string, string> = {
 }
 
 /** Строка списка: источник каждого факта виден, процентов и баллов нет (Арх. 11.7). */
-export function MatchCardCompact({ variant, item, pair, onOpen, onPinToggle, pinPending }: MatchCardCompactProps) {
+export function MatchCardCompact({
+  variant,
+  item,
+  pair,
+  onOpen,
+  onPinToggle,
+  pinPending,
+  onWarm,
+}: MatchCardCompactProps) {
+  const warmed = useRef(false)
+  const warm = () => {
+    if (warmed.current || !onWarm) return
+    warmed.current = true
+    onWarm(item.candidate_id)
+  }
   const isShortlist = 'position' in item
   const sItem = isShortlist ? (item as ShortlistItemView) : null
   const bItem = !isShortlist ? (item as BankItemView) : null
@@ -43,7 +61,7 @@ export function MatchCardCompact({ variant, item, pair, onOpen, onPinToggle, pin
 
   if (unavailable === 'withdrawn') {
     return (
-      <li className="surface-row flex min-w-0 items-center gap-3 p-4 text-ink-muted">
+      <li className="surface-row flex min-w-0 items-center gap-3 p-4 text-ink-muted md:px-5">
         <span className="num type-caption shrink-0">№ {sItem?.position}</span>
         <span className="type-sm min-w-0">{MATCHING.shortlist.withdrawn}</span>
       </li>
@@ -54,12 +72,15 @@ export function MatchCardCompact({ variant, item, pair, onOpen, onPinToggle, pin
 
   return (
     <li
-      className="surface-row flex min-w-0 flex-col gap-3 p-4 md:flex-row md:items-start md:gap-4"
+      className="surface-row flex min-w-0 flex-col gap-3 p-4 transition-colors hover:border-line-strong md:flex-row md:items-start md:gap-4 md:px-5"
       data-candidate={item.candidate_id}
+      onPointerEnter={(e) => {
+        if (e.pointerType === 'mouse') warm()
+      }}
+      onFocus={warm}
     >
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
-          {sItem ? <span className="num type-caption shrink-0 text-ink-muted">№ {sItem.position}</span> : null}
           <button
             type="button"
             onClick={() => onOpen(item.candidate_id)}
@@ -68,20 +89,20 @@ export function MatchCardCompact({ variant, item, pair, onOpen, onPinToggle, pin
             {title}
           </button>
           {item.display_name ? <span className="num type-caption text-ink-muted">{item.public_code}</span> : null}
-          {item.is_demo ? <DemoChip /> : null}
-          <CategoryChip title={item.category.title} />
+          <CandidateCategoryChip category={item.category} />
+          {/* Оценка соответствия стоит рядом со статусом справа по смыслу: это вердикт по строке */}
           {sItem ? <FitBadge band={sItem.fit_band ?? null} strength={sItem.strength_label} size="sm" /> : null}
           {bItem ? <FitBadge band={null} strength={bItem.strength_label} size="sm" /> : null}
-          {sItem?.diff_mark && sItem.diff_mark !== 'same' ? (
-            <span className="type-caption rounded-full bg-fill px-2 py-0.5 text-ink-muted">
-              {C.diff[sItem.diff_mark]}
-            </span>
-          ) : null}
         </div>
-        {bItem ? <LevelScale level={bItem.level} size="sm" ownGrade={item.category.grade.code} /> : null}
+        {/* Заявленный грейд: уровня по тесту нет, шкала не рисуется. */}
+        {bItem?.level ? (
+          <LevelScale level={bItem.level} size="sm" ownGrade={item.category.grade.code} />
+        ) : bItem ? (
+          <p className="type-caption min-w-0 text-ink-muted">{CATEGORY_DECLARED.card}</p>
+        ) : null}
         {evidence.length > 0 ? (
-          <ul className="flex min-w-0 flex-wrap gap-1.5" aria-label="Подтверждённые навыки">
-            {evidence.slice(0, 4).map((e) => (
+          <ul className="flex min-w-0 flex-wrap gap-1.5" aria-label="Навыки и их источник">
+            {evidence.slice(0, 3).map((e) => (
               <li key={e.skill.code} className="min-w-0 max-w-full">
                 <EvidenceChip kind={e.kind} skill={e.skill.title} size="sm" />
               </li>
@@ -93,7 +114,10 @@ export function MatchCardCompact({ variant, item, pair, onOpen, onPinToggle, pin
             ) : null}
           </ul>
         ) : null}
-        <p className="type-caption flex min-w-0 flex-wrap gap-x-3 gap-y-1 text-ink-muted">
+        <p className="type-caption flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-ink-muted">
+          {sItem ? <span className="num">№ {sItem.position}</span> : null}
+          {item.is_demo ? <DemoChip /> : null}
+          {sItem?.diff_mark && sItem.diff_mark !== 'same' ? <span>{C.diff[sItem.diff_mark]}</span> : null}
           {sItem?.must_total ? (
             <span>
               <span className="num">
@@ -116,7 +140,14 @@ export function MatchCardCompact({ variant, item, pair, onOpen, onPinToggle, pin
         ) : null}
       </div>
       <div className={cn('flex shrink-0 flex-wrap items-center gap-2 md:justify-end')}>
-        {status ? <StatusBadge status={status} label={INVITATION_LABELS[status] ?? status} size="sm" live /> : null}
+        {status ? (
+          <StatusBadge
+            status={status}
+            label={INVITATION_STATUS_LABELS.employer[status] ?? INVITATION_LABELS[status] ?? status}
+            size="sm"
+            live
+          />
+        ) : null}
         {!status && block ? (
           <span className="type-sm text-ink-muted">
             {block.code === 'conditions_mismatch' ? C.mismatch : C.again} · {formatDate(block.until)}

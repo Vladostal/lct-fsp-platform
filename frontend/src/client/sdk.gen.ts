@@ -74,6 +74,8 @@ export const contactResolveComplaint = <ThrowOnError extends boolean = false>(op
  * Планы теста по грейдам своей специализации
  *
  * Планы теста по грейдам своей специализации. 409 `survey_required`.
+ *
+ * Пустой список — теста по специализации пока нет.
  */
 export const assessmentGetBlueprints = <ThrowOnError extends boolean = false>(options?: Options<AssessmentGetBlueprintsData, ThrowOnError>): RequestResult<AssessmentGetBlueprintsResponses, AssessmentGetBlueprintsErrors, ThrowOnError> => (options?.client ?? client).get<AssessmentGetBlueprintsResponses, AssessmentGetBlueprintsErrors, ThrowOnError>({ url: '/api/v1/assessment/blueprints', ...options });
 
@@ -97,7 +99,11 @@ export const assessmentPostBlueprintPreview = <ThrowOnError extends boolean = fa
 /**
  * Заявить грейд
  *
- * Заявить грейд. 409: `survey_required`, `claim_locked`; 422: `grade_unavailable`.
+ * Заявить грейд. 409: `survey_required`, `claim_locked`, `cooldown_active`; 422: `grade_unavailable`.
+ *
+ * В специализации без теста заявление сразу даёт категорию `basis = declared`. Первую смену заявленного грейда
+ * можно сделать сразу, следующие — раз в 90 дней: иначе 409 `cooldown_active` с `params.reason = grade_change`
+ * и `params.available_at`.
  */
 export const assessmentPutClaim = <ThrowOnError extends boolean = false>(options: Options<AssessmentPutClaimData, ThrowOnError>): RequestResult<AssessmentPutClaimResponses, AssessmentPutClaimErrors, ThrowOnError> => (options.client ?? client).put<AssessmentPutClaimResponses, AssessmentPutClaimErrors, ThrowOnError>({
     url: '/api/v1/assessment/claim',
@@ -186,7 +192,10 @@ export const assessmentGetSurvey = <ThrowOnError extends boolean = false>(option
  * Сохранить ответы опроса
  *
  * Сохранить ответы опроса. 409: `survey_version_mismatch`, `session_active`,
- * `specialization_change_requires_confirm`, `cooldown_active`; 422: `specialization_unavailable`.
+ * `specialization_change_requires_confirm`, `cooldown_active`; 422 — ошибки полей и
+ * `specialization_unavailable` (тест по специализации написан, но сейчас недоступен).
+ *
+ * Специализация без теста принимается: категория в ней будет заявленной (`PUT /assessment/claim`).
  */
 export const assessmentPutSurvey = <ThrowOnError extends boolean = false>(options: Options<AssessmentPutSurveyData, ThrowOnError>): RequestResult<AssessmentPutSurveyResponses, AssessmentPutSurveyErrors, ThrowOnError> => (options.client ?? client).put<AssessmentPutSurveyResponses, AssessmentPutSurveyErrors, ThrowOnError>({
     url: '/api/v1/assessment/survey',
@@ -657,7 +666,7 @@ export const contactInvitationsPairStates = <ThrowOnError extends boolean = fals
 export const contactPrecheckInvitation = <ThrowOnError extends boolean = false>(options: Options<ContactPrecheckInvitationData, ThrowOnError>): RequestResult<ContactPrecheckInvitationResponses, ContactPrecheckInvitationErrors, ThrowOnError> => (options.client ?? client).get<ContactPrecheckInvitationResponses, ContactPrecheckInvitationErrors, ThrowOnError>({ url: '/api/v1/employer/invitations/precheck', ...options });
 
 /**
- * Слоты и суточный лимит
+ * Суточный лимит отправки
  */
 export const contactInvitationsQuota = <ThrowOnError extends boolean = false>(options?: Options<ContactInvitationsQuotaData, ThrowOnError>): RequestResult<ContactInvitationsQuotaResponses, ContactInvitationsQuotaErrors, ThrowOnError> => (options?.client ?? client).get<ContactInvitationsQuotaResponses, ContactInvitationsQuotaErrors, ThrowOnError>({ url: '/api/v1/employer/invitations/quota', ...options });
 
@@ -684,7 +693,7 @@ export const contactEmployerInvitationOutcome = <ThrowOnError extends boolean = 
 });
 
 /**
- * Отозвать приглашение; слот занят до исходного срока
+ * Отозвать приглашение
  */
 export const contactWithdrawEmployerInvitation = <ThrowOnError extends boolean = false>(options: Options<ContactWithdrawEmployerInvitationData, ThrowOnError>): RequestResult<ContactWithdrawEmployerInvitationResponses, ContactWithdrawEmployerInvitationErrors, ThrowOnError> => (options.client ?? client).post<ContactWithdrawEmployerInvitationResponses, ContactWithdrawEmployerInvitationErrors, ThrowOnError>({ url: '/api/v1/employer/invitations/{invitation_id}/withdraw', ...options });
 

@@ -20,7 +20,7 @@ from app.modules.contact import constants as c
 from app.modules.contact import rules, service
 from app.modules.contact.dto import DeclineCondition, InvitationData
 from app.modules.contact.models import CandidateContactState, Invitation, InvitationEvent
-from app.shared.enums import ConditionKind, DeclineReason, InvitationStatus, TrustLevel
+from app.shared.enums import ConditionKind, DeclineReason, InvitationStatus
 from tests.contact.conftest import T0, offer
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -36,7 +36,7 @@ _STEP = st.tuples(
 )
 
 
-def _check_invariants(db, now, limit):
+def _check_invariants(db, now):
     db.flush()
     db.expire_all()
     invitations = db.scalars(select(Invitation)).all()
@@ -60,8 +60,6 @@ def _check_invariants(db, now, limit):
     assert all(count == 1 for count in revisions.values()), "I7"
     originals = {i.id: i for i in invitations}
     assert all(originals[i.revises_id].revises_id is None for i in invitations if i.revises_id), "I7"
-    for rows in by_employer.values():
-        assert rules.slots_used(rows, now)[0] <= limit, "I2"
     assert all(s.consecutive_expired >= 0 for s in db.scalars(select(CandidateContactState)))
 
 
@@ -93,7 +91,6 @@ def _check_invariants(db, now, limit):
     ]
 )
 def test_random_sequences_keep_invariants(db, actors, world, monkeypatch, steps):
-    monkeypatch.setattr(c, "SLOT_LIMIT", {TrustLevel.BASIC: 2, TrustLevel.VERIFIED: 2})
     employers = [actors.employer().id for _ in range(2)]
     candidates = [actors.candidate().id for _ in range(3)]
     outer = db.begin_nested()
@@ -116,13 +113,10 @@ def test_random_sequences_keep_invariants(db, actors, world, monkeypatch, steps)
                     body = offer(candidate_id, salary_from=salary_from, salary_to=salary_from + 50_000)
                     if action == "revise" and last is not None:
                         body["revises_id"] = str(last.id)
-                    before = rules.slots_used(
-                        db.scalars(select(Invitation).where(Invitation.employer_id == employer_id)).all(), now
-                    )[0]
                     _, created = service.send(
                         db, now, employer_id, InvitationData.model_validate(body), uuid4(), is_demo=False
                     )
-                    assert created and before < 2, "I2: отправка при занятых слотах"
+                    assert created
                 elif action == "settle":
                     service.settle_all(db, now)
                 elif action == "min_up":
@@ -152,7 +146,7 @@ def test_random_sequences_keep_invariants(db, actors, world, monkeypatch, steps)
                     point.commit()
                 else:
                     point.rollback()
-            _check_invariants(db, now, limit=2)
+            _check_invariants(db, now)
             _SEEN.update(db.scalars(select(Invitation.status)).all())
     finally:
         outer.rollback()
@@ -258,12 +252,12 @@ def test_parallel_sends_to_same_pair_give_one_sent_i1(db_factory, world):
 
 
 @pytest.mark.real_db
-def test_nine_slots_two_parallel_sends_one_succeeds_i2(db_factory, world):
+def test_daily_limit_two_parallel_sends_one_succeeds_i2(db_factory, world):
     setup = db_factory()
     employer = _user(setup, "employer", world)
-    targets = [_user(setup, "candidate", world) for _ in range(11)]
+    targets = [_user(setup, "candidate", world) for _ in range(c.DAILY_SEND_LIMIT + 1)]
     setup.commit()
-    for candidate in targets[:9]:
+    for candidate in targets[:-2]:
         _send_now(setup, T0, employer, candidate)
 
     def job(candidate):
@@ -273,13 +267,12 @@ def test_nine_slots_two_parallel_sends_one_succeeds_i2(db_factory, world):
 
         return run
 
-    results = _parallel(db_factory, [job(targets[9]), job(targets[10])])
+    results = _parallel(db_factory, [job(targets[-2]), job(targets[-1])])
     ok = [r for r in results if r == "sent"]
     errors = [r for r in results if isinstance(r, ApiException)]
-    assert len(ok) == 1 and len(errors) == 1 and errors[0].code == "quota_exceeded", results
-    assert errors[0].params["used"] == 10
+    assert len(ok) == 1 and len(errors) == 1 and errors[0].code == "daily_limit_exceeded", results
     check = db_factory()
-    assert len(check.scalars(select(Invitation.id)).all()) == 10
+    assert len(check.scalars(select(Invitation.id)).all()) == c.DAILY_SEND_LIMIT
 
 
 @pytest.mark.real_db

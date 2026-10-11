@@ -222,6 +222,39 @@ def seed_result(db: Session, result: SeedResult) -> None:
         _write_session(db, profile, data, result.is_demo_result, cache)
 
 
+def seed_declared(
+    db: Session,
+    *,
+    candidate_id: UUID,
+    specialization_code: str,
+    grade_code: str,
+    now: datetime,
+    main_language: str | None = None,
+    experience_band: str = "2_4",
+) -> None:
+    """Записать опрос и заявленный грейд кандидата в специализации без теста (категория `basis = declared`).
+
+    Идемпотентна; `ValueError`, если у специализации есть тест (там категорию даёт только тест).
+    """
+    if grade_code not in GRADES:
+        raise ValueError(f"seed_declared: неизвестный грейд {grade_code}")
+    if not sessions.declared_allowed(specialization_code):
+        raise ValueError(f"seed_declared: у специализации {specialization_code} есть тест, категорию даёт только он")
+    _ensure_profile(
+        db,
+        candidate_id,
+        specialization_code,
+        grade_code,
+        now,
+        main_language=main_language,
+        experience_band=experience_band,
+    )
+    row = repo.category(db, candidate_id)
+    if row is not None and row.specialization_code == specialization_code:
+        return
+    sessions.declare_category(db, candidate_id, specialization_code, grade_code, now)
+
+
 def get_now(db: Session) -> datetime:
     from app.core import clock
 

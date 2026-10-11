@@ -3,6 +3,7 @@ import { createRootRouteWithContext, Outlet, useRouterState } from '@tanstack/re
 import { useEffect, useRef } from 'react'
 import type { Catalog, MeView } from '@/client'
 import { NotFound, PublicLayout } from '@/components/app'
+import { RouteProgress } from '@/components/app/layout/route-progress'
 import { roleRoot } from '@/lib/guards'
 import { catalogQuery, meQuery } from '@/lib/query'
 
@@ -57,7 +58,12 @@ function useFocusPageTitle() {
 
 function RootComponent() {
   useFocusPageTitle()
-  return <Outlet />
+  return (
+    <>
+      <RouteProgress />
+      <Outlet />
+    </>
+  )
 }
 
 /** Неизвестный адрес верхнего уровня: 404 в публичном каркасе со ссылкой на первый экран роли. */

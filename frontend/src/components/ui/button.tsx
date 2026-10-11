@@ -14,22 +14,22 @@ import { cn } from '@/lib/utils'
  * Размеры: md 44 px, sm 36 px (область нажатия расширена до 44 px), lg 52 px — только hero и мастер.
  */
 const buttonVariants = cva(
-  "relative inline-flex shrink-0 select-none items-center justify-center rounded-full border border-transparent font-medium whitespace-nowrap transition-colors duration-(--dur-fast) disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5",
+  "relative inline-flex shrink-0 select-none items-center justify-center rounded-full border border-transparent font-medium whitespace-nowrap transition-[color,background-color,transform] duration-(--dur-fast) active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5",
   {
     variants: {
       variant: {
         primary: 'bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-900',
-        secondary: 'border-brand-600 bg-surface text-brand-700 hover:bg-brand-50 active:bg-brand-100',
-        ghost: 'text-brand-700 hover:bg-brand-50 active:bg-brand-100',
+        secondary: 'bg-fill text-ink hover:bg-line active:bg-line',
+        ghost: 'text-ink-muted hover:bg-fill hover:text-ink active:bg-line',
         destructive: 'border-danger bg-surface text-danger hover:bg-danger-bg active:bg-danger-bg',
         link: 'tap-target rounded-xs text-brand-700 underline decoration-1 underline-offset-3 hover:text-brand-600 hover:decoration-2 active:text-brand-900',
       },
       size: {
-        md: 'h-11 gap-2 px-5 text-base',
-        sm: "tap-target h-9 gap-1.5 px-4 text-sm [&_svg:not([class*='size-'])]:size-4",
-        lg: 'h-13 gap-2 px-7 text-base',
-        icon: 'size-11',
-        'icon-sm': "tap-target size-9 [&_svg:not([class*='size-'])]:size-4",
+        md: 'tap-target h-10 gap-2 px-4 text-sm',
+        sm: "tap-target h-8 gap-1.5 px-3 text-sm [&_svg:not([class*='size-'])]:size-4",
+        lg: 'h-12 gap-2 px-6 text-base',
+        icon: 'tap-target size-10',
+        'icon-sm': "tap-target size-8 [&_svg:not([class*='size-'])]:size-4",
       },
     },
     compoundVariants: [{ variant: 'link', className: 'h-auto min-h-6 px-0' }],

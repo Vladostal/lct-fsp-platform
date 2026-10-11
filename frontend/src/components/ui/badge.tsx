@@ -3,9 +3,9 @@ import { Slot } from 'radix-ui'
 import type * as React from 'react'
 import { cn } from '@/lib/utils'
 
-/** Бейдж — пилюля высотой 28 (текст 14 / 20) или 24 (12 / 16); подпись не переносится (E §3.1, §4.3). */
+/** Бейдж — один размер h-6 (12 / 16), rounded-sm; подпись не переносится (E §3.1, §4.3). */
 const badgeVariants = cva(
-  'inline-flex w-fit max-w-full shrink-0 items-center justify-center gap-1.5 rounded-full border border-transparent font-medium whitespace-nowrap [&>svg]:pointer-events-none [&>svg]:shrink-0',
+  'inline-flex w-fit max-w-full shrink-0 items-center justify-center gap-1.5 rounded-sm border border-transparent font-medium whitespace-nowrap [&>svg]:pointer-events-none [&>svg]:shrink-0',
   {
     variants: {
       variant: {
@@ -14,12 +14,13 @@ const badgeVariants = cva(
         success: 'bg-success-bg text-success',
         warning: 'bg-warning-bg text-warning',
         danger: 'bg-danger-bg text-danger',
-        outline: 'border-line-strong bg-surface text-ink',
-        solid: 'bg-brand-600 text-white',
+        /* Синонимы прежних видов: чужие экраны компилируются, вид один. */
+        outline: 'bg-fill text-ink',
+        solid: 'bg-brand-50 text-brand-700',
       },
       size: {
-        md: 'h-7 px-3 text-sm leading-5 [&>svg]:size-4',
-        sm: 'h-6 px-2.5 text-xs leading-4 [&>svg]:size-3.5',
+        md: 'h-6 px-2 text-xs leading-4 [&>svg]:size-3.5',
+        sm: 'h-6 px-2 text-xs leading-4 [&>svg]:size-3.5',
       },
     },
     defaultVariants: {

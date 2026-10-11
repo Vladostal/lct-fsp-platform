@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Textarea } from '@/components/ui/textarea'
-import { applyFieldErrors, errorMessage, isApiError } from '@/lib/api'
+import { errorMessage, isApiError } from '@/lib/api'
 import { companyQuery } from '@/lib/query'
 import { COMPANY } from '../content'
 import { useSaveCompany } from '../hooks'
@@ -83,14 +83,16 @@ function CompanyForm({ company, mode, demo }: { company: CompanyView; mode: 'wiz
           contact_method: 'contactValue',
           'contact_method.value': 'contactValue',
         }
-        if (isApiError(error) && error.fields?.length) {
-          const mapped = error.fields.map((f) => ({ ...f, name: fieldMap[f.name] ?? f.name }))
-          applyFieldErrors(
-            { ...error, fields: mapped } as typeof error,
-            (name, e) => setErrors((prev) => ({ ...prev, [name]: e.message })),
-            ['name', 'sphere', 'description', 'site', 'city', 'contactValue'] as never,
-          )
-        } else setFormError(errorMessage(error))
+        const known = ['name', 'sphere', 'description', 'site', 'city', 'contactValue']
+        const byField: Record<string, string> = {}
+        if (isApiError(error))
+          for (const f of error.fields) {
+            const name = fieldMap[f.name] ?? f.name
+            if (known.includes(name)) byField[name] = f.message
+          }
+        // Ошибка без известного поля показывается над формой: молчаливого отказа быть не должно.
+        if (Object.keys(byField).length > 0) setErrors((prev) => ({ ...prev, ...byField }))
+        else setFormError(errorMessage(error))
       },
     })
   }
@@ -118,15 +120,15 @@ function CompanyForm({ company, mode, demo }: { company: CompanyView; mode: 'wiz
           mode === 'cabinet' ? 'grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]' : 'flex min-w-0 flex-col gap-6'
         }
       >
-        <div className="flex min-w-0 flex-col gap-6">
+        <div className="surface-card flex min-w-0 flex-col gap-6">
           {formError ? (
             <Alert variant="destructive">
               <AlertDescription>{formError}</AlertDescription>
             </Alert>
           ) : null}
-          <section aria-labelledby="c-about" className="surface-card flex min-w-0 flex-col gap-4 p-5">
+          <section aria-labelledby="c-about" className="flex min-w-0 flex-col gap-4">
             <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
-              <h2 id="c-about" className="type-h3">
+              <h2 id="c-about" className="type-eyebrow">
                 {COMPANY.sections.about}
               </h2>
               {demo ? (
@@ -186,8 +188,8 @@ function CompanyForm({ company, mode, demo }: { company: CompanyView; mode: 'wiz
             </div>
           </section>
 
-          <section aria-labelledby="c-contact" className="surface-card flex min-w-0 flex-col gap-4 p-5">
-            <h2 id="c-contact" className="type-h3">
+          <section aria-labelledby="c-contact" className="flex min-w-0 flex-col gap-4 border-t border-line pt-6">
+            <h2 id="c-contact" className="type-eyebrow">
               {COMPANY.sections.contact}
             </h2>
             <fieldset className="flex min-w-0 flex-col gap-2">
@@ -200,7 +202,7 @@ function CompanyForm({ company, mode, demo }: { company: CompanyView; mode: 'wiz
                 {COMPANY.contactKinds.map((k) => (
                   <Label
                     key={k.value}
-                    className="tap-target flex min-w-0 cursor-pointer items-center gap-2 rounded-md border border-line px-3 font-normal"
+                    className="tap-target flex min-w-0 cursor-pointer items-center gap-2 rounded-md bg-fill px-3 font-normal"
                   >
                     <RadioGroupItem value={k.value} />
                     <span className="min-w-0 break-words">{k.label}</span>

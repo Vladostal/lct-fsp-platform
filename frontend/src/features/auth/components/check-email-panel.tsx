@@ -45,7 +45,7 @@ export function CheckEmailPanel({ email }: { email: string }) {
       <div className="flex min-w-0 flex-col gap-3">
         <Button
           type="button"
-          variant="secondary"
+          variant="link"
           className="w-full"
           onClick={onResend}
           loading={resend.isPending}
@@ -59,7 +59,7 @@ export function CheckEmailPanel({ email }: { email: string }) {
             AUTH.checkEmail.resend
           )}
         </Button>
-        <Button variant="ghost" className="w-full" asChild>
+        <Button variant="link" className="w-full" asChild>
           <Link to="/signup">{AUTH.checkEmail.changeEmail}</Link>
         </Button>
       </div>

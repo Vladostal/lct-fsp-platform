@@ -14,12 +14,13 @@ from sqlalchemy.orm import Session
 
 from app.core import clock
 from app.core.errors import ApiException
+from app.modules.matching import cards, service
 from app.modules.matching import constants as C
-from app.modules.matching import service
 from app.modules.matching.dto import ShortlistQuery, ShortlistRefinement
 from app.modules.matching.models import ExposureEvent, Need, ShortlistItem, ShortlistSnapshot
 from app.modules.matching.schemas import ShortlistSnapshotView, SnapshotDiffView
-from app.shared.enums import VisibilityState, WorkFormat
+from app.modules.profile.dto import PrivacySettingsDTO
+from app.shared.enums import CategoryBasis, VisibilityState, WorkFormat
 
 API = "/api/v1"
 
@@ -98,8 +99,17 @@ def test_need_crud_and_errors(api: TestClient, world: Any, db: Session, employer
     assert [item["code"] for item in need["must_skills"]] == ["python", "postgresql"]
     assert [item["id"] for item in api.get(f"{API}/employer/needs").json()] == [need["id"]]
 
-    unavailable = api.post(f"{API}/employer/needs", json={**body, "specialization_code": "mobile"})
+    # Потребность создаётся по любой специализации справочника — и там, где тест есть (frontend), и там, где
+    # его ещё нет (mobile: кандидаты с заявленным грейдом). Ошибка — только для кода вне справочника.
+    for spec in ("frontend", "mobile"):
+        other = api.post(f"{API}/employer/needs", json={**body, "specialization_code": spec, "must_skills": ["react"]})
+        assert other.status_code == 201, other.text
+        assert other.json()["target"]["code"] == f"{spec}:middle" and other.json()["target"]["basis"] is None
+    unavailable = api.post(f"{API}/employer/needs", json={**body, "specialization_code": "cobol"})
     assert (unavailable.status_code, unavailable.json()["code"]) == (422, "specialization_unavailable")
+    assert unavailable.json()["fields"][0]["name"] == "specialization_code"
+    bad_grade = api.post(f"{API}/employer/needs", json={**body, "grade_code": "lead"})
+    assert (bad_grade.status_code, bad_grade.json()["code"]) == (422, "specialization_unavailable")
     unknown = api.post(f"{API}/employer/needs", json={**body, "must_skills": ["python", "cobol"]})
     assert (unknown.status_code, unknown.json()["code"]) == (422, "skill_unknown")
     assert unknown.json()["fields"][0]["name"] == "must_skills"
@@ -166,7 +176,7 @@ def test_snapshot_create_order_and_dedup(api: TestClient, world: Any, db: Sessio
     assert empty_row["risk"].startswith("Нет данных по обязательным навыкам") and empty_row["fit_band"] == "partial"
     assert view["items"][2]["fit_band"] == "partial"  # одними заявлениями не выше «частичного»
     assert "pct" not in json.dumps(view["items"]) and view["version_no"] == 1 and view["is_latest"] is True
-    assert view["scorer_version"] == "match-2+fsp-signal-test+skills-test"
+    assert view["scorer_version"] == "match-3+fsp-signal-test+skills-test"
     assert [row["relation"] for row in view["categories"]] == ["exact", "lower_with_margin", "higher"]
 
     again = api.post(f"{API}/employer/needs/{need_id}/shortlists")
@@ -449,8 +459,20 @@ def test_bank_filters_order_and_cursor(api: TestClient, world: Any, db: Session,
         "backend:junior",
         "frontend:middle",
     ]
-    assert [row["candidate_id"] for row in body["items"][:2]] == [str(people["top"].id), str(people["office"].id)]
-    assert body["items"][0]["strength_label"] == "high" and "fit_band" not in body["items"][0]
+    # Сила = 10·T + 30·F + 35·X + 25·S; у всех se_eff = 0.4, порог 0, ширина 1.5: T = clip((theta + 0.35) / 2.25).
+    # Стаж у всех 4 года при полном стаже middle 5 лет: X = 0.8 → 28 баллов.
+    #   fsp:      T = 0.45/2.25 = 0.2 → 2;  F = 0.8 → 24;  S = 0                 → 54.0, полоса 5, medium
+    #   declared: T = 1.55/2.25 = 0.689 → 6.89;  S = 3/6 → 12.5                   → 47.4, полоса 4
+    #   mid:      T = 0.689 → 6.89;  S = 2/6 → 8.33                               → 43.2, полоса 4
+    #   top:      T = 2.75/2.25 → 1 → 10;  S = 1/6 → 4.17                         → 42.2, полоса 4
+    #   office:   T = 1.95/2.25 = 0.867 → 8.67;  S = 0                            → 36.7, полоса 3
+    #   empty:    T = 0.689 → 6.89;  S = 0                                        → 34.9, полоса 3
+    # Первым идёт `fsp` (полоса 5), дальше — трое из полосы 4 в порядке показов и жребия.
+    assert body["items"][0]["candidate_id"] == str(people["fsp"].id)
+    same_band = {str(people[name].id) for name in ("declared", "mid", "top")}
+    assert {row["candidate_id"] for row in body["items"][1:3]} <= same_band
+    assert body["items"][0]["strength_label"] == "medium" and "fit_band" not in body["items"][0]
+    assert body["items"][0]["category"]["basis"] == "test" and body["items"][0]["level"] is not None
     rest = api.get(f"{API}/employer/candidates", params={"limit": 3, "cursor": body["next_cursor"]}).json()
     assert not {row["candidate_id"] for row in rest["items"]} & {row["candidate_id"] for row in body["items"]}
     stale = api.get(f"{API}/employer/candidates", params={"limit": 3, "cursor": body["next_cursor"], "has_fsp": True})
@@ -506,7 +528,12 @@ def test_card_view_and_open_limit(api: TestClient, world: Any, db: Session, empl
     assert body["match"] is None and body["pinned"] is None and body["disclosed"] is False
     assert body["display_name"] is None and body["custom_skills"] == [] and body["declared"]["about"] is None
     assert body["declared"]["city"] == "Казань" and body["category"]["code"] == "backend:middle"
-    assert [row["code"] for row in body["strength"]["contributions"]] == ["test", "freshness"]
+    rows = body["strength"]["contributions"]
+    assert [row["code"] for row in rows] == ["test", "freshness", "experience", "skills"]
+    # top: T = 1 → 10.0 из 10; давность 0; стаж 4 из 5 лет → 35·0.8 = 28.0 из 35; один навык из шести → 4.2 из 25.
+    assert [(row["points"], row["max_points"]) for row in rows] == [(10.0, 10.0), (0.0, 0.0), (28.0, 35.0), (4.2, 25.0)]
+    assert [row["source"] for row in rows] == ["confirmed", "confirmed", "declared", "declared"]
+    assert body["strength"]["label"] == "medium" and body["category"]["basis"] == "test"
     assert [item["skill"]["code"] for item in body["skills"]] == ["postgresql", "python", "docker"]
     opened = db.scalar(select(ExposureEvent.opened).where(ExposureEvent.candidate_id == people["top"].id))
     assert opened is True
@@ -585,7 +612,8 @@ def test_candidate_cabinet(world: Any, db: Session, login_as: Callable[..., Test
         ("python", "test"),
         ("docker", "declared"),
     ]
-    assert body["skills"][1]["detail"] == "указано вами в профиле" and body["strength"]["label"] in ("high", "medium")
+    # T = (0.9 + 0.35) / 2.25 = 0.556 → 5.56; стаж 28; один навык из шести → 4.17: сила 37.7 → medium (от 35).
+    assert body["skills"][1]["detail"] == "указано вами в профиле" and body["strength"]["label"] == "medium"
     before = api.get(f"{API}/candidate/profile/preview").json()
     after = api.get(f"{API}/candidate/profile/preview", params={"state": "after"}).json()
     assert (before["disclosed"], before["display_name"], before["declared"]["about"]) == (False, None, None)
@@ -651,7 +679,7 @@ def test_explain_for_invitation_and_exposure_stats(api: TestClient, world: Any, 
     assert (why.source, why.target.code, explain.fit_band) == ("need", "backend:middle", "good")
     assert [(item.skill.code, item.kind) for item in why.matched] == [("python", "test"), ("postgresql", "declared")]
     assert why.unconfirmed is not None and why.unconfirmed.skill.code == "postgresql"
-    assert "категория и уровень по тесту" in why.employer_saw and explain.scorer_version.startswith("match-2+")
+    assert "категория и уровень по тесту" in why.employer_saw and explain.scorer_version.startswith("match-3+")
     dumped = json.dumps(explain.model_dump(mode="json"), ensure_ascii=False)
     assert "position" not in dumped and "risk" not in dumped and "contributions" not in dumped
 
@@ -688,3 +716,103 @@ def test_demo_need_for(world: Any, db: Session, make_user: Callable[..., Any]) -
     assert service.demo_need_for(db, "backend:senior") is None
     assert db.scalar(select(Need.is_demo).where(Need.id == need_id)) is True
     assert db.scalar(select(ShortlistSnapshot.id)) is None
+
+
+# --------------------------------------------------------------------------------------------------------------------
+# Специализация без теста: кандидаты с заявленным грейдом
+# --------------------------------------------------------------------------------------------------------------------
+
+
+def test_declared_candidates_in_shortlist_bank_and_card(
+    api: TestClient, world: Any, db: Session, employer: Any, login_as: Callable[..., TestClient]
+) -> None:
+    """По специализации без теста подборка и банк работают: грейд заявленный, уровня нет, это видно в каждой строке."""
+    declared = CategoryBasis.DECLARED
+    full = world.add(spec="mobile", basis=declared, declared=["react", "docker"], experience_years=3.0)
+    bare = world.add(spec="mobile", basis=declared, declared=["react"], experience_years=None)
+    sport = world.add(spec="mobile", basis=declared, fsp_value=0.8, fsp_band="high")
+    senior = world.add(spec="mobile", basis=declared, grade="senior", declared=["react"])
+    world.add(spec="mobile", basis=declared, grade="junior", declared=["react"])  # «грейд ниже с запасом» — не для него
+    need_id = make_need(
+        db, world, employer.id, specialization_code="mobile", must_skills=["react"], nice_skills=["docker"]
+    )
+
+    created = api.post(f"{API}/employer/needs/{need_id}/shortlists")
+    assert created.status_code == 201, created.text
+    view = created.json()
+    # Порядок: закрытые обязательные → подтверждённое (у всех 0) → сила → заявленное. Сила без теста:
+    #   full:  35·3/5 + 25·2/6 = 21 + 8.33 = 29.3 (полоса 2);  bare: стаж скрыт, 25·1/6 = 4.2 (полоса 0);
+    #   sport: React не заявлен — обязательный без данных, поэтому ниже, хотя сила 30·0.8 + 35·4/5 = 52.0.
+    assert [row["candidate_id"] for row in view["items"]] == [str(item.id) for item in (full, bare, sport, senior)]
+    assert [row["relation"] for row in view["items"]] == ["exact", "exact", "exact", "higher"]
+    for row in view["items"]:
+        assert row["category"]["basis"] == "declared" and row["category"]["specialization"]["code"] == "mobile"
+        assert row["freshness_days"] is None and row["stale"] is False and row["grade_margin"] is False
+    assert [row["strength_label"] for row in view["items"][:3]] == ["base", "base", "medium"]
+    assert view["items"][0]["risk"].startswith("React — заявлено кандидатом")
+
+    # Чтение сохранённой версии — тот же ответ (давности нет, а не «ноль дней»).
+    stored = api.get(f"{API}/employer/shortlists/{view['id']}").json()
+    assert [row["freshness_days"] for row in stored["items"]] == [None] * 4
+    assert [row["category"]["basis"] for row in stored["items"]] == ["declared"] * 4
+
+    card = api.get(f"{API}/employer/candidates/{full.id}", params={"need_id": str(need_id)})
+    assert card.status_code == 200, card.text
+    body = card.json()
+    assert body["level"] is None and body["category"]["basis"] == "declared"
+    reasons = body["match"]["reasons"]
+    assert reasons[0]["code"] == "level_declared"
+    assert reasons[0]["text"] == "Грейд Middle заявлен кандидатом: тест по специализации готовится"
+    assert not {"level_confirmed", "level_margin", "fresh"} & {row["code"] for row in reasons}
+    rows = body["strength"]["contributions"]
+    assert [(row["code"], row["points"], row["max_points"], row["source"]) for row in rows] == [
+        ("test", 0.0, 10.0, "confirmed"),
+        ("experience", 21.0, 35.0, "declared"),
+        ("skills", 8.3, 25.0, "declared"),
+    ]
+    assert rows[0]["label"] == "Тест по специализации готовится" and body["strength"]["label"] == "base"
+    # Стаж не указан, а грейд заявлен: пометка идёт сразу после довода об уровне (место риска занято).
+    bare_card = api.get(f"{API}/employer/candidates/{bare.id}", params={"need_id": str(need_id)}).json()
+    assert [row["code"] for row in bare_card["match"]["reasons"]][:2] == ["level_declared", "experience_unknown"]
+    assert bare_card["match"]["risk"]["code"] == "must_declared_only"
+
+    page = api.get(f"{API}/employer/candidates", params={"category": "mobile:middle"})
+    assert page.status_code == 200, page.text
+    bank = page.json()
+    assert [row["candidate_id"] for row in bank["items"]] == [str(item.id) for item in (sport, full, bare)]
+    for row in bank["items"]:
+        assert row["level"] is None and row["category"]["basis"] == "declared" and row["freshness_days"] is None
+    assert (
+        bank["sections"][0]["category"]["code"] == "mobile:middle" and bank["sections"][0]["category"]["basis"] is None
+    )
+
+    now = clock.now(db)
+    explain = service.explain_for_invitation(db, employer.id, full.id, need_id, UUID(view["id"]), now)
+    assert "заявленный грейд (тест готовится)" in explain.why.employer_saw
+    assert "категория и уровень по тесту" not in explain.why.employer_saw
+    from_bank = service.explain_for_invitation(db, employer.id, full.id, None, None, now)
+    assert from_bank.why.target.basis == CategoryBasis.DECLARED and from_bank.why.matched == []
+
+    # Кабинет самого кандидата: вклады, предпросмотр карточки и PDF без уровня по тесту.
+    own = login_as(type("U", (), {"id": full.id})())
+    evidence = own.get(f"{API}/candidate/evidence").json()
+    assert [row["code"] for row in evidence["strength"]["contributions"]] == ["test", "experience", "skills"]
+    preview = own.get(f"{API}/candidate/profile/preview")
+    assert preview.status_code == 200, preview.text
+    assert preview.json()["level"] is None and preview.json()["category"]["basis"] == "declared"
+    cards.own_pdf(db, full.id, now)
+    assert world.last_pdf_model.level is None and world.last_pdf_model.category.basis == CategoryBasis.DECLARED
+
+
+def test_hidden_experience_and_stack_give_no_strength(api: TestClient, world: Any, db: Session, employer: Any) -> None:
+    """Скрытые стаж и стек в силу не идут: вклад ноль, штрафа нет."""
+    hidden = world.add(
+        theta=0.9,
+        declared=["python", "docker"],
+        privacy=PrivacySettingsDTO(show_experience=False, show_declared_stack=False),
+    )
+    body = api.get(f"{API}/employer/candidates/{hidden.id}").json()
+    rows = {row["code"]: row["points"] for row in body["strength"]["contributions"]}
+    # Остался только тест: T = (0.9 + 0.35) / 2.25 = 0.556 → 5.6 балла.
+    assert rows == {"test": 5.6, "freshness": 0.0, "experience": 0.0, "skills": 0.0}
+    assert body["strength"]["label"] == "base"

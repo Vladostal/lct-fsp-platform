@@ -33,7 +33,7 @@ export function ErrorState({
   text,
   onRetry,
   retrying = false,
-  homeHref = '/',
+  homeHref,
   headingLevel = 2,
   compact = false,
   className,
@@ -85,9 +85,9 @@ export function ErrorState({
             {COMMON.retry}
           </Button>
         ) : null}
-        {kind !== 'load' ? (
-          <Button variant="secondary" asChild>
-            <Link to={homeHref}>{kind === 'forbidden' ? COMMON.forbidden.action : COMMON.notFound.action}</Link>
+        {kind !== 'load' || homeHref ? (
+          <Button variant={kind === 'load' && onRetry ? 'ghost' : 'secondary'} asChild>
+            <Link to={homeHref ?? '/'}>{kind === 'forbidden' ? COMMON.forbidden.action : COMMON.notFound.action}</Link>
           </Button>
         ) : null}
       </div>

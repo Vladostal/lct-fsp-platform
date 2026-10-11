@@ -47,11 +47,15 @@ class Case:
         return [item.features for item in self.pool]
 
 
-def make_cases(world: World) -> list[Case]:
+def make_cases(world: World, *, declared_basis: bool = False) -> list[Case]:
+    """Потребности мира с пулом своей специализации. `declared_basis` — тот же мир как специализация без теста:
+    в пуле все кандидаты, грейд у каждого заявленный (блок отчёта `declared_basis`).
+    """
     cases = []
+    source = world.declared_pool if declared_basis else world.observed
     for need in world.needs:
         query = need.query
-        pool = [item for item in world.observed if item.latent.spec == query.specialization_code]
+        pool = [item for item in source if item.latent.spec == query.specialization_code]
         case = Case(world=world, need=need, pool=pool, by_id={item.latent.candidate_id: item for item in pool})
         for item in pool:
             case.rels[item.latent.candidate_id] = relevance(
@@ -191,7 +195,15 @@ ABLATIONS: dict[str, tuple[str, dict[str, object]]] = {
     "declared_05": ("вес заявленного 0.5", {"params": replace(DEFAULT_PARAMS, e_declared=0.5)}),
     "declared_0": ("вес заявленного 0", {"params": replace(DEFAULT_PARAMS, e_declared=0.0)}),
     "point": ("точка вместо нижней границы (Z_LOWER = 0)", {"params": replace(DEFAULT_PARAMS, z_lower=0.0)}),
-    "no_fsp": ("без ФСП (W_FSP = 0)", {"params": replace(DEFAULT_PARAMS, w_fsp=0.0, w_test=1.0)}),
+    "no_fsp": ("без ФСП (W_FSP = 0)", {"params": replace(DEFAULT_PARAMS, w_fsp=0.0)}),
+    "no_declared": (
+        "сила без заявленного (W_EXPERIENCE = W_SKILLS = 0)",
+        {"params": replace(DEFAULT_PARAMS, w_experience=0.0, w_skills=0.0)},
+    ),
+    "match2_strength": (
+        "прежняя сила match-2: тест 70, ФСП 30, без заявленного",
+        {"params": replace(DEFAULT_PARAMS, w_test=0.7, w_fsp=0.3, w_experience=0.0, w_skills=0.0)},
+    ),
     "no_drift": (
         "без роста неопределённости (se вместо se_eff)",
         {"params": replace(DEFAULT_PARAMS, use_se_eff=False)},
@@ -205,8 +217,12 @@ SENSITIVITY: dict[str, ScoringParams] = {
     "E_DECLARED ×1.2": replace(DEFAULT_PARAMS, e_declared=DEFAULT_PARAMS.e_declared * 1.2),
     "E_PULSE, E_FSP ×0.8": replace(DEFAULT_PARAMS, e_pulse=0.56, e_fsp=0.56),
     "E_PULSE, E_FSP ×1.2": replace(DEFAULT_PARAMS, e_pulse=0.84, e_fsp=0.84),
-    "W_FSP ×0.8": replace(DEFAULT_PARAMS, w_fsp=0.24, w_test=0.76),
-    "W_FSP ×1.2": replace(DEFAULT_PARAMS, w_fsp=0.36, w_test=0.64),
+    "W_FSP ×0.8": replace(DEFAULT_PARAMS, w_fsp=DEFAULT_PARAMS.w_fsp * 0.8),
+    "W_FSP ×1.2": replace(DEFAULT_PARAMS, w_fsp=DEFAULT_PARAMS.w_fsp * 1.2),
+    "W_EXPERIENCE ×0.8": replace(DEFAULT_PARAMS, w_experience=DEFAULT_PARAMS.w_experience * 0.8),
+    "W_EXPERIENCE ×1.2": replace(DEFAULT_PARAMS, w_experience=DEFAULT_PARAMS.w_experience * 1.2),
+    "W_SKILLS ×0.8": replace(DEFAULT_PARAMS, w_skills=DEFAULT_PARAMS.w_skills * 0.8),
+    "W_SKILLS ×1.2": replace(DEFAULT_PARAMS, w_skills=DEFAULT_PARAMS.w_skills * 1.2),
     "Z_LOWER ×0.8": replace(DEFAULT_PARAMS, z_lower=0.8),
     "Z_LOWER ×1.2": replace(DEFAULT_PARAMS, z_lower=1.2),
 }

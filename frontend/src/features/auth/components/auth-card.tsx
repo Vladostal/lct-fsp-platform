@@ -14,25 +14,20 @@ export type AuthCardProps = {
 }
 
 const ICON_TONE = {
-  brand: 'bg-brand-50 text-brand-700',
-  success: 'bg-success-bg text-success',
-  warning: 'bg-warning-bg text-warning',
+  brand: 'text-brand-700',
+  success: 'text-success',
+  warning: 'text-warning',
 } as const
 
 /** Карточка каркаса Auth: единственный h1 экрана, содержимое и строка ссылок под карточкой. */
 export function AuthCard({ title, description, icon: Icon, iconTone = 'brand', children, footer }: AuthCardProps) {
   usePageTitle(title)
   return (
-    <div className="flex min-w-0 animate-fade-in flex-col gap-4">
+    <div className="flex min-w-0 animate-rise-in flex-col gap-4">
       <Card className="gap-6 md:p-8">
         <div className="flex min-w-0 flex-col gap-3">
           {Icon ? (
-            <span
-              className={`grid size-14 shrink-0 place-items-center rounded-full ${ICON_TONE[iconTone]}`}
-              aria-hidden="true"
-            >
-              <Icon className="size-8" strokeWidth={1.5} />
-            </span>
+            <Icon className={`size-6 shrink-0 ${ICON_TONE[iconTone]}`} strokeWidth={1.5} aria-hidden="true" />
           ) : null}
           <h1 data-page-title tabIndex={-1} className="type-h1 text-ink outline-none">
             {title}

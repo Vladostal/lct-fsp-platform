@@ -14,10 +14,13 @@ import { invalidateGuardData } from '@/lib/guards'
 import { assessmentStateQuery } from '@/lib/query'
 import { blueprintsQuery, createQuickSession, createSession } from '../api'
 import { ASSESSMENT } from '../content'
-import { Tile } from './briefing-parts'
 import { unavailableReason } from './next-actions'
 
 const ITEMS = PLURALS.task
+
+// Быстрый демо-тест: маршрута `POST /demo/assessment/quick-session` в API сейчас нет (кнопка получала 404).
+// Вернуть true, когда маршрут появится.
+const QUICK_TEST_AVAILABLE = false
 
 export function Briefing({ catalog, grade }: { catalog: Catalog | null; grade?: string }) {
   const queryClient = useQueryClient()
@@ -74,9 +77,10 @@ export function Briefing({ catalog, grade }: { catalog: Catalog | null; grade?: 
     return (
       <>
         <PageHeader title={title} breadcrumbs={crumbs} />
+        {/* Пустой список — теста нет по всей специализации: грейд заявляется на экране категории. */}
         <ErrorState
-          title="Тест для этого грейда готовится"
-          text="Выберите другой грейд."
+          title={blueprints.data.length === 0 ? 'Тест по специализации готовится' : 'Тест для этого грейда готовится'}
+          text={blueprints.data.length === 0 ? 'Грейд можно заявить на странице категории.' : 'Выберите другой грейд.'}
           homeHref="/candidate/category"
         />
       </>
@@ -109,51 +113,50 @@ export function Briefing({ catalog, grade }: { catalog: Catalog | null; grade?: 
     }
   }
 
-  const demo = catalog?.features.demo === true
+  const demo = QUICK_TEST_AVAILABLE && catalog?.features.demo === true
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <PageHeader title={title} breadcrumbs={crumbs} />
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Tile value={`${bp.items_min} ${plural(bp.items_min, ITEMS)}`} />
-        <Tile value={`До ${bp.time_limit_min} мин`} />
-        <Tile value={ASSESSMENT.briefing.tiles.noUndo} />
-        <Tile value={ASSESSMENT.briefing.tiles.noPause} />
-      </div>
-      <p className="type-sm min-w-0 text-ink-muted">
-        Если результат окажется на границе, тест добавит до двух блоков по 6 заданий и продлит время: всего до{' '}
-        <span className="num">{bp.items_max}</span> {plural(bp.items_max, ITEMS)} и до{' '}
-        <span className="num">{bp.time_limit_max_min}</span> мин.
+      <p className="type-body min-w-0 text-ink">
+        <span className="num">
+          {bp.items_min} {plural(bp.items_min, ITEMS)}
+        </span>{' '}
+        · <span className="num">до {bp.time_limit_min} мин</span> · {ASSESSMENT.briefing.tiles.noUndo.toLowerCase()} ·{' '}
+        {ASSESSMENT.briefing.tiles.noPause.toLowerCase()}
+        <span className="type-sm block text-ink-muted">
+          На границе результата — до {bp.items_max} {plural(bp.items_max, ITEMS)} и до {bp.time_limit_max_min} мин.
+        </span>
       </p>
-      <section className="surface-card flex min-w-0 flex-col gap-3 p-4 md:p-6" aria-labelledby="bp-composition">
-        <h2 id="bp-composition" className="type-h3">
-          {ASSESSMENT.briefing.composition}
-        </h2>
-        <ul className="flex min-w-0 flex-wrap gap-2">
-          {bp.skills.map((s) => (
-            <li key={s.group_code} className="type-sm min-w-0 break-words rounded-full bg-fill px-3 py-1">
-              {s.label}
-            </li>
-          ))}
-        </ul>
-        <p className="type-sm min-w-0">{ASSESSMENT.briefing.perCandidate}</p>
-        <p className="type-sm min-w-0">{ASSESSMENT.briefing.pythonNote}</p>
-        <Link to="/how-it-works" hash="testing" className="text-link type-sm w-fit">
-          {ASSESSMENT.briefing.howItWorks}
-        </Link>
-      </section>
-      <section className="surface-card flex min-w-0 flex-col gap-3 p-4 md:p-6" aria-labelledby="bp-rules">
-        <h2 id="bp-rules" className="type-h3">
-          {ASSESSMENT.briefing.rulesTitle}
-        </h2>
-        <ul className="type-sm flex min-w-0 list-disc flex-col gap-1 pl-5">
-          {ASSESSMENT.briefing.rules.map((rule) => (
-            <li key={rule} className="min-w-0">
-              {rule}
-            </li>
-          ))}
-        </ul>
-        <Label className="mt-2 flex min-w-0 cursor-pointer items-start gap-3 font-normal">
+      <section
+        className="surface-card flex min-w-0 animate-rise-in flex-col divide-y divide-line"
+        aria-labelledby="bp-composition"
+      >
+        <div className="flex min-w-0 flex-col gap-2 pb-4">
+          <h2 id="bp-composition" className="type-h3">
+            {ASSESSMENT.briefing.composition}
+          </h2>
+          <p className="type-sm min-w-0 break-words text-ink-muted">{bp.skills.map((s) => s.label).join(' · ')}</p>
+          <p className="type-sm min-w-0">
+            {ASSESSMENT.briefing.perCandidate}{' '}
+            <Link to="/how-it-works" hash="testing" className="text-link">
+              {ASSESSMENT.briefing.howItWorks}
+            </Link>
+          </p>
+        </div>
+        <div className="flex min-w-0 flex-col gap-2 py-4">
+          <h2 id="bp-rules" className="type-h3">
+            {ASSESSMENT.briefing.rulesTitle}
+          </h2>
+          <ul className="type-sm flex min-w-0 list-disc flex-col gap-1 pl-5 text-ink-muted">
+            {ASSESSMENT.briefing.rules.map((rule) => (
+              <li key={rule} className="min-w-0">
+                {rule}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <Label className="flex min-w-0 cursor-pointer items-start gap-3 pt-4 font-normal">
           <Checkbox checked={confirmed} onCheckedChange={(v) => setConfirmed(v === true)} className="mt-0.5" />
           <span className="min-w-0">У меня есть {bp.time_limit_max_min} минут без перерыва</span>
         </Label>

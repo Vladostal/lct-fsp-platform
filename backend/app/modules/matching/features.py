@@ -15,7 +15,7 @@ from datetime import date, datetime
 from typing import Literal
 from uuid import UUID
 
-from app.shared.enums import EvidenceKind, TestOutcome
+from app.shared.enums import CategoryBasis, EvidenceKind, TestOutcome
 
 FspBand = Literal["none", "low", "medium", "high"]
 
@@ -59,17 +59,18 @@ class CandidateFeatures:
     candidate_id: UUID
     specialization_code: str
     grade_code: str
-    #: Текущий вердикт уровня категории.
-    verdict: TestOutcome
-    # Из `assessment.get_levels` (Арх. 5.6): подбор неопределённость не пересчитывает.
-    theta: float
-    se: float
-    se_eff: float
+    #: Текущий вердикт уровня категории; `None` — грейд заявлен, теста не было.
+    verdict: TestOutcome | None
+    # Из `assessment.get_levels` (Арх. 5.6): подбор неопределённость не пересчитывает. У заявленного грейда
+    # (`basis = declared`) оценки, дат и давности нет — `None`, а не ноль: «ноль дней» читался бы как «только что».
+    theta: float | None
+    se: float | None
+    se_eff: float | None
     cut: float
     width: float
-    tested_at: date
-    last_evidence_at: date
-    age_days: int
+    tested_at: date | None
+    last_evidence_at: date | None
+    age_days: int | None
     stale: bool
     evidence: Mapping[str, SkillEvidence]
     #: 0..1; 0, если истории нет, ФСП ID не привязан или достижения скрыты.
@@ -78,6 +79,13 @@ class CandidateFeatures:
     fsp_verified: bool
     work_formats: frozenset[str]
     exposure_7d: int
+    #: Основание категории: подтверждена тестом либо грейд заявлен кандидатом (тест по специализации готовится).
+    basis: CategoryBasis = CategoryBasis.TEST
+    #: Заявленный стаж, лет; `None` — не указан или скрыт настройкой приватности.
+    experience_years: float | None = None
+    #: Сколько заявленных навыков справочника относится к специализации кандидата (общие и софт-навыки не считаются);
+    #: 0, если заявленный стек скрыт.
+    declared_relevant: int = 0
 
 
 #: Белый список полей (тест `test_features_whitelist`).

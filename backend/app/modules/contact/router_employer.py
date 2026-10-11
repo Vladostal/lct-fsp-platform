@@ -105,7 +105,7 @@ def list_employer_invitations(
     "/employer/invitations/quota",
     response_model=QuotaView,
     responses=error_responses(*_AUTH),
-    summary="Слоты и суточный лимит",
+    summary="Суточный лимит отправки",
 )
 def invitations_quota(user: Employer, db: Db, now: Now) -> QuotaView:
     return insights.quota(db, now, user.id)
@@ -151,7 +151,7 @@ def invitations_pair_states(
 def get_employer_invitation(invitation_id: UUID, user: Employer, db: Db, now: Now) -> InvitationEmployerView:
     inv = _own(db, user.id, invitation_id)
     view = projections.employer_view(db, now, inv)
-    # Единственная запись при чтении в модуле (Арх. 4.4, 10.1): статусы, слоты и счётчики не меняются.
+    # Единственная запись при чтении в модуле (Арх. 4.4, 10.1): статусы и счётчики не меняются.
     inv.employer_seen_at = now
     return view
 
@@ -160,7 +160,7 @@ def get_employer_invitation(invitation_id: UUID, user: Employer, db: Db, now: No
     "/employer/invitations/{invitation_id}/withdraw",
     response_model=InvitationEmployerView,
     responses=error_responses(*_AUTH, 404, 409),
-    summary="Отозвать приглашение; слот занят до исходного срока",
+    summary="Отозвать приглашение",
 )
 def withdraw_employer_invitation(invitation_id: UUID, user: Employer, db: Db, now: Now) -> InvitationEmployerView:
     run_in_tx(db, lambda s: service.withdraw_invitation(s, now, user.id, invitation_id))

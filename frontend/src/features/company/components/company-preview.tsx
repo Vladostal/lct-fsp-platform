@@ -14,13 +14,13 @@ export function CompanyPreview({ draft, since, trustLabel }: Props) {
   const has = draft.name.trim() || draft.description.trim()
   const site = normalizeSite(draft.site)
   return (
-    <section aria-labelledby="company-preview" className="surface-card flex min-w-0 flex-col gap-3 p-5">
-      <h2 id="company-preview" className="type-h3">
+    <section aria-labelledby="company-preview" className="flex min-w-0 flex-col gap-3">
+      <h2 id="company-preview" className="type-eyebrow">
         {COMPANY.sections.preview}
       </h2>
       {has ? (
         <div className="flex min-w-0 flex-col gap-2">
-          <p className="type-h3 min-w-0 break-words">{draft.name.trim() || '—'}</p>
+          <p className="type-h3 min-w-0 font-semibold break-words">{draft.name.trim() || '—'}</p>
           {draft.sphere.trim() ? (
             <p className="type-sm min-w-0 break-words text-ink-muted">{draft.sphere.trim()}</p>
           ) : null}
@@ -35,9 +35,9 @@ export function CompanyPreview({ draft, since, trustLabel }: Props) {
             </p>
           ) : null}
           <p className="type-caption text-ink-muted">
-            {COMPANY.preview.since} {since ? formatDate(since) : 'сегодняшнего дня'}
+            {COMPANY.preview.since} {since ? formatDate(since) : 'сегодняшнего дня'} ·{' '}
+            {trustLabel ?? 'Компания подтвердила только e-mail'}
           </p>
-          <p className="type-caption text-ink-muted">{trustLabel ?? 'Компания подтвердила только e-mail'}</p>
         </div>
       ) : (
         <p className="type-sm text-ink-muted">{COMPANY.preview.empty}</p>

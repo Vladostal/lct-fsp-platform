@@ -13,6 +13,7 @@ from uuid import UUID, uuid4
 
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     DateTime,
     Float,
     ForeignKey,
@@ -30,6 +31,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base, enum_check
 from app.shared.enums import (
+    CategoryBasis,
     ClaimSource,
     EvidenceSource,
     FamilyStatus,
@@ -252,27 +254,41 @@ class SessionItemRow(Base):
 
 
 class CategoryRow(Base):
-    """Действующая категория кандидата: не больше одной."""
+    """Действующая категория кандидата: не больше одной.
+
+    `basis = test` — грейд подтверждён тестом, поля уровня заполнены. `basis = declared` — специализация без банка
+    заданий: грейд заявлен кандидатом, полей уровня нет (`tested_fields` это и проверяет).
+    """
 
     __tablename__ = "assessment_category"
     __table_args__ = (
         Index(None, "specialization_code", "grade_code"),
         enum_check("verdict", TestOutcome),
+        enum_check("basis", CategoryBasis),
+        CheckConstraint(
+            "basis = 'declared' OR (verdict IS NOT NULL AND theta IS NOT NULL AND se IS NOT NULL "
+            "AND items_count IS NOT NULL AND level_session_id IS NOT NULL AND level_updated_at IS NOT NULL "
+            "AND last_evidence_at IS NOT NULL)",
+            name="tested_fields",
+        ),
     )
 
     candidate_id: Mapped[UUID] = _user_fk(primary_key=True)
     specialization_code: Mapped[str] = mapped_column(Text, nullable=False)
     grade_code: Mapped[str] = mapped_column(Text, nullable=False)
-    verdict: Mapped[str] = mapped_column(Text, nullable=False)
-    theta: Mapped[float] = mapped_column(Float, nullable=False)
-    se: Mapped[float] = mapped_column(Float, nullable=False)
-    items_count: Mapped[int] = mapped_column(Integer, nullable=False)
-    level_session_id: Mapped[UUID] = mapped_column(Uuid, nullable=False)
+    basis: Mapped[str] = mapped_column(
+        Text, nullable=False, default=CategoryBasis.TEST.value, server_default=text("'test'")
+    )
+    verdict: Mapped[str | None] = mapped_column(Text, nullable=True)
+    theta: Mapped[float | None] = mapped_column(Float, nullable=True)
+    se: Mapped[float | None] = mapped_column(Float, nullable=True)
+    items_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    level_session_id: Mapped[UUID | None] = mapped_column(Uuid, nullable=True)
     assigned_at: Mapped[datetime] = mapped_column(_TS, nullable=False)
-    level_updated_at: Mapped[datetime] = mapped_column(_TS, nullable=False)
+    level_updated_at: Mapped[datetime | None] = mapped_column(_TS, nullable=True)
     last_grade_change_at: Mapped[datetime | None] = mapped_column(_TS, nullable=True)
     change_available_at: Mapped[datetime] = mapped_column(_TS, nullable=False)
-    last_evidence_at: Mapped[datetime] = mapped_column(_TS, nullable=False)
+    last_evidence_at: Mapped[datetime | None] = mapped_column(_TS, nullable=True)
     #: Категория получена быстрым демо-тестом (Арх. 13.5): в отчётах платформы не учитывается.
     is_demo_result: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text("false"))
 

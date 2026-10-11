@@ -96,7 +96,8 @@ class NextAction(BaseModel):
 class StateCategory(CategoryRef):
     assigned_at: datetime
     change_available_at: datetime
-    level_session_id: str
+    #: Сессия, по которой определён уровень; `None` — грейд заявлен (`basis = declared`), теста не было.
+    level_session_id: str | None = None
 
 
 class ActiveSessionBrief(BaseModel):

@@ -58,12 +58,12 @@ def export_pairs(out: Path, *, seed: int) -> int:
                     "nice_skills": ", ".join(query.nice_skills),
                     "work_formats": ", ".join(item.value for item in query.work_formats),
                     "candidate_category": f"{features.specialization_code}:{features.grade_code}",
-                    "verdict": features.verdict.value,
+                    "verdict": features.verdict.value if features.verdict else "",
                     "confirmed_skills": ", ".join(confirmed),
                     "declared_skills": ", ".join(declared),
                     "fsp": features.fsp_band,
                     "candidate_formats": ", ".join(sorted(features.work_formats)),
-                    "freshness_days": str(features.age_days),
+                    "freshness_days": str(features.age_days) if features.age_days is not None else "",
                 }
             )
     random.Random(f"pairs:{seed}").shuffle(rows)

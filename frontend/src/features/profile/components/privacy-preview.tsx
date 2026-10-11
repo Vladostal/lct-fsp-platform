@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import type { CandidateCardEmployerView } from '@/client'
-import { CategoryChip, EmptyState, ErrorState, EvidenceChip, LevelScale } from '@/components/app'
+import { CandidateCategoryChip, EmptyState, ErrorState, EvidenceChip, LevelScale } from '@/components/app'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { WORK_FORMAT_LABELS } from '@/content/common'
+import { CATEGORY_DECLARED, WORK_FORMAT_LABELS } from '@/content/common'
 import { hasCode } from '@/lib/api'
+import { formatYears } from '@/lib/format'
 import { previewQuery } from '../api'
 import { PRIVACY } from '../content'
 
@@ -28,11 +29,15 @@ function PreviewCard({ card, state }: { card: CandidateCardEmployerView; state: 
           {card.display_name ?? <span className="num">{card.public_code}</span>}
         </h3>
         {card.display_name ? <span className="num type-caption text-ink-muted">{card.public_code}</span> : null}
-        <CategoryChip title={card.category.title} />
+        <CandidateCategoryChip category={card.category} />
       </header>
-      <LevelScale level={card.level} ownGrade={card.category.grade.code} size="sm" />
+      {card.level ? (
+        <LevelScale level={card.level} ownGrade={card.category.grade.code} size="sm" />
+      ) : (
+        <p className="type-sm min-w-0 text-ink-muted">{CATEGORY_DECLARED.card}</p>
+      )}
       {card.skills.length ? (
-        <ul className="flex min-w-0 flex-wrap gap-2" aria-label="Подтверждённые навыки">
+        <ul className="flex min-w-0 flex-wrap gap-2" aria-label="Навыки и их источник">
           {card.skills.map((item) => (
             <li key={item.skill.code} className="min-w-0">
               <EvidenceChip
@@ -63,7 +68,7 @@ function PreviewCard({ card, state }: { card: CandidateCardEmployerView; state: 
             <dt className="type-sm text-ink-muted">Стаж и роли</dt>
             <dd className="type-sm min-w-0 text-ink [overflow-wrap:anywhere]">
               {[
-                declared?.experience_years != null ? `${declared.experience_years} лет` : null,
+                declared?.experience_years != null ? formatYears(declared.experience_years) : null,
                 ...(declared?.roles ?? []).map((r) => r.title),
               ]
                 .filter(Boolean)

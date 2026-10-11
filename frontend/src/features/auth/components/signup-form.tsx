@@ -87,7 +87,7 @@ export function SignupForm({ initialRole }: { initialRole?: Role }) {
       }
     >
       <Form {...form}>
-        <form onSubmit={onSubmit} noValidate className="flex min-w-0 flex-col gap-5">
+        <form onSubmit={onSubmit} noValidate className="flex min-w-0 flex-col gap-4">
           <FormField
             control={form.control}
             name="role"
@@ -108,7 +108,7 @@ export function SignupForm({ initialRole }: { initialRole?: Role }) {
                     </ToggleGroupItem>
                   ))}
                 </ToggleGroup>
-                <p className="type-sm text-ink-muted" aria-live="polite">
+                <p className="type-caption text-ink-muted" aria-live="polite">
                   {AUTH.signup.roleHint[role]}
                 </p>
               </FormItem>
@@ -144,7 +144,7 @@ export function SignupForm({ initialRole }: { initialRole?: Role }) {
             )}
           />
 
-          <div className="flex min-w-0 flex-col gap-4">
+          <div className="flex min-w-0 flex-col gap-3">
             <FormField
               control={form.control}
               name="consent_processing"
@@ -198,7 +198,8 @@ export function SignupForm({ initialRole }: { initialRole?: Role }) {
               type="submit"
               variant="primary"
               className="w-full"
-              loading={signup.isPending}
+              // Текст согласия ещё грузится: без его версии отправка невозможна, показываем ожидание, а не тишину.
+              loading={signup.isPending || (bothChecked && consentDoc.isPending)}
               aria-disabled={!canSubmit || undefined}
               aria-describedby={canSubmit ? undefined : 'signup-disabled-reason'}
             >

@@ -65,7 +65,7 @@ def lock_employer(db: Session, now: datetime, employer_id: UUID) -> EmployerCont
     """Создать при отсутствии и заблокировать строку `employer_contact_state` (Арх. 4.4).
 
     Первая блокировка в порядке блокировок: отправки, отзывы и отметки одного работодателя идут строго по очереди,
-    поэтому подсчёт слотов и суточного лимита при записи не гонится с параллельной отправкой (I2).
+    поэтому подсчёт суточного лимита при записи не гонится с параллельной отправкой (I2).
     """
     db.execute(
         pg_insert(EmployerContactState)
@@ -172,7 +172,7 @@ def settle(
        `candidate_id` (`lock_candidates`, там же `normalize_pause`);
     3. `responder` (демо-ответчик, только из `settle_all` при `DEMO_MODE`) выполняет назревшие действия;
     4. строки `invitation` области в порядке `(expires_at, id)` блокируются и получают `status = expired`,
-       `resolved_at = slot_release_at = expires_at`, `pair_block_until = expires_at + PAIR_RETRY_DAYS`;
+       `resolved_at = expires_at`, `pair_block_until = expires_at + PAIR_RETRY_DAYS`;
     5. для каждой: событие `expired` (`actor = system`, `at = expires_at`); `consecutive_expired += 1`; при
        `consecutive_expired >= SILENCE_STRIKES` и отсутствии автопаузы — `profile.set_auto_pause(at = expires_at,
        until = expires_at + AUTO_PAUSE_MAX_DAYS)`.
@@ -214,7 +214,6 @@ def settle(
     for inv in expired:
         inv.status = InvitationStatus.EXPIRED.value
         inv.resolved_at = inv.expires_at
-        inv.slot_release_at = inv.expires_at
         inv.pair_block_until = inv.expires_at + c.PAIR_RETRY
         inv.updated_at = now
         add_event(db, inv, EventCode.EXPIRED, EventActor.SYSTEM, inv.expires_at)

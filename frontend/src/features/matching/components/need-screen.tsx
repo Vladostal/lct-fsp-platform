@@ -3,7 +3,17 @@ import { Link } from '@tanstack/react-router'
 import { Ellipsis } from 'lucide-react'
 import { useState } from 'react'
 import type { Catalog, NeedView } from '@/client'
-import { CategoryChip, EmptyState, ErrorState, NotFound, PageHeader, PageSkeleton, SalaryRange } from '@/components/app'
+import {
+  CategoryChip,
+  EmptyState,
+  ErrorState,
+  FunnelStrip,
+  NotFound,
+  PageHeader,
+  PageSkeleton,
+  SalaryRange,
+  Section,
+} from '@/components/app'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -159,16 +169,8 @@ function InvitationsTab({ need }: { need: NeedView }) {
   ]
   return (
     <div className="flex min-w-0 flex-col gap-6">
-      <dl className="grid min-w-0 grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-        {cells.map(([label, n]) => (
-          <div key={label} className="surface-card min-w-0 p-4">
-            <dt className="type-sm text-ink-muted">{label}</dt>
-            <dd className="type-h2 num">{n ?? 0}</dd>
-          </div>
-        ))}
-      </dl>
-      <section className="flex min-w-0 flex-col gap-2">
-        <h2 className="type-h3">Причины отказов</h2>
+      <FunnelStrip steps={cells.map(([label, n]) => ({ label, value: n ?? 0 }))} />
+      <Section title="Причины отказов">
         {q.data.reasons.length > 0 ? (
           <ul className="flex min-w-0 flex-col gap-1">
             {q.data.reasons.map((r) => (
@@ -180,10 +182,9 @@ function InvitationsTab({ need }: { need: NeedView }) {
         ) : (
           <p className="type-sm text-ink-muted">Отказов пока нет</p>
         )}
-      </section>
+      </Section>
       {q.data.stated_salary.length > 0 || q.data.stated_formats.length > 0 ? (
-        <section className="flex min-w-0 flex-col gap-2">
-          <h2 className="type-h3">Условия, которые назвали кандидаты</h2>
+        <Section title="Условия, которые назвали кандидаты">
           <ul className="flex min-w-0 flex-col gap-1">
             {q.data.stated_salary.map((s) => (
               <li key={`s${s.value}`} className="type-body num">
@@ -196,19 +197,18 @@ function InvitationsTab({ need }: { need: NeedView }) {
               </li>
             ))}
           </ul>
-        </section>
+        </Section>
       ) : null}
       {q.data.hints.length > 0 ? (
-        <section className="flex min-w-0 flex-col gap-2">
-          <h2 className="type-h3">Подсказки</h2>
-          <ul className="flex min-w-0 flex-col gap-2">
+        <Section title="Подсказки">
+          <ul className="flex min-w-0 flex-col divide-y divide-line">
             {q.data.hints.slice(0, 3).map((h) => (
-              <li key={`${h.code}${h.value}`} className="surface-card type-sm min-w-0 break-words p-4">
+              <li key={`${h.code}${h.value}`} className="type-sm min-w-0 break-words py-2">
                 {h.text}
               </li>
             ))}
           </ul>
-        </section>
+        </Section>
       ) : null}
       {q.data.salary_note ? <p className="type-sm text-ink-muted">{q.data.salary_note}</p> : null}
       <EmptyLink />
@@ -238,7 +238,7 @@ function DescriptionTab({ need }: { need: NeedView }) {
   ]
   return (
     <div className="flex min-w-0 flex-col gap-6">
-      <dl className="surface-card grid min-w-0 grid-cols-1 gap-x-6 gap-y-3 p-5 sm:grid-cols-[200px_minmax(0,1fr)]">
+      <dl className="grid min-w-0 grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-[200px_minmax(0,1fr)]">
         {rows.map(([k, v]) => (
           <div key={k} className="contents">
             <dt className="type-sm text-ink-muted">{k}</dt>
@@ -246,15 +246,14 @@ function DescriptionTab({ need }: { need: NeedView }) {
           </div>
         ))}
       </dl>
-      <section className="flex min-w-0 flex-col gap-3">
-        <h2 className="type-h3">{MATCHING.form.blueprint}</h2>
+      <Section title={MATCHING.form.blueprint}>
         <NeedBlueprint
           specialization={need.target.specialization.code}
           grade={need.target.grade.code}
           must={need.must_skills.map((s) => s.code)}
           nice={need.nice_skills.map((s) => s.code)}
         />
-      </section>
+      </Section>
       {!need.latest_snapshot ? <EmptyState compact text="Подборка ещё не сформирована." /> : null}
     </div>
   )

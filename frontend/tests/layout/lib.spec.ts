@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { mockApi } from '../utils/api-mock'
+import { CATALOG, DECLARED_STATE, mockApi } from '../utils/api-mock'
 
 /**
  * Проверки чистых функций каркаса (`lib/format`, `lib/guards`, `lib/api`) в настоящем браузере: модули
@@ -13,12 +13,14 @@ type FormatModule = typeof import('../../src/lib/format')
 type GuardsModule = typeof import('../../src/lib/guards')
 type ApiModule = typeof import('../../src/lib/api')
 type ErrorsModule = typeof import('../../src/content/errors')
+type CategoryModule = typeof import('../../src/lib/category')
 
 const SRC = {
   format: '/src/lib/format.ts',
   guards: '/src/lib/guards.ts',
   api: '/src/lib/api.ts',
   errors: '/src/content/errors.ts',
+  category: '/src/lib/category.ts',
 } as const
 
 test.describe('функции lib', () => {
@@ -92,6 +94,9 @@ test.describe('функции lib', () => {
       const named = { first_name: 'Анна', last_name: 'Петрова' }
       const grade = { code: 'middle', title: 'Middle' }
       const done = { ...noState, last_session: { id: 's1' } } as never
+      const passed = { ...noState, last_session: { id: 's1' }, survey_completed: true }
+      const claimed = { ...passed, claimed_grade: grade } as never
+      const switched = passed as never
       const active = { ...noState, survey_completed: true, claimed_grade: grade, active_session: { id: 's9' } } as never
       return {
         steps: [
@@ -133,6 +138,10 @@ test.describe('функции lib', () => {
           g.candidateGuard('/candidate/onboarding/profile', { profile: named, state: done }),
           g.candidateGuard('/candidate/test/new', { profile: named, state: done }),
           g.candidateGuard('/candidate/category', { profile: named, state: done }),
+          // мастер пройден: опрос открыт (смена специализации), шаг «Грейд» — только пока грейд не заявлен
+          g.candidateGuard('/candidate/onboarding/survey', { profile: named, state: done }),
+          g.candidateGuard('/candidate/onboarding/grade', { profile: named, state: claimed }),
+          g.candidateGuard('/candidate/onboarding/grade', { profile: named, state: switched }),
           // данных нет (эндпоинт недоступен): охрана шага не вмешивается
           g.candidateGuard('/candidate/invitations', {}),
         ],
@@ -167,8 +176,60 @@ test.describe('функции lib', () => {
       null,
       null,
       null,
+      '/candidate',
+      null,
+      null,
     ])
     expect(result.employer).toEqual(['/employer/onboarding/company', null, null, null])
+  })
+
+  test('заявленный грейд: мастер пройден, экран категории открыт, основание категории', async ({ page }) => {
+    const result = await page.evaluate(
+      async ({ src, state, catalog }) => {
+        const g: GuardsModule = await import(/* @vite-ignore */ src.guards)
+        const c: CategoryModule = await import(/* @vite-ignore */ src.category)
+        const api: ApiModule = await import(/* @vite-ignore */ src.api)
+        const named = { first_name: 'Анна', last_name: 'Петрова' }
+        const ref = (code: string, basis?: 'test' | 'declared' | null) => ({ basis, specialization: { code } })
+        return {
+          // Заявленный грейд даёт категорию без теста: сессии нет, но мастер пройден.
+          step: g.onboardingStep(named, state as never),
+          home: g.home({ role: 'candidate' }, { profile: named, state: state as never }),
+          guard: [
+            g.candidateGuard('/candidate/category', { profile: named, state: state as never }),
+            g.candidateGuard('/candidate/onboarding/grade', { profile: named, state: state as never }),
+          ],
+          // Общий текст — про опрос: тест написан, но сейчас недоступен. «Тест готовится» здесь было бы неправдой;
+          // форма потребности для кода вне справочника берёт свой текст.
+          unknown: api.errorText('specialization_unavailable'),
+          hasTest: [
+            c.hasTest(catalog, 'backend'),
+            c.hasTest(catalog, 'frontend'),
+            c.hasTest(catalog, 'unknown'),
+            c.hasTest(null, 'frontend'),
+          ],
+          declared: [
+            c.isDeclared(ref('frontend', 'declared'), catalog),
+            c.isDeclared(ref('backend', 'test'), catalog),
+            // `basis` главнее справочника: тест появился, а грейд ещё заявленный — и наоборот.
+            c.isDeclared(ref('backend', 'declared'), catalog),
+            c.isDeclared(ref('frontend', 'test'), catalog),
+            // Ответ без `basis` (приглашения): основание берётся из справочника.
+            c.isDeclared(ref('frontend'), catalog),
+            c.isDeclared(ref('backend', null), catalog),
+            c.isDeclared(ref('frontend'), null),
+            c.isDeclared(null, catalog),
+          ],
+        }
+      },
+      { src: SRC, state: DECLARED_STATE, catalog: CATALOG },
+    )
+    expect(result.step).toBe('done')
+    expect(result.home).toBe('/candidate')
+    expect(result.guard).toEqual([null, '/candidate'])
+    expect(result.unknown).toBe('Тест по этой специализации временно недоступен. Попробуйте позже')
+    expect(result.hasTest).toEqual([true, false, true, true])
+    expect(result.declared).toEqual([true, false, true, false, true, false, false, false])
   })
 
   test('api: тексты ошибок по коду, статусу и параметрам; словарь покрывает коды Арх. 9.12', async ({ page }) => {
@@ -185,9 +246,6 @@ test.describe('функции lib', () => {
         cooldown: nbsp(
           api.errorText('cooldown_active', { reason: 'grade_change', available_at: '2026-12-19T10:00:00Z' }),
         ),
-        quota: nbsp(
-          api.errorText('quota_exceeded', { used: 10, limit: 10, next_release_at: '2026-10-12T11:02:00Z' }),
-        ).replace(/\d{2}:\d{2}/, 'ЧЧ:ММ'),
         retry: nbsp(api.errorMessage(make(429, 'rate_limited', { params: { retry_after: 45 } }))),
         unknownCode: api.errorMessage(make(409, 'future_code')),
         unknown401: api.errorMessage(make(401, 'whatever')),
@@ -219,8 +277,7 @@ test.describe('функции lib', () => {
     expect(result.byCode).toBe('Неверный e-mail или пароль')
     expect(result.params).toBe('Вилка слишком широкая: «до» — не больше 270 000 ₽')
     expect(result.bare).toBe('Вилка слишком широкая: уменьшите верхнюю границу')
-    expect(result.cooldown).toBe('Сменить подтверждённый грейд можно с 19 дек.')
-    expect(result.quota).toBe('Все слоты заняты: 10 из 10. Ближайший освободится 12 окт., ЧЧ:ММ')
+    expect(result.cooldown).toBe('Сменить грейд можно с 19 дек.')
     expect(result.retry).toBe('Слишком часто. Повторите через 45 с')
     expect(result.unknownCode).toBe('сообщение сервера')
     expect(result.unknown401).toBe('Сессия истекла. Войдите снова')
@@ -328,7 +385,6 @@ const ARCH_ERROR_CODES = [
   'active_invitation_exists',
   'pair_cooldown',
   'conditions_mismatch',
-  'quota_exceeded',
   'revision_not_allowed',
   'invitation_not_actionable',
   'complaint_exists',

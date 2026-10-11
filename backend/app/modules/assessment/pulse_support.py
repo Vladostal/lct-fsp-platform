@@ -23,7 +23,7 @@ from app.modules.assessment.families.registry import REGISTRY
 from app.modules.assessment.groups import GROUPS, SKILL_GROUP_MAP
 from app.modules.assessment.models import SkillEvidenceRow, VariantRow
 from app.modules.assessment.sessions import item_view
-from app.shared.enums import EvidenceSource, ItemKind, SkillVerdict, VariantStatus
+from app.shared.enums import CategoryBasis, EvidenceSource, ItemKind, SkillVerdict, VariantStatus
 
 #: Для коротких заданий — только ввод ответа: единственное задание с выбором угадывается слишком легко.
 INPUT_KINDS: frozenset[str] = frozenset({ItemKind.NUMERIC_INPUT.value, ItemKind.TEXT_INPUT.value})
@@ -66,7 +66,7 @@ def pick_pulse_item(db: Session, candidate_id: UUID, group_code: str, now: datet
     он не видел, с наименьшим `served_count`. Нет категории или подходящего варианта — 503 `bank_unavailable`.
     """
     category = repo.category(db, candidate_id)
-    if category is None:
+    if category is None or category.basis != CategoryBasis.TEST.value:
         raise ApiException(503, "bank_unavailable", "Короткое задание доступно после подтверждения грейда")
     low, high = blueprints.MAIN_RANGE[category.grade_code]
     seen = repo.seen_families(db, candidate_id, category.specialization_code, now)
@@ -138,7 +138,8 @@ def record_pulse_result(
     if not correct:
         return
     category = repo.category(db, candidate_id)
-    if category is None:
+    # Заявленная категория тестом не измерена: сдвигать нечего.
+    if category is None or category.last_evidence_at is None or category.level_updated_at is None:
         return
     cfg = get_config()
     credited = min(

@@ -179,6 +179,7 @@ EXPECTED_ENUMS: dict[str, list[str]] = {
     "SessionStatus": ["in_progress", "finished", "expired"],
     "SessionKind": ["initial", "lower", "higher", "retake"],
     "TestOutcome": ["not_confirmed", "borderline", "confirmed", "confirmed_with_margin"],
+    "CategoryBasis": ["test", "declared"],
     "ItemKind": ["numeric_input", "text_input", "single_choice", "multi_choice", "pick_line", "order_blocks"],
     "ItemStatus": ["pending", "shown", "answered", "skipped", "unreached", "not_shown"],
     "SlotRole": ["main", "stretch", "ext"],

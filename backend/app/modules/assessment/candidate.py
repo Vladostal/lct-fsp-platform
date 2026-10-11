@@ -15,6 +15,7 @@ from app.modules.assessment.config import GRADES, get_config
 from app.modules.assessment.dto import LevelThreshold, LevelView
 from app.modules.assessment.engine import level as level_math
 from app.modules.assessment.engine import rules
+from app.modules.assessment.groups import TESTED_SPECIALIZATIONS
 from app.modules.assessment.models import (
     AssessmentProfile,
     CategoryRow,
@@ -40,7 +41,7 @@ from app.modules.assessment.schemas import (
     TestSessionView,
 )
 from app.modules.catalog import service as catalog
-from app.shared.enums import ClaimSource, EvidenceSource, SessionStatus, TestOutcome
+from app.shared.enums import CategoryBasis, ClaimSource, EvidenceSource, SessionStatus, TestOutcome
 from app.shared.schemas import Ref
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -68,9 +69,11 @@ def put_survey(
 ) -> SurveySchema:
     """Сохранить ответы опроса (Арх. 5.2): новая строка ответов, история не перезаписывается.
 
-    Смена специализации после первой сессии требует подтверждения и возможна раз в
+    Смена специализации после первой сессии или при действующей категории требует подтверждения и возможна раз в
     `SPECIALIZATION_CHANGE_COOLDOWN_DAYS`; заявленный грейд при ней сбрасывается, а прежняя категория сохраняется,
-    пока не подтверждён грейд в новой. Опрос запрещён при активной сессии.
+    пока не подтверждён (или, где теста нет, не заявлен) грейд в новой. Опрос запрещён при активной сессии.
+    Специализация без теста допустима: категория в ней будет заявленной (`put_claim`). Специализация, тест
+    по которой написан, но сейчас недоступен, — 422 `specialization_unavailable`.
     """
     cfg = get_config()
     if version != cfg.survey_version:
@@ -85,17 +88,34 @@ def put_survey(
     parsed, errors = survey_schema.validate(answers)
     if parsed is None:
         raise validation_error(*errors)
-    if not catalog.is_available(parsed.specialization):
-        raise ApiException(422, "specialization_unavailable", "Тест по этой специализации готовится")
+    if parsed.specialization in TESTED_SPECIALIZATIONS and not catalog.is_available(parsed.specialization):
+        # Тест написан, но банк не собран или специализация выключена: заявленной категории здесь не бывает.
+        raise ApiException(422, "specialization_unavailable", "Тест по этой специализации временно недоступен")
 
     profile = repo.profile(db, candidate_id)
     changing = profile is not None and profile.specialization_code != parsed.specialization
-    had_sessions = profile is not None and any(r.specialization_code == profile.specialization_code for r in rows)
+    category = repo.category(db, candidate_id)
+    # «История» в прежней специализации — сессии теста либо действующая категория (в том числе заявленная).
+    had_sessions = profile is not None and (
+        any(r.specialization_code == profile.specialization_code for r in rows)
+        or (category is not None and category.specialization_code == profile.specialization_code)
+    )
     if changing and had_sessions:
         assert profile is not None
         if not confirm_change:
+            target_has_test = not sessions.declared_allowed(parsed.specialization)
+            replaces_confirmed = (
+                category is not None and category.basis == CategoryBasis.TEST.value and not target_has_test
+            )
             raise ApiException(
-                409, "specialization_change_requires_confirm", "Смена специализации сбросит заявленный грейд"
+                409,
+                "specialization_change_requires_confirm",
+                (
+                    "Тест по новой специализации готовится: подтверждённая категория будет заменена заявленным грейдом"
+                    if replaces_confirmed
+                    else "Смена специализации сбросит заявленный грейд"
+                ),
+                params={"target_has_test": target_has_test, "replaces_confirmed_category": replaces_confirmed},
             )
         if profile.specialization_changed_at is not None:
             available_at = profile.specialization_changed_at + timedelta(days=cfg.specialization_change_cooldown_days)
@@ -133,13 +153,20 @@ def put_survey(
 
 
 def put_claim(db: Session, candidate_id: UUID, grade: str, now: datetime) -> AssessmentStateView:
-    """Заявить грейд; после первой сессии заявление заблокировано (`claim_locked`, Арх. 5.7)."""
+    """Заявить грейд; после первой сессии заявление заблокировано (`claim_locked`, Арх. 5.7).
+
+    В специализации без теста заявление сразу даёт категорию `basis = declared` (`sessions.declare_category`):
+    блокировки `claim_locked` там нет, смену грейда ограничивает срок — 409 `cooldown_active`.
+    """
     profile = repo.profile(db, candidate_id)
     if profile is None:
         raise ApiException(409, "survey_required", "Сначала пройдите опрос")
-    if grade not in GRADES or not catalog.is_available(profile.specialization_code, grade):
+    has_test = not sessions.declared_allowed(profile.specialization_code)
+    if grade not in GRADES or (has_test and not catalog.is_available(profile.specialization_code, grade)):
         raise ApiException(422, "grade_unavailable", "Тест на этот грейд пока недоступен")
-    if profile.claim_locked and profile.claimed_grade != grade:
+    if not has_test:
+        sessions.declare_category(db, candidate_id, profile.specialization_code, grade, now)
+    elif profile.claim_locked and profile.claimed_grade != grade:
         raise ApiException(409, "claim_locked", "Заявленный грейд нельзя изменить после начала теста")
     if profile.claimed_grade != grade:
         answers = _answers(db, profile) or {}
@@ -190,13 +217,24 @@ def level_view(
     )
 
 
-def category_level_view(row: CategoryRow, now: datetime) -> LevelView:
+def category_level_view(row: CategoryRow, now: datetime) -> LevelView | None:
+    """Уровень категории на шкале экрана; `None` — грейд заявлен, тестом уровень не измерен."""
+    if (
+        row.basis != CategoryBasis.TEST.value
+        or row.theta is None
+        or row.se is None
+        or row.verdict is None
+        or row.level_updated_at is None
+        or row.last_evidence_at is None
+    ):
+        return None
     return level_view(row.theta, row.se, row.grade_code, row.verdict, row.level_updated_at, row.last_evidence_at, now)
 
 
 def actions(db: Session, candidate_id: UUID, now: datetime) -> list[NextAction]:
     ctx = sessions.start_context(db, candidate_id)
-    if ctx.specialization is None:
+    if ctx.specialization is None or sessions.declared_allowed(ctx.specialization):
+        # Теста по специализации нет: действий с тестом тоже нет, грейд заявляется (`put_claim`).
         return []
     post = sessions.window_posterior(db, candidate_id, ctx.specialization, now)
     result = []
@@ -242,10 +280,12 @@ def state_view(db: Session, candidate_id: UUID, now: datetime) -> AssessmentStat
         claim_locked=profile.claim_locked,
         category=(
             StateCategory(
-                **labels.category_ref(category.specialization_code, category.grade_code).model_dump(),
+                **labels.category_ref(
+                    category.specialization_code, category.grade_code, category.basis
+                ).model_dump(),
                 assigned_at=category.assigned_at,
                 change_available_at=category.change_available_at,
-                level_session_id=str(category.level_session_id),
+                level_session_id=str(category.level_session_id) if category.level_session_id else None,
             )
             if category
             else None
@@ -282,6 +322,9 @@ def blueprint_views(db: Session, candidate_id: UUID) -> list[TestBlueprintView]:
     cfg = get_config()
     families = repo.load_families(db)
     spec = profile.specialization_code
+    if sessions.declared_allowed(spec):
+        # Теста нет — планов нет (у части специализаций нет и групп заданий в `groups.SPECIALIZATIONS`).
+        return []
     result = []
     for grade in GRADES:
         lang = profile.lang_module
@@ -351,9 +394,8 @@ def result_view(db: Session, candidate_id: UUID, session_id: str, now: datetime)
     category = repo.category(db, candidate_id)
     own = category is not None and category.specialization_code == session.specialization_code
     expired = session.status == SessionStatus.EXPIRED.value
-    if own and category is not None:
-        level = category_level_view(category, now)
-    else:
+    level = category_level_view(category, now) if own and category is not None else None
+    if level is None:
         level = level_view(
             session.theta or 0.0,
             session.se or get_config().prior_sd,
@@ -396,7 +438,11 @@ def result_view(db: Session, candidate_id: UUID, session_id: str, now: datetime)
         outcome=TestOutcome(session.outcome),
         outcome_label=labels.outcome_label(session.outcome, session.target_grade, expired=expired),
         finished_at=session.finished_at,
-        category=labels.category_ref(category.specialization_code, category.grade_code) if category else None,
+        category=(
+            labels.category_ref(category.specialization_code, category.grade_code, category.basis)
+            if category
+            else None
+        ),
         level=level,
         skills=[
             ResultSkill(

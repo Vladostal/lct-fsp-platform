@@ -12,7 +12,13 @@ import { toast } from 'sonner'
 import type { AssessmentStateView, CandidateProfileView, CompanyView, MeView, NeedView, Role } from '@/client'
 import { COMMON } from '@/content/common'
 import { ApiError, hasStatus, isApiError } from '@/lib/api'
-import { assessmentStateQuery, candidateProfileQuery, companyQuery, needsQuery } from '@/lib/query'
+import {
+  assessmentStateQuery,
+  candidateProfileQuery,
+  companyQuery,
+  invalidateOperations,
+  needsQuery,
+} from '@/lib/query'
 
 export type OnboardingStep = 'profile' | 'survey' | 'grade' | 'test' | 'done'
 
@@ -156,14 +162,27 @@ export async function resolveHome(queryClient: QueryClient, me: Pick<MeView, 'ro
   return home(me, await loadHomeData(queryClient, me, { fresh: true }))
 }
 
+/** Корни ключей каркаса и экранов теста: состояние, опрос, история, согласия. */
+const GUARD_KEY_ROOTS: ReadonlySet<unknown> = new Set(['candidate', 'employer', 'assessment'])
+
+/** Те же данные в запросах сгенерированного клиента (обзор кабинета кандидата). */
+const GUARD_OPERATIONS = ['assessmentGetState', 'profileGetConsents', 'profileGetProfile'] as const
+
 /**
  * Сбросить данные охраны после мутации, меняющей шаг мастера или первый экран (сохранение профиля, опроса,
  * грейда, старт и завершение теста, профиль компании, первая потребность).
  */
-export function invalidateGuardData(queryClient: QueryClient): Promise<void> {
-  return queryClient.invalidateQueries({
-    predicate: (query) => query.queryKey[0] === 'candidate' || query.queryKey[0] === 'employer',
-  })
+export async function invalidateGuardData(queryClient: QueryClient): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({
+      // Идущая сессия теста не трогается: экран теста ведёт её сам, а повторная загрузка посреди перехода
+      // на результат запустила бы этот переход второй раз.
+      predicate: (query) =>
+        GUARD_KEY_ROOTS.has(query.queryKey[0]) &&
+        !(query.queryKey[0] === 'assessment' && query.queryKey[1] === 'session'),
+    }),
+    invalidateOperations(queryClient, GUARD_OPERATIONS),
+  ])
 }
 
 const WIZARD_STEP_BY_PATH: Record<string, OnboardingStep> = {
@@ -182,7 +201,9 @@ function trimSlash(pathname: string): string {
  *   4. мастер не пройден: разрешены шаги не дальше текущего; брифинг теста — только на шаге test;
  *      экраны своей сессии теста (C5, C6) доступны всегда; остальное → маршрут текущего шага;
  *   5. идёт тест, а открыт шаг мастера или брифинг → экран теста;
- *   6. мастер пройден, а открыт шаг 1–3 → обзор (брифинг остаётся: с него стартует повторная попытка).
+ *   6. мастер пройден, а открыт шаг «Профиль» → обзор. Брифинг остаётся (с него стартует повторная попытка),
+ *      опрос тоже: через него меняют специализацию. Шаг «Грейд» открыт, только пока грейд не заявлен, —
+ *      то есть сразу после смены специализации.
  */
 export function candidateGuard(pathname: string, data: HomeData): string | null {
   const { profile, state } = data
@@ -196,7 +217,10 @@ export function candidateGuard(pathname: string, data: HomeData): string | null 
     return `/candidate/test/${state.active_session.id}`
   }
   if (step === 'done') {
-    return wizardStep !== undefined && wizardStep !== 'test' ? '/candidate' : null
+    if (wizardStep === undefined || wizardStep === 'test' || wizardStep === 'survey') return null
+    // Специализация сменена: заявленный грейд сброшен сервером, и его выбирают заново на шаге «Грейд».
+    if (wizardStep === 'grade' && state.survey_completed && state.claimed_grade == null) return null
+    return '/candidate'
   }
   if (isSessionScreen) return null
   if (wizardStep === undefined) return stepRoute(step)

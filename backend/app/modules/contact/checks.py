@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import or_, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.errors import ApiException, ParamValue, field_error
@@ -55,21 +55,11 @@ class SendContext:
     candidate_is_demo: bool
     company: CompanyDTO | None
     frozen: bool
-    slot_override: int | None
     candidate_visible: bool
     candidate_formats: list[WorkFormat]
     pair: list[Invitation]
-    slot_rows: list[Invitation]
     daily_created: list[datetime]
     inbox_count: int
-
-    @property
-    def slot_limit(self) -> int:
-        return rules.slot_limit(self.slot_override, self.company.trust_level if self.company else None)
-
-    @property
-    def slots(self) -> tuple[int, datetime | None]:
-        return rules.slots_used(self.slot_rows, self.now)
 
     @property
     def daily_limit(self) -> int:
@@ -86,18 +76,6 @@ class SendContext:
 
 def employer_state(db: Session, employer_id: UUID) -> EmployerContactState | None:
     return db.get(EmployerContactState, employer_id)
-
-
-def slot_rows(db: Session, employer_id: UUID, now: datetime) -> list[Invitation]:
-    """Приглашения работодателя, которые могут занимать слот: ждущие ответа и с `slot_release_at > now`."""
-    return list(
-        db.scalars(
-            select(Invitation).where(
-                Invitation.employer_id == employer_id,
-                or_(Invitation.status.in_(rules.ACTIVE_STATUSES), Invitation.slot_release_at > now),
-            )
-        )
-    )
 
 
 def daily_created(db: Session, employer_id: UUID, now: datetime) -> list[datetime]:
@@ -152,11 +130,9 @@ def gather(db: Session, now: datetime, employer_id: UUID, candidate_id: UUID) ->
         candidate_is_demo=bool(candidate and candidate.is_demo),
         company=company_service.get_company(db, employer_id),
         frozen=bool(state and state.sending_frozen_at is not None),
-        slot_override=state.slot_limit_override if state else None,
         candidate_visible=visible,
         candidate_formats=formats,
         pair=pair,
-        slot_rows=slot_rows(db, employer_id, now),
         daily_created=daily_created(db, employer_id, now),
         inbox_count=inbox,
     )
@@ -198,12 +174,6 @@ def violations(
         retry_after = rules.daily_retry_after(ctx.daily_created, now)
         if retry_after is not None:
             found.append(Violation("5.8", 429, "daily_limit_exceeded", {"retry_after": retry_after}))
-    used, next_release = ctx.slots
-    if used >= ctx.slot_limit:
-        params: dict[str, ParamValue] = {"used": used, "limit": ctx.slot_limit}
-        if next_release is not None:
-            params["next_release_at"] = next_release.isoformat()
-        found.append(Violation("5.9", 409, "quota_exceeded", params))
     if ctx.inbox_count >= c.CANDIDATE_INBOX_CAPACITY:
         # Тот же код и текст, что в 5.3: счёт и срок освобождения входящих работодателю не сообщаются.
         found.append(Violation("5.10", 409, "candidate_unavailable"))

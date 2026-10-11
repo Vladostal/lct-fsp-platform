@@ -4,23 +4,15 @@ import { EVIDENCE_LABELS } from '@/content/common'
 import { cn } from '@/lib/utils'
 
 /**
- * Вид доказательства различается иконкой, типом границы и подписью — цвет лишь дублирует (E §3.3):
- *   test, pulse — сплошная граница brand-600; fsp — полоса слева fsp-red; declared — пунктир; none — без границы.
+ * Вид доказательства различается иконкой и подписью — цвет лишь дублирует (E §3.3). Единый вид без рамок:
+ *   test, pulse — brand-50; fsp — иконка fsp-red; declared, none — приглушённый текст.
  */
 const KIND_VIEW: Record<EvidenceKind, { icon: LucideIcon; chip: string; iconClass: string }> = {
-  test: { icon: BadgeCheck, chip: 'border border-brand-600 bg-brand-50 text-brand-700', iconClass: 'text-brand-700' },
-  pulse: { icon: Zap, chip: 'border border-brand-600 bg-brand-50 text-brand-700', iconClass: 'text-brand-700' },
-  fsp: {
-    icon: Trophy,
-    chip: 'border border-l-[3px] border-line-strong border-l-fsp-red bg-surface text-ink',
-    iconClass: 'text-fsp-red',
-  },
-  declared: {
-    icon: PencilLine,
-    chip: 'border border-dashed border-line-strong bg-surface text-ink-muted',
-    iconClass: 'text-ink-muted',
-  },
-  none: { icon: Minus, chip: 'border border-transparent bg-fill text-ink-muted', iconClass: 'text-ink-muted' },
+  test: { icon: BadgeCheck, chip: 'bg-brand-50 text-brand-700', iconClass: 'text-brand-700' },
+  pulse: { icon: Zap, chip: 'bg-brand-50 text-brand-700', iconClass: 'text-brand-700' },
+  fsp: { icon: Trophy, chip: 'bg-fill text-ink', iconClass: 'text-fsp-red' },
+  declared: { icon: PencilLine, chip: 'bg-fill text-ink-muted', iconClass: 'text-ink-muted' },
+  none: { icon: Minus, chip: 'bg-fill text-ink-muted', iconClass: 'text-ink-muted' },
 }
 
 export type EvidenceChipProps = {
@@ -69,13 +61,13 @@ export function EvidenceChip({
       className={cn(
         'inline-flex max-w-full min-w-0 items-center gap-1.5 font-medium',
         size === 'md'
-          ? 'min-h-7 rounded-[14px] px-3 py-1 text-sm leading-5'
-          : 'h-6 rounded-full px-2.5 text-xs leading-4',
+          ? 'min-h-6 rounded-sm px-2 py-0.5 text-[13px] leading-5'
+          : 'h-6 rounded-sm px-2 text-xs leading-4',
         view.chip,
         !detail && className,
       )}
     >
-      <Icon className={cn(size === 'md' ? 'size-4' : 'size-3.5', view.iconClass)} aria-hidden="true" />
+      <Icon className={cn(size === 'md' ? 'size-3.5' : 'size-3', view.iconClass)} aria-hidden="true" />
       {labelVisible ? (
         <span className="min-w-0">
           {skill ? (

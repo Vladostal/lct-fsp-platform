@@ -26,6 +26,7 @@ from app.eval.matching.world import (
     REGIMES,
     World,
     build_world,
+    closure,
 )
 from app.modules.matching import constants as C
 from app.modules.matching.features import CandidateFeatures, SkillEvidence, merge_evidence
@@ -35,6 +36,7 @@ from app.modules.matching.ranking import (
     KEY_ORDER_V11,
     KEY_ORDER_V12,
     RankedItem,
+    score_candidate,
 )
 from app.modules.matching.scoring import DEFAULT_PARAMS, strength
 from app.shared.enums import EvidenceKind, Relation
@@ -55,9 +57,14 @@ THREATS = [
     "допущением и, вероятно, завышает шум формы по сравнению с настоящим движком теста; основной вариант "
     "наблюдений (прогон движка на симулированных ответах) не выполнялся.",
     "Порядок ключей версии 2 (обязательные → подтверждённое → сила) выбран по этой же симуляции на сидах 201–208: "
-    "сравнение с бейзлайном на них оптимистично. Независимая проверка — тот же прогон на сидах, не участвовавших "
-    "в выборе (`--seeds 301-320`): в основном режиме разность P@10 с бейзлайном заявленного стека +0.041 "
-    "[+0.034; +0.049], превосходство сохраняется во всех четырёх проверенных режимах.",
+    "сравнение с бейзлайном на них оптимистично. Независимая проверка на сидах, не участвовавших в выборе "
+    "(`--seeds 301-320`), проводилась для оценщика `match-2`; для `match-3` она не повторялась.",
+    "Сила версии 3 на 60 баллов из 100 состоит из заявленного кандидатом (стаж и число навыков специализации). "
+    "Веса 10 / 30 / 35 / 25 заданы решением команды, а не подобраны и не проверены на людях. В мире симуляции "
+    "стаж связан с латентным уровнем формулой, которую написала команда (`world._profile`), приукрашивающие "
+    "завышают его на 1–4 года: насколько заявленный стаж реальных людей говорит об уровне, симуляция не знает.",
+    "Блок «Специализации без теста» — те же люди без оценки теста: в нём нет ни отсева тестом, ни подтверждённых "
+    "навыков, а грейд — тот, который кандидат заявил. Это ближе всего к девяти специализациям из десяти.",
 ]
 
 
@@ -191,9 +198,66 @@ def twins(cases: Sequence[S.Case], *, samples: int) -> dict[str, Any]:
     }
 
 
-def _stuff(features: CandidateFeatures, skills: Sequence[str]) -> CandidateFeatures:
+def _stuff(features: CandidateFeatures, skills: Sequence[str], already: frozenset[str]) -> CandidateFeatures:
+    """Дописать в профиль навыки потребности: растёт и покрытие заявленным, и число заявленных навыков в силе."""
     added = [SkillEvidence(skill, EvidenceKind.DECLARED) for skill in skills]
-    return replace(features, evidence=merge_evidence([*features.evidence.values(), *added]))
+    new = len([skill for skill in dict.fromkeys(skills) if skill not in already])
+    return replace(
+        features,
+        evidence=merge_evidence([*features.evidence.values(), *added]),
+        declared_relevant=features.declared_relevant + new,
+    )
+
+
+def _inflate(features: CandidateFeatures) -> CandidateFeatures:
+    """Накрутка одной силы: стаж 40 лет и ещё 30 заявленных навыков, набор навыков с источниками не меняется."""
+    return replace(features, experience_years=40.0, declared_relevant=features.declared_relevant + 30)
+
+
+def stuffing_keys(cases: Sequence[S.Case]) -> dict[str, float]:
+    """Что накрутка меняет в ключах порядка действующей системы у самих накрутивших (по всем потребностям).
+
+    * `key_must_changed_share`, `key_confirmed_changed_share` — доля накрутивших, у кого изменился первый ключ
+      (обязательных без данных) и второй (полоса подтверждённого покрытия) после добавления навыков потребности;
+    * `strength_band_gain`, `strength_band_gain_max` — средний и наибольший рост полосы силы (третий ключ);
+    * `profile_only_*` — то же при накрутке одной силы (стаж 40 лет и +30 заявленных навыков, навыки потребности
+      не добавляются): ключи 1–2 от этих полей не зависят по построению, число это проверяет.
+    """
+    must = confirmed = total = 0
+    gain = gain_max = 0
+    profile_keys = profile_gain = profile_gain_max = 0
+    for case in cases:
+        query = case.need.query
+        skills = [*query.must_skills, *query.nice_skills]
+        for index, item in enumerate(case.pool):
+            if index % 10 != 0:
+                continue
+            relation = Relation.EXACT
+            before = score_candidate(item.features, query, relation, closure)
+            after = score_candidate(_stuff(item.features, skills, item.declared), query, relation, closure)
+            inflated = score_candidate(_inflate(item.features), query, relation, closure)
+            total += 1
+            must += before.coverage.must_covered != after.coverage.must_covered
+            confirmed += before.coverage.confirmed_band != after.coverage.confirmed_band
+            step = after.strength.band - before.strength.band
+            gain, gain_max = gain + step, max(gain_max, step)
+            profile_keys += (before.coverage.must_covered, before.coverage.confirmed_band) != (
+                inflated.coverage.must_covered,
+                inflated.coverage.confirmed_band,
+            )
+            step = inflated.strength.band - before.strength.band
+            profile_gain, profile_gain_max = profile_gain + step, max(profile_gain_max, step)
+    count = max(1, total)
+    return {
+        "stuffed": total,
+        "key_must_changed_share": round(must / count, 4),
+        "key_confirmed_changed_share": round(confirmed / count, 4),
+        "strength_band_gain": round(gain / count, 4),
+        "strength_band_gain_max": gain_max,
+        "profile_only_keys_changed_share": round(profile_keys / count, 4),
+        "profile_only_strength_band_gain": round(profile_gain / count, 4),
+        "profile_only_strength_band_gain_max": profile_gain_max,
+    }
 
 
 def stuffing(cases: Sequence[S.Case]) -> dict[str, dict[str, float]]:
@@ -221,7 +285,10 @@ def stuffing(cases: Sequence[S.Case]) -> dict[str, dict[str, float]]:
         query = case.need.query
         skills = [*query.must_skills, *query.nice_skills]
         stuffed_ids = {item.latent.candidate_id for index, item in enumerate(case.pool) if index % 10 == 0}
-        pool = [_stuff(row, skills) if row.candidate_id in stuffed_ids else row for row in case.features()]
+        pool = [
+            _stuff(row, skills, case.by_id[row.candidate_id].declared) if row.candidate_id in stuffed_ids else row
+            for row in case.features()
+        ]
         declared = {
             item.latent.candidate_id: (
                 item.declared | set(skills) if item.latent.candidate_id in stuffed_ids else item.declared
@@ -273,7 +340,7 @@ def fairness(cases: Sequence[S.Case]) -> dict[str, Any]:
         upper_top = [row for row in top if row.candidate_id in upper_ids]
         if upper_top and no_fsp_share(upper) > 0:
             equal.append(no_fsp_share(upper_top) / no_fsp_share(upper))
-        only_test = replace(DEFAULT_PARAMS, w_fsp=0.0, w_test=1.0)
+        only_test = replace(DEFAULT_PARAMS, w_fsp=0.0)
         by_test = sorted(items, key=lambda row: -strength(row.scored.features, only_test).x10)[:10]
         by_strength = {row.candidate_id for row in sorted(items, key=lambda row: -row.scored.strength.x10)[:10]}
         displaced.append(
@@ -388,6 +455,21 @@ def run(out: Path, *, seeds: Sequence[int], quick: bool) -> dict[str, Any]:
     fair = fairness(main_cases)
     twin = twins(main_cases, samples=4 if quick else 10)
     stuff = stuffing(main_cases)
+    stuff_keys = stuffing_keys(main_cases)
+    vs_match2 = paired(ours.p10, main["abl:match2_strength"].p10)
+    declared_cases = [case for world in worlds[MAIN_REGIME] for case in S.make_cases(world, declared_basis=True)]
+    declared_table = evaluate(declared_cases, random_repeats=repeats, full=False)
+    declared_basis: dict[str, Any] = {
+        "status": "измерено",
+        "n": len(declared_cases),
+        "pool": sum(len(world.declared_pool) for world in worlds[MAIN_REGIME]),
+        "ours": declared_table["ours"].row(),
+        "declared": declared_table["declared"].row(),
+        "strength_only": declared_table["strength_only"].row(),
+        "random": declared_table["random"].row(),
+        "diff_declared": paired(declared_table["ours"].p10, declared_table["declared"].p10),
+        "diff_random": paired(declared_table["ours"].p10, declared_table["random"].p10),
+    }
     strong = regime_rows["strong"]["diff_declared"]
     honest = regime_rows["honest"]["diff_declared"]
     manual = _manual(out)
@@ -435,6 +517,18 @@ def run(out: Path, *, seeds: Sequence[int], quick: bool) -> dict[str, Any]:
             "ok": stuff["ours"]["p10_stuffed"] >= stuff["declared"]["p10_stuffed"],
             "value": {"ours": stuff["ours"]["p10_stuffed"], "declared": stuff["declared"]["p10_stuffed"]},
         },
+        {
+            "name": "Не хуже прежней силы match-2 (тест 70, ФСП 30): интервал разности P@10 не лежит целиком "
+            "ниже нуля (добавлен с оценщиком match-3)",
+            "ok": vs_match2["ci_high"] >= 0,
+            "value": vs_match2,
+        },
+        {
+            "name": "Накрутка заявленным не меняет ключи 1–2 (закрытые обязательные и подтверждённое покрытие) "
+            "у накрутившего (добавлен с оценщиком match-3)",
+            "ok": stuff_keys["key_must_changed_share"] == 0 and stuff_keys["key_confirmed_changed_share"] == 0,
+            "value": stuff_keys,
+        },
     ]
     notes = []
     if not criteria[0]["ok"]:
@@ -454,9 +548,32 @@ def run(out: Path, *, seeds: Sequence[int], quick: bool) -> dict[str, Any]:
             "Первым ключом внутри раздела стоит число закрытых обязательных навыков, и заявленный навык пробел "
             "закрывает. Поэтому накрутка заявленного поднимает кандидата над теми, у кого пробел остался, — но не "
             "над кандидатом с тем же числом закрытых обязательных и большим подтверждённым покрытием. Порядок "
-            f"версии 1.2 («сила первой») к накрутке глух, но и без неё даёт P@10 {stuff['order_v12']['p10']:.3f} "
+            f"версии 1.2 («сила первой») к накрутке устойчивее (в топ-10 входит {stuff['order_v12']['entered']:.2f} "
+            f"накрутивших против {stuff['ours']['entered']:.2f}; с силой match-3 заявленные навыки поднимают и её), "
+            f"но и без накрутки даёт P@10 {stuff['order_v12']['p10']:.3f} "
             f"против {stuff['ours']['p10_stuffed']:.3f} у действующего порядка уже после накрутки: защита стоила "
             "дороже угрозы. Источник каждого навыка работодатель видит в карточке."
+        )
+
+    if not criteria[8]["ok"]:
+        notes.append(
+            "Действующая сила match-3 (тест 10, ФСП 30, заявленные стаж 35 и навыки 25) уступает прежней силе "
+            f"match-2 (тест 70, ФСП 30) по P@10: разность {_ci(vs_match2)}. Перенос 60 баллов силы на заявленное — "
+            "продуктовое решение (все специализации доступны до появления тестов), а не результат валидации."
+        )
+    if not criteria[9]["ok"]:
+        notes.append(
+            "Накрутка меняет первый ключ: заявленный навык закрывает пробел в обязательных "
+            f"(у {stuff_keys['key_must_changed_share']:.1%} накрутивших), второй ключ — подтверждённое покрытие — "
+            f"изменился у {stuff_keys['key_confirmed_changed_share']:.1%}. Накрутка одной силы (стаж и число "
+            f"навыков) ключи 1–2 изменила у {stuff_keys['profile_only_keys_changed_share']:.1%} и подняла полосу "
+            f"силы в среднем на {stuff_keys['profile_only_strength_band_gain']:.2f} "
+            f"(наибольшее — {stuff_keys['profile_only_strength_band_gain_max']})."
+        )
+    if declared_basis["diff_declared"]["ci_low"] <= 0:
+        notes.append(
+            "В специализациях без теста (все грейды заявленные) наш порядок не превосходит бейзлайн заявленного "
+            f"стека: разность P@10 {_ci(declared_basis['diff_declared'])}."
         )
 
     here = Path(relevance_module.__file__).resolve().parent
@@ -516,7 +633,9 @@ def run(out: Path, *, seeds: Sequence[int], quick: bool) -> dict[str, Any]:
         "exposure": exposure_evenness(worlds[MAIN_REGIME][0]),
         "sensitivity": sens,
         "twins": twin,
-        "stuffing": stuff,
+        "stuffing": {**stuff, "keys": stuff_keys, "strength_band_gain": stuff_keys["strength_band_gain"]},
+        "declared_basis": declared_basis,
+        "paired_p10_match2_strength": vs_match2,
         "manual": manual,
         "criteria": criteria,
         "notes": notes,
@@ -530,7 +649,7 @@ def run(out: Path, *, seeds: Sequence[int], quick: bool) -> dict[str, Any]:
 
 
 STUFFING_LABELS = {
-    "ours": "Наша (порядок версии 2)",
+    "ours": "Наша (порядок версии 2, сила match-3)",
     "declared": "B1 заявленный стек",
     "order_v12": "Порядок версии 1.2 (сила первой)",
     "order_v10": "Порядок версии 1.0",
@@ -548,6 +667,34 @@ SYSTEM_LABELS = {
 
 def _ci(row: dict[str, float]) -> str:
     return f"{row['diff']:+.3f} [{row['ci_low']:+.3f}; {row['ci_high']:+.3f}]"
+
+
+def _declared_block(block: dict[str, Any] | None) -> list[str]:
+    """Раздел отчёта о специализациях без теста; блока нет — прямо сказано «не измерено»."""
+    if not block or block.get("status") != "измерено":
+        return ["Не измерено."]
+    return [
+        f"Тот же мир, но теста нет: в пуле все {block['pool']} кандидатов (отсева тестом нет), грейд у каждого — "
+        "заявленный, оценки уровня и подтверждённых навыков нет. Порядок: закрытые обязательные (по заявленному) → "
+        "сила (ФСП, заявленные стаж и навыки) → покрытие заявленным.",
+        "",
+        "| Система | P@5 | P@10 | 95 % интервал P@10 | nDCG@10 | MRR |",
+        "|---|---|---|---|---|---|",
+        *(
+            f"| {label} | {block[name]['p5']:.3f} | {block[name]['p10']:.3f} | "
+            f"[{block[name]['p10_ci'][0]:.3f}; {block[name]['p10_ci'][1]:.3f}] | {block[name]['ndcg10']:.3f} | "
+            f"{block[name]['mrr']:.3f} |"
+            for name, label in (
+                ("ours", "Наша система"),
+                ("declared", "B1 совпадение заявленного стека"),
+                ("strength_only", "B3 только сила профиля"),
+                ("random", "B0 случайный в категории"),
+            )
+        ),
+        "",
+        f"Наша − B1: {_ci(block['diff_declared'])}; наша − B0: {_ci(block['diff_random'])}. Планки для этого блока "
+        "нет: числа показывают, чего стоит подбор, пока тест по специализации не готов.",
+    ]
 
 
 def render(report: dict[str, Any]) -> str:
@@ -630,7 +777,8 @@ def render(report: dict[str, Any]) -> str:
         f"{fair['feasible_salary_base']:.3f}: измеренная цена отказа от фильтра по вилке.",
         f"- `nofsp_ratio@10` = {fair['nofsp_ratio_at_10']:.3f}; `nofsp_equal_level@10` = "
         f"{fair['nofsp_equal_level_at_10']:.3f}; `fsp_displacement@10` = {fair['fsp_displacement_at_10']:.3f} "
-        f"(потолок вклада ФСП — {fair['fsp_max_points']} балла силы).",
+        f"(потолок вклада ФСП — {fair['fsp_max_points']} балла силы; тест даёт до {100 * C.W_TEST:g}, "
+        f"заявленные стаж и навыки — до {100 * (C.W_EXPERIENCE + C.W_SKILLS):g}).",
         f"- Равномерность показов (один сид, 200 сессий): с учётом показов — Джини {exp['with_exposure']['gini']:.3f}, "
         f"показано {exp['with_exposure']['shown_share']:.1%}, максимум {exp['with_exposure']['max_shows']:.0f}; "
         f"без учёта — Джини {exp['without_exposure']['gini']:.3f}, "
@@ -644,6 +792,7 @@ def render(report: dict[str, Any]) -> str:
         *(f"| {row['name']} | {_ci(row)} | {row['rbo10']:.3f} |" for row in report["sensitivity"]),
     ]
     twin, stuff = report["twins"], report["stuffing"]
+    keys = stuff["keys"]
     lines += [
         "",
         "## Шум формы теста («близнецы»)",
@@ -652,7 +801,9 @@ def render(report: dict[str, Any]) -> str:
         f"{twin['strength_band_diff_share']:.1%}; с разным `confirmed_band`: {twin['confirmed_band_diff_share']:.1%}; "
         f"близнец выпал из подборки (другая категория): {twin['left_shortlist_share']:.1%}. Медиана разницы позиций: "
         f"действующий порядок — {twin['median_position_shift_current']:g}, порядок версии 1.1 — "
-        f"{twin['median_position_shift_v11']:g}. Планки нет; число относится к угрозам валидности.",
+        f"{twin['median_position_shift_v11']:g}. Планки нет; число относится к угрозам валидности. Доля пар с "
+        "разным `strength_band` несравнима с отчётом match-2: тест теперь даёт 10 баллов силы из 100, а не 70, "
+        "поэтому форма теста реже меняет полосу — тест от этого точнее не стал.",
         "",
         "## Накрутка заявленным",
         "",
@@ -666,8 +817,22 @@ def render(report: dict[str, Any]) -> str:
             for name, label in STUFFING_LABELS.items()
         ),
         "",
-        "«Более сильный» — кандидат с большей полосой силы либо с той же силой и большим подтверждённым покрытием. "
+        "«Более сильный» — кандидат с большей полосой силы либо с той же силой и большим подтверждённым покрытием; "
+        "полосы берутся после накрутки. С оценщиком match-3 накрутка поднимает и силу самого накрутившего, поэтому "
+        "число вытесненных «более сильных» занижено и с отчётом match-2 напрямую не сравнимо. "
         "P@10 после накрутки показывает итог для работодателя: сколько релевантных осталось в топ-10.",
+        "",
+        f"Ключи порядка у накрутивших ({keys['stuffed']} случаев): первый ключ (закрытые обязательные) изменился "
+        f"у {keys['key_must_changed_share']:.1%}, второй (подтверждённое покрытие) — у "
+        f"{keys['key_confirmed_changed_share']:.1%}; полоса силы выросла в среднем на "
+        f"{keys['strength_band_gain']:.2f} (наибольшее — {keys['strength_band_gain_max']}). Накрутка одной силы "
+        f"(стаж 40 лет и +30 заявленных навыков, навыки потребности не добавлены): ключи 1–2 изменились у "
+        f"{keys['profile_only_keys_changed_share']:.1%}, полоса силы — в среднем +"
+        f"{keys['profile_only_strength_band_gain']:.2f} (наибольшее — {keys['profile_only_strength_band_gain_max']}).",
+        "",
+        "## Специализации без теста (все грейды заявленные)",
+        "",
+        *_declared_block(report.get("declared_basis")),
         "",
         "## Ручной слой",
         "",
@@ -715,8 +880,21 @@ def console(report: dict[str, Any]) -> str:
         "Накрутка заявленным (вошло в топ-10 / вытеснено более сильных / P@10 до → после): "
         + "; ".join(
             f"{name} — {row['entered']:.2f} / {row['displaced']:.2f} / {row['p10']:.3f} → {row['p10_stuffed']:.3f}"
-            for name, row in stuff.items()
+            for name, row in ((name, stuff[name]) for name in STUFFING_LABELS)
         )
+    )
+    keys = stuff["keys"]
+    lines.append(
+        f"Ключи у накрутивших: первый изменился у {keys['key_must_changed_share']:.1%}, второй — у "
+        f"{keys['key_confirmed_changed_share']:.1%}; рост полосы силы — {keys['strength_band_gain']:.2f} в среднем, "
+        f"{keys['strength_band_gain_max']} наибольший"
+    )
+    row = report["ablations"]["match2_strength"]
+    lines.append(f"Прежняя сила match-2 (70/30): P@10 {row['p10']:.3f}; вариант − наша {_ci(row['vs_ours'])}")
+    block = report["declared_basis"]
+    lines.append(
+        f"Без теста (все грейды заявленные): наша {block['ours']['p10']:.3f}, B1 {block['declared']['p10']:.3f}, "
+        f"B0 {block['random']['p10']:.3f}; наша − B1 {_ci(block['diff_declared'])}"
     )
     lines += [*report["notes"], "summary: " + json.dumps(report["summary"], ensure_ascii=False)]
     return "\n".join(lines)

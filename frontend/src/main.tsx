@@ -17,7 +17,7 @@ setupApiClient()
 // 401 на запрос кабинета: кэш `me` уже очищен, остаётся увести пользователя и объяснить, что произошло (Арх. 11.3).
 installSessionGuard(({ href, reason }) => {
   toast.info(reason === 'demo_restarted' ? COMMON.demoRestarted : COMMON.sessionExpired)
-  void router.navigate({ href, replace: true })
+  void router.navigate({ href, replace: true, ignoreBlocker: true })
 })
 
 const container = document.getElementById('root')

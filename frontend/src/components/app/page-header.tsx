@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { ChevronLeft } from 'lucide-react'
 import type * as React from 'react'
+import { Fragment } from 'react'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -57,27 +58,29 @@ export function PageHeader({
           <BreadcrumbList>
             {breadcrumbs.map((crumb, index) => {
               const last = index === breadcrumbs.length - 1
+              const linked = !last && !!crumb.href
+              // Разделитель — соседний пункт списка: <li> внутри <li> недопустим.
               return (
-                <BreadcrumbItem key={`${crumb.label}-${crumb.href ?? index}`} className="min-w-0">
-                  {last || !crumb.href ? (
-                    <BreadcrumbPage className="min-w-0">{crumb.label}</BreadcrumbPage>
-                  ) : (
-                    <>
+                <Fragment key={`${crumb.label}-${crumb.href ?? index}`}>
+                  <BreadcrumbItem className="min-w-0">
+                    {linked ? (
                       <BreadcrumbLink asChild>
                         <Link to={crumb.href} className="text-link">
                           {crumb.label}
                         </Link>
                       </BreadcrumbLink>
-                      <BreadcrumbSeparator />
-                    </>
-                  )}
-                </BreadcrumbItem>
+                    ) : (
+                      <BreadcrumbPage className="min-w-0">{crumb.label}</BreadcrumbPage>
+                    )}
+                  </BreadcrumbItem>
+                  {linked ? <BreadcrumbSeparator /> : null}
+                </Fragment>
               )
             })}
           </BreadcrumbList>
         </Breadcrumb>
       ) : null}
-      {back ? (
+      {back && !(breadcrumbs && breadcrumbs.length > 0) ? (
         <Link
           to={back.href}
           className="inline-flex min-h-11 w-fit items-center gap-1 text-sm font-medium text-brand-700 hover:text-brand-600"
@@ -88,11 +91,11 @@ export function PageHeader({
       ) : null}
       <div className="flex min-w-0 flex-wrap items-start justify-between gap-x-6 gap-y-4">
         <div className="flex min-w-0 flex-1 basis-80 flex-col gap-2">
-          {eyebrow ? <p className="type-eyebrow text-ink-muted">{eyebrow}</p> : null}
+          {eyebrow && !(breadcrumbs && breadcrumbs.length > 0) ? <p className="type-eyebrow">{eyebrow}</p> : null}
           <h1 data-page-title tabIndex={-1} className="type-h1 min-w-0 text-ink outline-none">
             {title}
           </h1>
-          {description ? <div className="type-body max-w-[72ch] min-w-0 text-ink-muted">{description}</div> : null}
+          {description ? <div className="type-sm max-w-[60ch] min-w-0 text-ink-muted">{description}</div> : null}
           {meta ? <div className="flex min-w-0 flex-wrap items-center gap-2 pt-1">{meta}</div> : null}
         </div>
         {actions ? (

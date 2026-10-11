@@ -55,7 +55,9 @@ export function MinSalarySelect({ value, onChange, category, showFutureNote = fa
       {showFutureNote ? <p className="type-caption text-ink-muted">{S.futureOnly}</p> : null}
       {hint.data ? (
         <p className="type-caption text-ink-muted" data-testid="salary-hint">
-          <span className="num font-medium text-ink">{S.hint(formatSalaryRange(hint.data.from, hint.data.to))}</span>
+          <span className="font-medium text-ink">
+            {S.hint} <span className="num">{formatSalaryRange(hint.data.from, hint.data.to)}</span>
+          </span>
           <span className="block">{S.hintSource}</span>
         </p>
       ) : null}

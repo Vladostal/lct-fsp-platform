@@ -20,7 +20,7 @@ from app.modules.assessment.dto import LevelThreshold, LevelView
 from app.modules.profile import service
 from app.modules.profile.dto import PdfContacts, PdfDeclaredBlock, PdfFspBlock, ProfilePdfModel
 from app.modules.profile.pdf import render
-from app.shared.enums import EvidenceKind, TestOutcome
+from app.shared.enums import CategoryBasis, EvidenceKind, TestOutcome
 from app.shared.schemas import CategoryRef, EvidenceItem, Ref
 
 GENERATED = datetime(2026, 10, 6, 12, 0, tzinfo=UTC)
@@ -137,6 +137,12 @@ def test_template_has_no_salary_and_all_blocks() -> None:
         assert block in html
     assert "Подтверждённых достижений ФСП в профиле нет" in html_of(model(fsp=None))
     assert "Категория пока не определена" in html_of(model(category=None, level=None))
+    # Заявленный грейд: блока уровня нет, а слово «категория» как подтверждённый факт не печатается.
+    stated = model().category.model_copy(update={"basis": CategoryBasis.DECLARED})
+    declared = html_of(model(category=stated, level=None))
+    assert "<h2>Заявленный грейд</h2>" in declared and "заявленный грейд, тест готовится" in declared
+    assert "<h2>Категория</h2>" not in declared and "Тест пройден" not in declared and 'class="scale"' not in declared
+    assert "<h2>Категория</h2>" in html and "заявленный грейд" not in html
     assert not any("salary" in name for name in ProfilePdfModel.model_fields)
 
 

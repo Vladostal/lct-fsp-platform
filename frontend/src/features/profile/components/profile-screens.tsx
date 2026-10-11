@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query'
-import { Download, FileText } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import type { Catalog } from '@/client'
@@ -98,14 +97,10 @@ export function ProfileCabinet({ userId, catalog, category }: ScreenProps) {
       <PageHeader title={PROFILE.cabinet.title} description={PROFILE.cabinet.description} />
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="size-4 text-ink-muted" aria-hidden="true" />
-            {PROFILE.cabinet.pdfCard}
-          </CardTitle>
+          <CardTitle>{PROFILE.cabinet.pdfCard}</CardTitle>
         </CardHeader>
         <p className="type-body mb-3 text-ink-muted">{PROFILE.cabinet.pdfText}</p>
         <Button variant="secondary" className="self-start" loading={pdfBusy} onClick={openPdf}>
-          <Download aria-hidden="true" />
           {PROFILE.cabinet.pdfDownload}
         </Button>
         {pdfError ? (

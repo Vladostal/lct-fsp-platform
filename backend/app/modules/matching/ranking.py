@@ -63,7 +63,12 @@ KEY_PARTS: dict[str, Callable[[Scored], int]] = {
     "confirmed_raw": lambda s: -(s.coverage.confirmed_pct or 0),
     "coverage_raw": lambda s: -(s.coverage.pct or 0),
     "additive": lambda s: (
-        -round(4.5 * (s.coverage.pct or 0) + 4.0 * s.strength.value + 15 * max(0.0, 1 - s.features.age_days / 365))
+        -round(
+            4.5 * (s.coverage.pct or 0)
+            + 4.0 * s.strength.value
+            # У заявленного грейда давности нет: прибавки за свежесть тоже нет.
+            + (15 * max(0.0, 1 - s.features.age_days / 365) if s.features.age_days is not None else 0.0)
+        )
     ),
 }
 
@@ -113,7 +118,7 @@ def sort_key(scored: Scored, seed: str, key_order: Sequence[str] = DEFAULT_KEY_O
     sort_key = ( section_order,                 # exact = 0, lower_with_margin = 1, higher = 2
                  must_missing,                  # обязательных навыков без единого доказательства (0 — закрыты все)
                  −confirmed_band,               # соответствие потребности по подтверждённому (0, если требований нет)
-                 −strength_band,                # сила подтверждённого профиля: все ответы теста и ФСП, нижняя граница
+                 −strength_band,                # сила профиля: тест (нижняя граница), ФСП, заявленные стаж и навыки
                  −coverage_band,                # заявленное по желательным — только среди равных по ключам выше
                  exposure_bucket,               # floor(log2(1 + exposure_7d))
                  tie_hash )                     # sha256(f"{seed}:{candidate_id}")
@@ -245,8 +250,8 @@ def rank_bank(
     """Порядок банка кандидатов (Арх. 6.9).
 
     Специализации — в порядке каталога, грейды — от старшего к младшему, внутри категории —
-    `(−strength_band, exposure_bucket, tie_hash)`: буквально «внутри категории — по силе подтверждённого
-    профиля». Навыки в банке — только фильтр «есть / нет», в порядок не входят.
+    `(−strength_band, exposure_bucket, tie_hash)`: внутри категории — по силе профиля (тест, ФСП, заявленные стаж
+    и навыки). Навыки в банке — только фильтр «есть / нет», в порядок не входят.
     """
     spec_index = {code: index for index, code in enumerate(specializations)}
     grade_index = {code: index for index, code in enumerate(grades)}

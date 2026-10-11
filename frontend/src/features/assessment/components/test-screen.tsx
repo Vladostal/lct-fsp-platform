@@ -33,6 +33,30 @@ type Live = {
   offsetMs: number
 }
 
+/** Сегменты по числу заданий минимальной формы; доп. блоки при росте формы просто добавляются в конец. */
+function SegmentedProgress({ answered, total }: { answered: number; total: number }) {
+  return (
+    <div
+      role="progressbar"
+      aria-label="Прогресс теста"
+      aria-valuemin={0}
+      aria-valuemax={total}
+      aria-valuenow={answered}
+      className="flex h-1 w-full gap-0.5"
+    >
+      {Array.from({ length: total }, (_, i) => (
+        <span
+          // biome-ignore lint/suspicious/noArrayIndexKey: сегменты одинаковы, порядок фиксирован
+          key={i}
+          className={`flex-1 rounded-full transition-colors duration-(--dur-fast) ${
+            i < answered ? 'bg-brand-600' : i === answered ? 'bg-brand-600/40' : 'bg-line'
+          }`}
+        />
+      ))}
+    </div>
+  )
+}
+
 function fromServer(
   src: Pick<TestSessionView, 'progress' | 'expires_at' | 'server_now'> & { item?: TestItemView | null },
 ): Live {
@@ -58,7 +82,8 @@ function readDraft(sessionId: string, item: TestItemView): ItemValue {
 export function TestScreen({ sessionId }: { sessionId: string }) {
   const query = useQuery(sessionQuery(sessionId))
   usePageTitle('Тест')
-  if (query.isError) {
+  // Сбой фонового обновления при уже загруженной сессии тест не прерывает: задание и таймер остаются на экране.
+  if (query.isError && !query.data) {
     return <ErrorState error={query.error} onRetry={() => query.refetch()} homeHref="/candidate" />
   }
   if (!query.data) {
@@ -103,6 +128,8 @@ function TestRunner({
 
   const goResult = useCallback(
     async (expired = false) => {
+      // Закрытие сессии видят сразу и таймер, и обновлённый запрос, и ответ на отправку: уходим один раз.
+      if (leaving.current) return
       leaving.current = true
       if (expired) toast(ASSESSMENT.test.expired)
       await invalidateGuardData(queryClient)
@@ -201,8 +228,11 @@ function TestRunner({
           setValue(readDraft(sessionId, r.data.item))
         }
       } else if (isApiError(e) && e.status === 0) setNetError({ skipped })
-      else if (hasStatus(e, 404)) await navigate({ to: '/candidate' })
-      else setError(errorMessage(e))
+      else if (hasStatus(e, 404)) {
+        // Сессии больше нет: вопрос «уйти из теста?» не нужен.
+        leaving.current = true
+        await navigate({ to: '/candidate' })
+      } else setError(errorMessage(e))
     } finally {
       setBusy(false)
     }
@@ -234,14 +264,15 @@ function TestRunner({
       <FocusHeaderSlot>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <div className="flex min-w-0 items-center justify-between gap-3">
-            <span className="type-sm hidden min-w-0 truncate text-ink-muted sm:inline">
-              Тест · {session.target.title}
-            </span>
             <span className="num type-sm shrink-0">
-              Задание {Math.min(answered + 1, min_total)} из {min_total}
+              {Math.min(answered + 1, min_total)} из {min_total}
             </span>
           </div>
-          <Progress value={percent} className="h-1" aria-label="Прогресс теста" />
+          {min_total > 30 ? (
+            <Progress value={percent} className="h-1" aria-label="Прогресс теста" />
+          ) : (
+            <SegmentedProgress answered={answered} total={min_total} />
+          )}
         </div>
         <TestTimer remainingMs={remaining} />
       </FocusHeaderSlot>
@@ -254,7 +285,7 @@ function TestRunner({
 
       {item ? (
         <section className="flex min-w-0 flex-col gap-4" aria-labelledby="item-title">
-          <p className="type-eyebrow num text-ink-muted">{item.skill_label}</p>
+          <p className="type-eyebrow min-w-0 text-ink-muted">{item.skill_label}</p>
           <h1 id="item-title" ref={titleRef} tabIndex={-1} className="type-h1 min-w-0 break-words outline-none">
             {item.prompt}
           </h1>
@@ -266,8 +297,12 @@ function TestRunner({
             disabled={busy}
           />
         </section>
-      ) : (
-        <ErrorState title="Задание не загрузилось" onRetry={() => refetch()} homeHref="/candidate" />
+      ) : session.status !== 'in_progress' ? null : (
+        <ErrorState
+          title="Задание не загрузилось"
+          onRetry={() => void refetch().then((r) => r.data && setLive(fromServer(r.data)))}
+          homeHref="/candidate"
+        />
       )}
 
       {netError ? (

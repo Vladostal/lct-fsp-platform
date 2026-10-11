@@ -115,6 +115,17 @@ def test_grant_and_revoke_publication(
     assert client.get(CONSENT).json()["publication"]["granted"] is False
 
 
+def test_declared_category_allows_publication(
+    client: TestClient, login_as: Callable[..., Any], make_candidate: Callable[..., Candidate], world: Any
+) -> None:
+    """Заявленный грейд (тест по специализации готовится) — тоже категория: профиль можно опубликовать."""
+    candidate = make_candidate(category=False)
+    world.declared.add(candidate.id)
+    login_as(candidate)
+    granted = client.post(PUBLICATION, json={"action": "grant", "version": publication_version()})
+    assert granted.status_code == 200 and granted.json()["state"] == "visible"
+
+
 def test_manual_pause_roundtrip(
     client: TestClient, login_as: Callable[..., Any], make_candidate: Callable[..., Candidate]
 ) -> None:

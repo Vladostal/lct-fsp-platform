@@ -20,7 +20,7 @@ from uuid import UUID
 
 from app.modules.matching.dto import ShortlistQuery
 from app.modules.matching.features import CandidateFeatures, SkillEvidence, merge_evidence
-from app.shared.enums import EvidenceKind, TestOutcome, WorkFormat
+from app.shared.enums import CategoryBasis, EvidenceKind, TestOutcome, WorkFormat
 
 OBSERVATION_MODEL = "simplified"
 AS_OF = date(2026, 10, 1)
@@ -160,6 +160,8 @@ class World:
     observed: list[Observed] = field(default_factory=list)
     #: Те же кандидаты с другой формой теста («близнецы»): меняется только шум теста.
     twins: dict[UUID, CandidateFeatures] = field(default_factory=dict)
+    #: Те же люди как кандидаты специализации без теста: все с заявленным грейдом (блок отчёта `declared_basis`).
+    declared_pool: list[Observed] = field(default_factory=list)
     needs: list[EvalNeed] = field(default_factory=list)
 
 
@@ -225,6 +227,8 @@ class _Profile:
     age_days: int
     fsp_signal: float
     pulse: tuple[str, ...]
+    #: Заявленный стаж, лет: растёт с уровнем, шумит, у приукрашивающих завышен.
+    experience_years: float = 0.0
 
 
 def _profile(rng: random.Random, latent: LatentCandidate, regime: Regime) -> _Profile:
@@ -248,12 +252,20 @@ def _profile(rng: random.Random, latent: LatentCandidate, regime: Regime) -> _Pr
     if rng.random() < 0.20:
         working = [skill for skill, lat in latent.skills.items() if lat >= 2]
         pulse = tuple(rng.sample(working, min(len(working), rng.randint(1, 3))))
+    age_days = rng.randint(0, 300)
+    # Стаж разыгрывается последним: все прежние случайные числа профиля остаются теми же, что и до версии 3.
+    # `g` — уровень в ширинах грейда над порогом junior: на пороге junior в среднем 1 год, middle — 3.5, senior — 6.
+    g = (latent.theta_true - CUTS["junior"]) / WIDTH
+    years = max(0.0, 1.0 + 2.5 * g + rng.gauss(0, 1.5))
+    if inflator:
+        years += rng.uniform(1, 4)
     return _Profile(
         claimed_grade=max(0, min(len(GRADES) - 1, claimed)),
         declared=frozenset(declared),
-        age_days=rng.randint(0, 300),
+        age_days=age_days,
         fsp_signal=signal,
         pulse=pulse,
+        experience_years=max(0.0, min(40.0, round(years * 2) / 2)),
     )
 
 
@@ -319,6 +331,42 @@ def _take_test(
         fsp_verified=profile.fsp_signal > 0,
         work_formats=latent.formats,
         exposure_7d=0,
+        basis=CategoryBasis.TEST,
+        experience_years=profile.experience_years,
+        declared_relevant=len(profile.declared),
+    )
+
+
+def declared_features(latent: LatentCandidate, profile: _Profile) -> CandidateFeatures:
+    """Тот же кандидат в специализации без теста: грейд заявлен, оценки и подтверждений тестом нет.
+
+    Остаются заявленные навыки, стаж и сигнал ФСП. Категорию получает каждый — отсева тестом нет.
+    """
+    grade = GRADES[profile.claimed_grade]
+    evidence = [SkillEvidence(skill, EvidenceKind.DECLARED) for skill in sorted(profile.declared)]
+    return CandidateFeatures(
+        candidate_id=latent.candidate_id,
+        specialization_code=latent.spec,
+        grade_code=grade,
+        verdict=None,
+        theta=None,
+        se=None,
+        se_eff=None,
+        cut=CUTS[grade],
+        width=WIDTH,
+        tested_at=None,
+        last_evidence_at=None,
+        age_days=None,
+        stale=False,
+        evidence=merge_evidence(evidence),
+        fsp_signal=profile.fsp_signal,
+        fsp_band=_fsp_band(profile.fsp_signal),  # type: ignore[arg-type]
+        fsp_verified=profile.fsp_signal > 0,
+        work_formats=latent.formats,
+        exposure_7d=0,
+        basis=CategoryBasis.DECLARED,
+        experience_years=profile.experience_years,
+        declared_relevant=len(profile.declared),
     )
 
 
@@ -368,9 +416,12 @@ def build_world(seed: int, regime: Regime, *, candidates: int = 400, needs: int 
     for latent in world.latents:
         profile = _profile(random.Random(f"profile:{seed}:{regime.name}:{latent.candidate_id}"), latent, regime)
         features = _take_test(random.Random(f"form-a:{seed}:{latent.candidate_id}"), latent, profile, regime)
+        text = " ".join([latent.spec, *sorted(profile.declared)])
+        world.declared_pool.append(
+            Observed(latent=latent, features=declared_features(latent, profile), declared=profile.declared, text=text)
+        )
         if features is None:
             continue  # никто не подтвердился — кандидат без категории, в пул не входит
-        text = " ".join([latent.spec, *sorted(profile.declared)])
         world.observed.append(Observed(latent=latent, features=features, declared=profile.declared, text=text))
         twin = _take_test(random.Random(f"form-b:{seed}:{latent.candidate_id}"), latent, profile, regime)
         if twin is not None:

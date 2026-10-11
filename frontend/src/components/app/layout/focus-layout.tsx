@@ -2,6 +2,7 @@ import type * as React from 'react'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { APP_NAME } from '@/lib/config'
+import { AppHeader } from './app-header'
 import { SkipLink } from './skip-link'
 
 const SLOT_ID = 'focus-header-slot'
@@ -15,8 +16,9 @@ export function FocusLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col bg-canvas">
       <SkipLink />
-      <header data-sticky="top" className="sticky top-0 z-20 border-b border-line bg-surface">
-        <div className="mx-auto flex h-14 w-full max-w-[928px] min-w-0 items-center gap-4 px-4 md:px-6">
+      <AppHeader
+        width="focus"
+        logo={
           <img
             src="/logo_mobile.svg"
             alt={`ФСП · ${APP_NAME}`}
@@ -24,9 +26,9 @@ export function FocusLayout({ children }: { children: React.ReactNode }) {
             height={28}
             className="h-7 w-auto shrink-0"
           />
-          <div id={SLOT_ID} className="flex min-w-0 flex-1 items-center justify-end gap-4" />
-        </div>
-      </header>
+        }
+        actions={<div id={SLOT_ID} className="flex min-w-0 flex-1 items-center justify-end gap-4" />}
+      />
       <main
         id="main"
         tabIndex={-1}

@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet } from '@tanstack/react-router'
 import { CabinetFrame } from '@/features/auth'
 
-/** Каркас Cabinet работодателя: шапка с навигацией и квотой «Слоты {used} / {limit}». */
+/** Каркас Cabinet работодателя: шапка с навигацией и отметкой о приостановке отправки. */
 export const Route = createFileRoute('/employer/_cabinet')({
   component: EmployerCabinet,
 })

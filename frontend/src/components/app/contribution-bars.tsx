@@ -1,10 +1,24 @@
 import type { Contribution } from '@/client'
+import { STRENGTH_SUMMARY } from '@/content/common'
 import { formatDecimal } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
 export type ContributionBarsProps = {
   items: readonly Contribution[]
+  /**
+   * Итог под полосами силы профиля: сколько баллов подтверждено (тест и ФСП) и сколько заявлено кандидатом
+   * (стаж и навыки). Считается по полю `source` строк; без него (оценщик match-2) итог не показывается.
+   */
+  summary?: boolean
   className?: string
+}
+
+/** Суммы баллов по источнику: подтверждённое платформой и заявленное кандидатом. */
+export function contributionTotals(items: readonly Contribution[]): { confirmed: number; declared: number } | null {
+  if (!items.some((item) => item.source != null)) return null
+  const sum = (source: 'confirmed' | 'declared') =>
+    Math.max(0, Math.round(items.filter((i) => i.source === source).reduce((acc, i) => acc + i.points, 0) * 10) / 10)
+  return { confirmed: sum('confirmed'), declared: sum('declared') }
 }
 
 /**
@@ -13,9 +27,10 @@ export type ContributionBarsProps = {
  * полосы нет, значение «−0,8». Строка `fsp` с нулём не рисуется (кандидат без истории ФСП не штрафуется).
  * Раскладка зависит от ширины контейнера: в узком полоса уходит под подпись.
  */
-export function ContributionBars({ items, className }: ContributionBarsProps) {
+export function ContributionBars({ items, summary = false, className }: ContributionBarsProps) {
   const rows = items.filter((item) => !(item.code === 'fsp' && item.points === 0))
   if (rows.length === 0) return null
+  const totals = summary ? contributionTotals(items) : null
 
   return (
     <div data-slot="contribution-bars" className={cn('@container min-w-0', className)}>
@@ -49,6 +64,13 @@ export function ContributionBars({ items, className }: ContributionBarsProps) {
           )
         })}
       </dl>
+      {totals ? (
+        <p data-slot="contribution-summary" className="type-caption mt-3 min-w-0 break-words text-ink-muted">
+          {STRENGTH_SUMMARY.confirmed}: <span className="num text-ink">{formatDecimal(totals.confirmed)}</span>{' '}
+          {STRENGTH_SUMMARY.confirmedOf} · {STRENGTH_SUMMARY.declared}:{' '}
+          <span className="num text-ink">{formatDecimal(totals.declared)}</span> {STRENGTH_SUMMARY.declaredOf}
+        </p>
+      ) : null}
     </div>
   )
 }

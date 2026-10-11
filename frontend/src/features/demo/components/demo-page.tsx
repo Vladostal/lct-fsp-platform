@@ -1,4 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
+import { useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import type { MeView } from '@/client'
@@ -57,6 +58,7 @@ export function DemoPage({ me, expired }: Props) {
   const enter = useEnterSession()
   const restart = useRestartScenario()
   const queryClient = useQueryClient()
+  const router = useRouter()
   const [lastRestart, setLastRestart] = useState(() => read(RESTART_STORAGE, 'local'))
   const [restartNote, setRestartNote] = useState<string | null>(null)
   const [loginError, setLoginError] = useState<string | null>(null)
@@ -76,7 +78,8 @@ export function DemoPage({ me, expired }: Props) {
         setLastRestart(r.restarted_at)
         write(RESTART_STORAGE, r.restarted_at, 'local')
         toast.success(DEMO.restartDone)
-        void queryClient.invalidateQueries()
+        // Перезапуск удаляет и сессию вызвавшего: перечитываем `me`, чтобы страница сразу стала гостевой.
+        void queryClient.invalidateQueries().then(() => router.invalidate())
       },
       onError: (e) => {
         if (hasCode(e, 'rate_limited')) {
@@ -91,19 +94,17 @@ export function DemoPage({ me, expired }: Props) {
   }
 
   return (
-    <div className="mx-auto flex w-full min-w-0 max-w-[880px] flex-col gap-6">
+    <div className="mx-auto flex w-full min-w-0 max-w-[880px] flex-col gap-8">
       <PageHeader title={DEMO.title} description={DEMO.description} />
       {expired ? (
         <Alert variant="info">
           <AlertDescription>{DEMO.expired}</AlertDescription>
         </Alert>
       ) : null}
-      <Alert variant="info">
-        <AlertDescription>{DEMO.shared}</AlertDescription>
-      </Alert>
+      <p className="type-sm text-ink-muted">{DEMO.shared}</p>
 
       <section aria-labelledby="demo-accounts" className="flex min-w-0 flex-col gap-3">
-        <h2 id="demo-accounts" className="type-h2">
+        <h2 id="demo-accounts" className="type-eyebrow">
           {DEMO.accounts}
         </h2>
         {loginError ? (
@@ -125,11 +126,11 @@ export function DemoPage({ me, expired }: Props) {
         ) : accounts.data.length === 0 ? (
           <p className="type-sm text-ink-muted">{DEMO.empty}</p>
         ) : (
-          <ul className="flex min-w-0 flex-col gap-3">
+          <ul className="flex min-w-0 flex-col divide-y divide-line">
             {accounts.data.map((a) => (
               <li
                 key={a.key}
-                className="surface-row flex min-w-0 flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
+                className="flex min-w-0 flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="min-w-0">
                   <p className="type-h3 min-w-0 break-words">{a.title}</p>
@@ -154,8 +155,8 @@ export function DemoPage({ me, expired }: Props) {
       </section>
 
       {me?.is_demo ? (
-        <section aria-labelledby="demo-restart" className="surface-card flex min-w-0 flex-col gap-3 p-5">
-          <h2 id="demo-restart" className="type-h3">
+        <section aria-labelledby="demo-restart" className="flex min-w-0 flex-col gap-3">
+          <h2 id="demo-restart" className="type-eyebrow">
             {DEMO.restart}
           </h2>
           <p className="type-sm text-ink-muted">{DEMO.restartHint}</p>
@@ -180,7 +181,7 @@ export function DemoPage({ me, expired }: Props) {
       ) : null}
 
       <section aria-labelledby="demo-links" className="flex min-w-0 flex-col gap-2">
-        <h2 id="demo-links" className="type-h3">
+        <h2 id="demo-links" className="type-eyebrow">
           {DEMO.links}
         </h2>
         <ul className="flex min-w-0 flex-col gap-1">
@@ -197,7 +198,14 @@ export function DemoPage({ me, expired }: Props) {
         </ul>
       </section>
 
-      <HostBlock />
+      <details className="group min-w-0">
+        <summary className="type-sm tap-target cursor-pointer list-none text-ink-muted hover:text-ink">
+          {DEMO.host}
+        </summary>
+        <div className="pt-3">
+          <HostBlock />
+        </div>
+      </details>
     </div>
   )
 }
@@ -249,7 +257,7 @@ function HostBlock() {
   }
 
   return (
-    <section aria-labelledby="demo-host" className="surface-card flex min-w-0 flex-col gap-3 p-5">
+    <section aria-labelledby="demo-host" className="flex min-w-0 flex-col gap-3">
       <h2 id="demo-host" className="type-h3">
         {DEMO.host}
       </h2>

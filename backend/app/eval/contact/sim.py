@@ -5,13 +5,13 @@
 * популяция кандидатов по Арх. 12.1: персона (`responsive` 55 %, `selective` 20 %, `expensive` 15 %, `silent` 10 %),
   минимум (у 30 % не задан, у остальных — ступень лестницы, ближайшая к медиане × exp(N(0, 0.2))), сила профиля;
 * 30 работодателей с одной потребностью: подборка — 40 кандидатов по убыванию «сила + шум работодателя»; раз в сутки
-  работодатель приглашает следующих по подборке, пока есть слоты и не набрано три согласия; вилка равна вилке
-  потребности;
+  работодатель приглашает следующих по подборке, пока не набрано три согласия и не исчерпан суточный лимит;
+  вилка равна вилке потребности;
 * внимание кандидата: вероятность ответить в срок `p = base[persona] / (1 + ALPHA * max(0, pending - 1))` —
   допущение о перегрузе; что ответить, решает боевая `rules.demo_decision`;
-* режимы: A — без лимитов; B — только слоты работодателя; C — слоты, ёмкость входящих и автопауза.
+* режимы: A — без лимитов; B — суточный лимит отправки, ёмкость входящих и автопауза.
 
-Сверка вилки, занятость слота, блокировка слота недоставленным, право и условия пересмотра считаются боевыми
+Сверка вилки, право и условия пересмотра считаются боевыми
 функциями `app.modules.contact.rules` с боевыми константами.
 """
 
@@ -48,11 +48,10 @@ PERSONA_SHARE = (
     (DemoPersona.EXPENSIVE, 0.15),
     (DemoPersona.SILENT, 0.10),
 )
-MODES = ("A", "B", "C")
+MODES = ("A", "B")
 MODE_LABELS = {
     "A": "A — без лимитов",
-    "B": "B — только слоты работодателя",
-    "C": "C — слоты, ёмкость входящих, автопауза",
+    "B": "B — суточный лимит, ёмкость входящих, автопауза",
 }
 
 
@@ -86,7 +85,6 @@ class Inv:
     created_at: datetime
     expires_at: datetime
     resolved_at: datetime | None = None
-    slot_release_at: datetime | None = None
     pair_block_until: datetime | None = None
     # Поля пересмотра (`rules.RevisableFacts`).
     employer_id: UUID = field(default_factory=lambda: UUID(int=0))
@@ -129,8 +127,6 @@ class RunResult:
     first_accept_days: list[float] = field(default_factory=list)
     coverage: float = 0.0
     gini: float | None = None
-    slot_days: float = 0.0
-    slot_days_bounced: float = 0.0
     revisions_after_bounce: int = 0
     revisions_after_bounce_delivered: int = 0
     attempts_by_quartile: list[int] = field(default_factory=lambda: [0, 0, 0, 0])
@@ -184,9 +180,7 @@ def run_once(seed: int, mode: str, alpha: float, silent_share: float, n: int) ->
     employers = make_employers(world_rng, population)
     rng = random.Random(seed * 7919 + ord(mode))
     result = RunResult()
-    slots_on = mode in ("B", "C")
-    inbox_on = mode == "C"
-    limit = c.SLOT_LIMIT[next(iter(c.SLOT_LIMIT))]
+    limits_on = mode == "B"
     order = sorted(range(n), key=lambda i: population[i].strength)
     quartile = {index: min(3, rank * 4 // n) for rank, index in enumerate(order)}
     active: list[Inv] = []
@@ -208,7 +202,7 @@ def run_once(seed: int, mode: str, alpha: float, silent_share: float, n: int) ->
                     cand.persona, salary_from=inv.salary_from, fit_band=inv.fit, revision_meets_condition=meets
                 )
                 assert decision is not None
-                inv.resolved_at = inv.slot_release_at = inv.reply_at
+                inv.resolved_at = inv.reply_at
                 cand.pending -= 1
                 cand.strikes = 0
                 result.response_hours.append((inv.reply_at - inv.created_at).total_seconds() / 3600)
@@ -227,11 +221,11 @@ def run_once(seed: int, mode: str, alpha: float, silent_share: float, n: int) ->
                         employer.revise_queue.append(inv)
             elif inv.expires_at <= now:
                 inv.status = InvitationStatus.EXPIRED.value
-                inv.resolved_at = inv.slot_release_at = inv.expires_at
+                inv.resolved_at = inv.expires_at
                 cand.pending -= 1
                 result.expired += 1
                 cand.strikes += 1
-                if inbox_on and rules.strike_triggers_pause(cand.strikes) and cand.paused_until is None:
+                if limits_on and rules.strike_triggers_pause(cand.strikes) and cand.paused_until is None:
                     cand.paused_until = inv.expires_at + c.AUTO_PAUSE_MAX
                     result.auto_pauses += 1
             else:
@@ -243,7 +237,7 @@ def run_once(seed: int, mode: str, alpha: float, silent_share: float, n: int) ->
                 cand.strikes = rules.strikes_after_auto_resume()
 
     def attempt(employer: Employer, cand: Candidate, salary_from: int, now: datetime, original: Inv | None) -> Inv:
-        """Отправка: боевая сверка вилки; `sent` либо `bounced` со слотом на 72 часа."""
+        """Отправка: боевая сверка вилки; `sent` либо `bounced`."""
         delivered = rules.salary_ok(salary_from, cand.min_salary)
         inv = Inv(
             employer=employer.index,
@@ -265,7 +259,6 @@ def run_once(seed: int, mode: str, alpha: float, silent_share: float, n: int) ->
                 result.revisions_after_bounce_delivered += delivered
         if not delivered:
             inv.resolved_at = now
-            inv.slot_release_at = now + c.BOUNCE_SLOT_HOLD
             result.bounced += 1
             result.bounced_by_quartile[quartile[cand.index]] += 1
             if original is None:
@@ -282,14 +275,17 @@ def run_once(seed: int, mode: str, alpha: float, silent_share: float, n: int) ->
         return inv
 
     def available(cand: Candidate, now: datetime) -> bool:
-        if not inbox_on:
+        if not limits_on:
             return True
         if cand.paused_until is not None and cand.paused_until > now:
             return False
         return cand.pending < c.CANDIDATE_INBOX_CAPACITY
 
-    def has_slot(employer: Employer, now: datetime) -> bool:
-        return not slots_on or rules.slots_used(employer.invitations, now)[0] < limit
+    def can_send(employer: Employer, now: datetime) -> bool:
+        """Боевой суточный лимит: попытки за скользящие 24 часа, включая недоставленные."""
+        if not limits_on:
+            return True
+        return rules.daily_retry_after([inv.created_at for inv in employer.invitations], now) is None
 
     for day in range(HORIZON_DAYS):
         now = at(day * 24)
@@ -300,7 +296,7 @@ def run_once(seed: int, mode: str, alpha: float, silent_share: float, n: int) ->
             # Пересмотры: после bounced — «от» на шаг выше; после отказа с суммой — названная сумма, если в бюджете.
             queue, employer.revise_queue = employer.revise_queue, []
             for original in queue:
-                if not has_slot(employer, now) or not rules.can_revise(original, now, has_revision=original.revised):
+                if not can_send(employer, now) or not rules.can_revise(original, now, has_revision=original.revised):
                     continue
                 cand = population[original.candidate]
                 if original.status == InvitationStatus.BOUNCED.value:
@@ -315,10 +311,7 @@ def run_once(seed: int, mode: str, alpha: float, silent_share: float, n: int) ->
                 ):
                     continue
                 attempt(employer, cand, proposal, now, original)
-            while employer.cursor < len(employer.shortlist) and has_slot(employer, now):
-                in_flight = sum(1 for inv in employer.invitations if rules.is_active(inv.status))
-                if slots_on and employer.accepts + in_flight >= limit:
-                    break
+            while employer.cursor < len(employer.shortlist) and can_send(employer, now):
                 cand = population[employer.shortlist[employer.cursor]]
                 employer.cursor += 1
                 if available(cand, now):
@@ -330,13 +323,6 @@ def run_once(seed: int, mode: str, alpha: float, silent_share: float, n: int) ->
     result.first_accept_days = [e.first_accept_day for e in employers if e.first_accept_day is not None]
     result.coverage = sum(1 for cand in population if cand.delivered > 0) / n
     result.gini = rules.gini([cand.delivered for cand in population])
-    for employer in employers:
-        for inv in employer.invitations:
-            release = rules.slot_release_at(inv, end) or end
-            days = max(0.0, (min(release, end) - inv.created_at).total_seconds() / 86400)
-            result.slot_days += days
-            if inv.status == InvitationStatus.BOUNCED.value:
-                result.slot_days_bounced += days
     top = [(employer, index) for employer in employers for index in employer.shortlist[:10]]
     result.feasible_at_10 = sum(rules.salary_ok(e.salary_from, population[i].min_salary) for e, i in top) / len(top)
     result.feasible_at_10_median = sum(
@@ -361,7 +347,6 @@ class Aggregate:
     needs_filled_share: float
     median_days_to_first_accept: float | None
     bounced_share_by_quartile: list[float | None]
-    slot_days_bounced_share: float | None
     revision_success_share: float | None
     feasible_at_10: float
     feasible_at_10_median: float
@@ -395,9 +380,6 @@ def aggregate(mode: str, results: list[RunResult]) -> Aggregate:
         needs_filled_share=round(sum(r.needs_filled for r in results) / (runs * EMPLOYERS), 4),
         median_days_to_first_accept=round(median(first), 1) if first else None,
         bounced_share_by_quartile=[rules.share(bounces[q], attempts[q]) for q in range(4)],
-        slot_days_bounced_share=rules.share(
-            round(sum(r.slot_days_bounced for r in results)), round(sum(r.slot_days for r in results))
-        ),
         revision_success_share=rules.share(sum(r.revisions_after_bounce_delivered for r in results), revisions),
         feasible_at_10=round(sum(r.feasible_at_10 for r in results) / runs, 4),
         feasible_at_10_median=round(sum(r.feasible_at_10_median for r in results) / runs, 4),
@@ -406,7 +388,7 @@ def aggregate(mode: str, results: list[RunResult]) -> Aggregate:
 
 
 def compare(seed: int, runs: int, alpha: float, silent_share: float, n: int) -> dict[str, Aggregate]:
-    """Три режима на одних и тех же популяциях (одни зёрна прогонов)."""
+    """Оба режима на одних и тех же популяциях (одни зёрна прогонов)."""
     return {
         mode: aggregate(mode, [run_once(seed + index, mode, alpha, silent_share, n) for index in range(runs)])
         for mode in MODES
@@ -438,7 +420,7 @@ def _attack_one(target: int | None, accounts: int) -> tuple[int, int, int]:
     не выше `v`, `bounced` — выше. Ограничения на аккаунт те же, что в бою: у пары две сверки за `PAIR_RETRY_DAYS` —
     исходная отправка и, только после `bounced` и только с большей нижней границей, один пересмотр
     (`rules.can_revise`, `rules.revision_terms_ok`); после `sent` аккаунт для этого кандидата закрыт на 30 дней.
-    Слот и суточный лимит одной цели не мешают: десять слотов и двадцать попыток в сутки больше двух проб.
+    Суточный лимит одной цели не мешает: двадцать попыток в сутки больше двух проб.
     """
     ladder = min_salary_ladder()
     # Пороги проб: значение ниже лестницы отличает «не задан» от первой ступени.
@@ -496,7 +478,6 @@ def _probe(salary_from: int, target: int | None, now: datetime, original: Inv | 
     )
     if not delivered:
         inv.resolved_at = now
-        inv.slot_release_at = now + c.BOUNCE_SLOT_HOLD
         inv.pair_block_until = now + c.PAIR_RETRY
     return inv
 

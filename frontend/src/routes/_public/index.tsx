@@ -1,8 +1,9 @@
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
-import { ArrowRight, BadgeCheck, Lock, MailCheck, Search } from 'lucide-react'
-import { CategoryChip, EvidenceChip, PipelineLine, SalaryRange, StatusBadge, usePageTitle } from '@/components/app'
+import { ArrowDown, ArrowRight, ClipboardCheck, Search, Send } from 'lucide-react'
+import { EvidenceChip, usePageTitle } from '@/components/app'
 import { Button } from '@/components/ui/button'
 import { resolveHome } from '@/lib/guards'
+import { HeroFlow } from './-hero-flow'
 
 /** P1. Лендинг: за один экран объясняет обратную механику и разводит по ролям. Вошедший уходит на свой первый экран. */
 export const Route = createFileRoute('/_public/')({
@@ -14,58 +15,43 @@ export const Route = createFileRoute('/_public/')({
 
 const STEPS = [
   {
-    icon: BadgeCheck,
+    icon: ClipboardCheck,
     title: 'Тест подтверждает грейд',
-    text: 'Вы сами выбираете грейд, тест его проверяет. Категория — специализация и подтверждённый грейд — появляется только после теста.',
+    text: 'Вы выбираете грейд — тест его проверяет. Где теста пока нет, грейд помечен как заявленный.',
   },
   {
     icon: Search,
-    title: 'Работодатель находит категорию',
-    text: 'Он описывает, кого ищет, и получает подборку кандидатов нужной категории. До вашего согласия он видит код, а не имя.',
+    title: 'Работодатель находит вас',
+    text: 'Описывает, кого ищет, и получает подборку. Видит код, а не имя.',
   },
   {
-    icon: MailCheck,
-    title: 'Приглашение с зарплатой',
-    text: 'Вилка и формат названы сразу. Контакты откроются работодателю только после того, как вы примете приглашение.',
+    icon: Send,
+    title: 'Приглашение с вилкой',
+    text: 'Зарплата и формат — сразу. Контакты — после вашего согласия.',
   },
 ] as const
 
-const EVIDENCE = [
-  {
-    kind: 'test',
-    skill: 'Python',
-    text: 'Навык проверен заданиями теста. Такие сведения весят в подборе больше всего.',
-  },
-  {
-    kind: 'fsp',
-    skill: 'Алгоритмы',
-    text: 'Результат соревнований из реестра ФСП — с согласия кандидата. Без истории ФСП штрафа нет.',
-  },
-  {
-    kind: 'declared',
-    skill: 'Kafka',
-    text: 'Кандидат указал навык сам. Учитывается, но категорию не определяет.',
-  },
-] as const
+/* Стрелки между шагами слегка «подталкивают» вперёд; без анимации (reduce) стоят на месте. */
+const STEPS_CSS = `
+@media (prefers-reduced-motion: no-preference){
+  .st-x{animation:st-x 1.8s ease-in-out infinite}
+  .st-y{animation:st-y 1.8s ease-in-out infinite}
+}
+@keyframes st-x{0%,100%{transform:none}50%{transform:translateX(4px)}}
+@keyframes st-y{0%,100%{transform:none}50%{transform:translateY(4px)}}
+`
 
 function Landing() {
   usePageTitle(null)
 
   return (
     <>
-      {/* 1. Hero */}
-      <section className="page-container grid items-center gap-10 py-10 md:py-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,440px)] lg:gap-16 lg:py-20">
-        <div className="flex min-w-0 flex-col gap-6">
-          <p className="type-eyebrow flex items-center gap-2 text-brand-700">
-            <span className="size-2 shrink-0 rounded-full bg-fsp-red" aria-hidden="true" />
-            подбор с обратной механикой
-          </p>
+      <section className="page-container grid items-center gap-10 pt-10 pb-4 md:pt-16 md:pb-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,440px)] lg:gap-16">
+        <div className="flex min-w-0 flex-col gap-8">
           <h1 data-page-title tabIndex={-1} className="type-display text-ink outline-none">
-            Работодатель приходит к вам с вилкой — после того, как тест подтвердил ваш грейд
+            Платформа <span className="min-[480px]:whitespace-nowrap">ИТ-специалистов,</span>{' '}
+            <span className="whitespace-nowrap">проверенных ФСП</span>
           </h1>
-          <p className="type-body max-w-[60ch] text-ink-muted md:text-lg md:leading-7">
-            Откликаться не нужно: категорию определяет тест, а не резюме, и приглашение приходит сразу с зарплатой.
-          </p>
           <div className="flex min-w-0 flex-col gap-3 min-[480px]:flex-row min-[480px]:flex-wrap">
             <Button variant="primary" size="lg" asChild>
               <Link to="/signup" search={{ role: 'candidate' }}>
@@ -80,126 +66,65 @@ function Landing() {
             </Button>
           </div>
         </div>
-
-        {/* Пример приглашения: собран из тех же компонентов, что и кабинет. */}
-        <figure className="flex min-w-0 flex-col gap-3">
-          <div className="relative flex min-w-0 flex-col gap-5 rounded-lg bg-surface p-5 shadow-pop md:rounded-xl md:p-6">
-            <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
-              <CategoryChip title="Backend · Middle" />
-              <StatusBadge status="sent" label="Новое" size="sm" />
-            </div>
-            <div className="flex min-w-0 flex-col gap-1">
-              <p className="type-sm text-ink-muted">Backend-разработчик в платёжный сервис</p>
-              <SalaryRange from={180000} to={240000} size="lg" />
-            </div>
-            <ul className="flex min-w-0 flex-wrap gap-2" aria-label="Чем вы подходите">
-              <li>
-                <EvidenceChip kind="test" skill="Python" size="sm" />
-              </li>
-              <li>
-                <EvidenceChip kind="test" skill="PostgreSQL" size="sm" />
-              </li>
-              <li>
-                <EvidenceChip kind="fsp" skill="Алгоритмы" size="sm" />
-              </li>
-              <li>
-                <EvidenceChip kind="declared" skill="Kafka" size="sm" />
-              </li>
-            </ul>
-            <p className="type-sm flex items-start gap-2 border-t border-line pt-4 text-ink-muted">
-              <Lock className="mt-0.5 size-4 text-brand-700" aria-hidden="true" />
-              <span className="min-w-0">Имя и контакты работодатель увидит только после вашего согласия</span>
-            </p>
-          </div>
-          <figcaption className="type-caption text-center text-ink-muted">
-            Пример приглашения: вилка и формат названы до ответа
-          </figcaption>
-        </figure>
+        <HeroFlow />
       </section>
 
-      {/* 2. Три шага с линией-пайплайном */}
-      <section aria-labelledby="steps-title" className="border-y border-line bg-surface">
-        <div className="page-container flex flex-col gap-8 py-10 md:gap-12 md:py-16">
-          <div className="flex max-w-[64ch] flex-col gap-3">
-            <p className="type-eyebrow text-ink-muted">как это устроено</p>
-            <h2 id="steps-title" className="type-h1 text-ink">
-              Три шага от теста до приглашения
-            </h2>
-          </div>
-          <ol className="grid min-w-0 gap-0 lg:grid-cols-3 lg:gap-8">
-            {STEPS.map((step, index) => {
-              const Icon = step.icon
-              const last = index === STEPS.length - 1
-              return (
-                <li
-                  key={step.title}
-                  className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-x-4 lg:grid-cols-1 lg:gap-y-5"
-                >
-                  {/* Узел шага и линия: на узком экране линия идёт вниз, на широком — вправо к следующему шагу. */}
-                  <div className="flex flex-col items-center gap-2 lg:flex-row lg:gap-4">
-                    <span className="grid size-12 shrink-0 place-items-center rounded-full border-2 border-brand-600 bg-brand-50 text-brand-700">
-                      <Icon className="size-6" aria-hidden="true" />
-                    </span>
-                    {last ? null : (
-                      <>
-                        <PipelineLine shape="vertical" className="min-h-10 flex-1 lg:hidden" />
-                        <PipelineLine shape="horizontal" className="hidden flex-1 lg:block" />
-                      </>
-                    )}
-                  </div>
-                  <div className={last ? 'flex min-w-0 flex-col gap-2' : 'flex min-w-0 flex-col gap-2 pb-8 lg:pb-0'}>
-                    <p className="type-eyebrow text-brand-700">шаг {index + 1}</p>
-                    <h3 className="type-h3 text-ink">{step.title}</h3>
-                    <p className="type-body text-ink-muted">{step.text}</p>
-                  </div>
-                </li>
-              )
-            })}
-          </ol>
-        </div>
-      </section>
-
-      {/* 3. Источники сведений */}
-      <section aria-labelledby="evidence-title" className="page-container flex flex-col gap-8 py-10 md:py-16">
-        <div className="flex max-w-[64ch] flex-col gap-3">
-          <p className="type-eyebrow text-ink-muted">откуда известно</p>
-          <h2 id="evidence-title" className="type-h1 text-ink">
-            У каждого факта о кандидате виден источник
-          </h2>
-          <p className="type-body text-ink-muted">
-            Три вида сведений различаются иконкой, рамкой и подписью — и по-разному весят в подборе.
-          </p>
-        </div>
-        <ul className="grid min-w-0 gap-4 md:grid-cols-3 md:gap-6">
-          {EVIDENCE.map((item) => (
+      <section aria-labelledby="steps-title" className="page-container flex flex-col gap-8 py-10 md:py-14">
+        <h2 id="steps-title" className="type-h1 text-ink">
+          Три шага от теста до приглашения
+        </h2>
+        <style>{STEPS_CSS}</style>
+        <ol className="grid min-w-0 gap-10 lg:grid-cols-3 lg:gap-12">
+          {STEPS.map((step, index) => (
             <li
-              key={item.kind}
-              className="flex min-w-0 flex-col items-start gap-4 rounded-lg bg-surface p-4 shadow-card md:rounded-xl md:p-6"
+              key={step.title}
+              style={{ '--i': index } as React.CSSProperties}
+              className="surface-row stagger group relative flex min-w-0 animate-rise-in flex-col gap-3 rounded-lg p-5 transition-[border-color,translate] duration-200 hover:-translate-y-1 hover:border-brand-600 md:rounded-xl md:p-6"
             >
-              <EvidenceChip kind={item.kind} skill={item.skill} />
-              <p className="type-body text-ink-muted">{item.text}</p>
+              <div className="flex items-center justify-between gap-3">
+                <span className="flex size-11 items-center justify-center rounded-md bg-brand-50 text-brand-700 transition-colors duration-200 group-hover:bg-brand-600 group-hover:text-surface">
+                  <step.icon className="size-5" aria-hidden="true" />
+                </span>
+                <span aria-hidden="true" className="num text-[2rem] leading-none font-semibold text-brand-600">
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+              </div>
+              <h3 className="type-h3 text-ink">{step.title}</h3>
+              <p className="type-body text-ink-muted">{step.text}</p>
+              {index < STEPS.length - 1 ? (
+                <span
+                  aria-hidden="true"
+                  className="absolute -bottom-8 left-1/2 flex size-6 -translate-x-1/2 items-center justify-center text-brand-600 lg:top-1/2 lg:-right-9 lg:bottom-auto lg:left-auto lg:translate-x-0 lg:-translate-y-1/2"
+                >
+                  <ArrowDown className="st-y size-5 lg:hidden" />
+                  <ArrowRight className="st-x hidden size-5 lg:block" />
+                </span>
+              ) : null}
             </li>
           ))}
-        </ul>
+        </ol>
       </section>
 
-      {/* 4. Объяснение механик */}
-      <section aria-labelledby="how-title" className="page-container pb-12 md:pb-20">
-        <div className="flex min-w-0 flex-col items-start gap-6 rounded-lg bg-brand-50 p-6 md:flex-row md:items-center md:justify-between md:rounded-xl md:p-10">
-          <div className="flex max-w-[60ch] min-w-0 flex-col gap-2">
-            <h2 id="how-title" className="type-h2 text-ink">
-              Как считается грейд и как строится подборка
-            </h2>
-            <p className="type-body text-ink-muted">
-              Правила теста, порядок подбора и числа проверки — на отдельной странице, без входа.
-            </p>
-          </div>
-          <Button variant="secondary" asChild className="max-[479px]:w-full">
-            <Link to="/how-it-works">
-              Как это работает
-              <ArrowRight aria-hidden="true" />
-            </Link>
-          </Button>
+      <section aria-label="Источники сведений" className="page-container pb-12 md:pb-16">
+        <div className="flex min-w-0 flex-col gap-4 border-t border-line pt-8 md:flex-row md:items-center md:justify-between">
+          <ul className="flex min-w-0 flex-wrap gap-x-5 gap-y-2">
+            <li>
+              <EvidenceChip kind="test" />
+            </li>
+            <li>
+              <EvidenceChip kind="fsp" />
+            </li>
+            <li>
+              <EvidenceChip kind="declared" />
+            </li>
+          </ul>
+          <Link
+            to="/how-it-works"
+            className="type-body inline-flex min-h-11 items-center gap-2 text-brand-700 hover:underline"
+          >
+            Как считается грейд и строится подборка
+            <ArrowRight className="size-4" aria-hidden="true" />
+          </Link>
         </div>
       </section>
     </>

@@ -1,6 +1,7 @@
 """Демо-компании, их потребности и история приглашений (Арх. 13.5).
 
-Три компании по одной потребности на каждую доступную категорию; истории принятых приглашений хватает для
+Три компании по одной потребности на каждую доступную категорию `backend` и две потребности по специализациям
+без теста (Frontend, QA) с версией подборки, но без приглашений; истории принятых приглашений хватает для
 показателей и медианы вилок категории (`contact.salary_hint`: не меньше `SALARY_HINT_MIN_N` принятых от
 `SALARY_HINT_MIN_EMPLOYERS` работодателей). Дата каждого действия — в прошлом: `now` передаётся в функции записи.
 """
@@ -78,6 +79,38 @@ COMPANIES: tuple[CompanySpec, ...] = (
             "middle": (["rest_api", "sql"], ["docker", "redis"], 195_000, 255_000, [R]),
             "senior": (["system_design", "microservices"], ["kafka", "postgresql"], 320_000, 440_000, [H, R]),
         },
+    ),
+)  # fmt: skip
+
+@dataclass(frozen=True)
+class DeclaredNeedSpec:
+    """Потребность по специализации без теста: в подборке — кандидаты с заявленным грейдом, приглашений нет."""
+
+    company_key: str
+    title: str
+    team: str
+    specialization: str
+    grade: str
+    must: tuple[str, ...]
+    nice: tuple[str, ...]
+    salary_from: int
+    salary_to: int
+    formats: tuple[WorkFormat, ...]
+
+
+#: Включить потребности по специализациям без теста. Если версия подборки для заявленных категорий падает
+#: внутри `matching`, интегратор выключает их здесь одной строкой — остальной сид от них не зависит.
+DECLARED_NEEDS_ENABLED = True
+DECLARED_NEEDS: tuple[DeclaredNeedSpec, ...] = (
+    DeclaredNeedSpec(
+        "company_1", "Frontend-разработчик (React)",
+        "Лазурит Технологии: личный кабинет клиента на React, команда из пяти человек, дизайн-система и ревью.",
+        "frontend", "middle", ("react", "typescript"), ("javascript", "html", "css"), 180_000, 240_000, (H, R),
+    ),
+    DeclaredNeedSpec(
+        "company_2", "QA-инженер (автотесты)",
+        "Северный ветер: автотесты складских сервисов, команда качества из четырёх человек.",
+        "qa", "middle", ("test_automation", "pytest"), ("playwright", "selenium"), 150_000, 200_000, (H, R),
     ),
 )  # fmt: skip
 
@@ -170,12 +203,34 @@ def candidates_by_category(
     result: dict[str, list[tuple[UUID, int | None, list[WorkFormat]]]] = {}
     for uid, category in categories.items():
         view = pool.get(uid)
-        if view is None or not view.visible:
+        # История приглашений — только по категориям `backend`: у остальных специализаций грейд заявленный,
+        # приглашений им сид не рассылает (иначе QA-кандидат получил бы приглашение на backend-потребность).
+        if view is None or not view.visible or category.specialization_code != "backend":
             continue
         result.setdefault(category.grade_code, []).append((uid, profile.min_salary(db, uid), list(view.work_formats)))
     for items in result.values():
         items.sort(key=lambda item: pool[item[0]].public_code)
     return result
+
+
+def _declared_needs(db: Session, employer_id: UUID, spec: CompanySpec, now: datetime) -> None:
+    """Потребности компании по специализациям без теста с первой версией подборки; приглашения не рассылаются."""
+    if not DECLARED_NEEDS_ENABLED:
+        return
+    for item in DECLARED_NEEDS:
+        if item.company_key != spec.key:
+            continue
+        need_id = matching.create_need(
+            db, employer_id,
+            NeedData(
+                title=item.title, team_description=item.team, specialization_code=item.specialization,
+                grade_code=item.grade, must_skills=list(item.must), nice_skills=list(item.nice),
+                work_formats=list(item.formats), city=spec.city, salary_from=item.salary_from,
+                salary_to=item.salary_to,
+            ),
+            now, is_demo=True,
+        )  # fmt: skip
+        matching.create_snapshot(db, employer_id, need_id, now)
 
 
 def seed_companies() -> int:
@@ -207,7 +262,6 @@ def seed_companies() -> int:
                 now - timedelta(days=100),
                 trust_level=TrustLevel.VERIFIED,
             )  # fmt: skip
-            contact.set_slot_override(db, employer_id, 10_000)
             needs: dict[str, NeedRefDTO] = {}
             for grade in grades:
                 must, nice, low, high, formats = spec.needs[grade]
@@ -227,6 +281,7 @@ def seed_companies() -> int:
                 )  # fmt: skip
                 matching.create_snapshot(db, employer_id, need_id, now)
                 needs[grade] = matching.need_ref(db, employer_id, need_id)
+            _declared_needs(db, employer_id, spec, now)
             step = 0
             for grade in grades:
                 for outcome in HISTORY_PLAN[grade]:

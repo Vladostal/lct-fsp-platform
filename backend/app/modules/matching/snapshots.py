@@ -404,7 +404,7 @@ def item_view(
         public_code=person.public_code,
         display_name=live.display_name(cid),
         is_demo=person.is_demo,
-        category=support.category_ref(specialization_code, expl.level.grade_code),
+        category=support.category_ref(specialization_code, expl.level.grade_code, expl.level.basis),
         relation=Relation(item.relation),
         grade_margin=expl.level.verdict == TestOutcome.CONFIRMED_WITH_MARGIN,
         position=item.position,
@@ -416,7 +416,10 @@ def item_view(
         evidence_more=more,
         fsp_summary=live.fsp_short(cid),
         formats_common=[WorkFormat(value) for value in expl.formats_common],
-        freshness_days=max(0, (today - expl.level.last_evidence_at).days),
+        # У заявленного грейда подтверждения тестом не было: давности нет, а не «ноль дней».
+        freshness_days=(
+            max(0, (today - expl.level.last_evidence_at).days) if expl.level.last_evidence_at is not None else None
+        ),
         stale=expl.level.stale,
         risk=expl.risk.text if expl.risk else None,
         diff_mark=DiffMark.SAME if outside else DiffMark(item.diff_mark),
@@ -504,7 +507,9 @@ def view(db: Session, employer_id: UUID, snapshot_id: UUID, now: datetime) -> Sh
         query_changes=snapshot.query_changes,
         categories=[
             SnapshotCategory(
-                category=support.category_ref(*str(row["category_code"]).split(":", 1)),
+                category=support.category_ref(
+                    str(row["category_code"]).partition(":")[0], str(row["category_code"]).partition(":")[2]
+                ),
                 relation=Relation(row["relation"]),
                 relation_label=RELATION_LABELS[Relation(row["relation"])],
                 count=int(row["count"]),

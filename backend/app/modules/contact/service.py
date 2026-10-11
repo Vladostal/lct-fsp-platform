@@ -371,7 +371,6 @@ def send(
     )
     if not delivered:  # переход T2
         inv.resolved_at = now
-        inv.slot_release_at = now + c.BOUNCE_SLOT_HOLD
         inv.pair_block_until = now + c.PAIR_RETRY
     db.add(inv)
     db.flush()
@@ -455,14 +454,13 @@ def do_accept(
     *,
     demo: bool = False,
 ) -> None:
-    """Переход T4 под блокировкой кандидата: раскрытие контактов, слот свободен сразу, счётчик молчания обнулён."""
+    """Переход T4 под блокировкой кандидата: раскрытие контактов, счётчик молчания обнулён."""
     filled = profile_service.filled_channels(db, inv.candidate_id)
     chosen = list(dict.fromkeys(disclose)) if disclose is not None else _default_disclose(db, inv.candidate_id, filled)
     if not rules.disclose_ok(chosen, filled):
         raise ApiException(422, "disclose_invalid", texts.message("disclose_invalid"))
     inv.status = InvitationStatus.ACCEPTED.value
     inv.resolved_at = now
-    inv.slot_release_at = now
     inv.pair_block_until = now + c.PAIR_RETRY
     inv.updated_at = now
     state.consecutive_expired = 0
@@ -491,7 +489,7 @@ def do_decline(
     *,
     demo: bool = False,
 ) -> None:
-    """Переход T5 под блокировкой кандидата: причина, необязательное условие, слот свободен сразу."""
+    """Переход T5 под блокировкой кандидата: причина, необязательное условие."""
     comment = (comment or "").strip() or None
     if comment is not None and len(comment) > c.DECLINE_COMMENT_MAX:
         raise validation_error(field_error("comment", "length", texts.field_message("comment")))
@@ -516,7 +514,6 @@ def do_decline(
             inv.decline_condition_work_format = str(value)
     inv.status = InvitationStatus.DECLINED.value
     inv.resolved_at = now
-    inv.slot_release_at = now
     inv.pair_block_until = now + c.PAIR_RETRY
     inv.decline_reason = DeclineReason(reason_code).value
     inv.decline_comment = comment
@@ -603,7 +600,7 @@ def _employer_invitation(db: Session, employer_id: UUID, invitation_id: UUID) ->
 
 
 def withdraw_invitation(db: Session, now: datetime, employer_id: UUID, invitation_id: UUID) -> InvitationDTO:
-    """Отозвать приглашение (T7): слот занят до исходного срока — отзыв не ускоряет оборот слотов."""
+    """Отозвать приглашение (T7): пара закрыта на `PAIR_RETRY_DAYS`."""
     probe = _employer_invitation(db, employer_id, invitation_id)
     _employer_begin(db, now, employer_id, [probe.candidate_id])
     inv = _locked_invitation(db, invitation_id)
@@ -615,21 +612,11 @@ def withdraw_invitation(db: Session, now: datetime, employer_id: UUID, invitatio
         raise _not_actionable(inv)
     inv.status = InvitationStatus.WITHDRAWN.value
     inv.resolved_at = now
-    inv.slot_release_at = inv.expires_at
     inv.pair_block_until = now + c.PAIR_RETRY
     inv.updated_at = now
     settle_mod.add_event(db, inv, EventCode.WITHDRAWN, EventActor.EMPLOYER, now)
     db.flush()
     return _dto(inv)
-
-
-def set_slot_override(db: Session, employer_id: UUID, limit: int | None) -> None:
-    """Задать или снять (`None`) собственный лимит слотов работодателя; демо-компаниям сид ставит 10000."""
-    now = clock.now(db)
-    state = settle_mod.lock_employer(db, now, employer_id)
-    state.slot_limit_override = limit
-    state.updated_at = now
-    db.flush()
 
 
 # --------------------------------------------------------------------------------------------------------------------

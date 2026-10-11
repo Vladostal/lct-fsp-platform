@@ -3,19 +3,19 @@ import { Link } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import type { Catalog, NeedView, ShortlistItemView, ShortlistRefinement, ShortlistSnapshotView } from '@/client'
-import { EmptyState, ErrorState } from '@/components/app'
+import { CandidateCategoryChip, EmptyState, ErrorState, FunnelStrip, Section } from '@/components/app'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Sheet, SheetBody, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { hasCode, hasStatus } from '@/lib/api'
+import { errorMessage, hasCode, hasStatus, isApiError } from '@/lib/api'
 import { formatDateTime, formatDuration } from '@/lib/format'
 import { useMediaQuery } from '@/lib/hooks/use-media-query'
 import { polling } from '@/lib/query'
 import { cn } from '@/lib/utils'
-import { matchingKeys, pinCandidate, shortlistsQuery, snapshotQuery, unpinCandidate } from '../api'
+import { cardQuery, matchingKeys, pinCandidate, shortlistsQuery, snapshotQuery, unpinCandidate } from '../api'
 import { MATCHING } from '../content'
 import { useCreateShortlist, usePairStates } from '../hooks'
 import type { NeedSearch } from '../schemas'
@@ -23,6 +23,8 @@ import { MatchCardCompact } from './match-card-compact'
 import { RefinePanel } from './refine-panel'
 
 const S = MATCHING.shortlist
+
+const SHORTLIST_FAILED = 'Не удалось сформировать подборку. Попробуйте ещё раз.'
 
 export function retryText(error: unknown): string {
   const sec = Number((error as { params?: Record<string, unknown> })?.params?.retry_after)
@@ -51,12 +53,36 @@ export function ShortlistTab({ need, search, catalog, setSearch, refineOpen, set
   const [rateLimited, setRateLimited] = useState<string | null>(null)
   const [live, setLive] = useState('')
   const diffRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
   const archived = need.status === 'archived'
 
   // 404 версии: сброс к последней.
   useEffect(() => {
     if (snapshot.isError && hasStatus(snapshot.error, 404) && search.snapshot) setSearch({ snapshot: undefined }, true)
   }, [snapshot.isError, snapshot.error, search.snapshot, setSearch])
+
+  // J/K (по e.code — работает и на русской раскладке) двигают фокус по названиям кандидатов.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code !== 'KeyJ' && e.code !== 'KeyK') return
+      if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return
+      const target = e.target as Element | null
+      if (target?.closest?.('input,textarea,select,[contenteditable],[role=dialog],[role=menu]')) return
+      if (document.querySelector('[data-state=open][role=dialog]')) return
+      const rows = Array.from(
+        listRef.current?.querySelectorAll<HTMLElement>('li[data-candidate] button.text-link') ?? [],
+      )
+      if (rows.length === 0) return
+      const at = rows.indexOf(document.activeElement as HTMLElement)
+      const next =
+        e.code === 'KeyJ' ? (at < 0 ? 0 : Math.min(at + 1, rows.length - 1)) : at < 0 ? 0 : Math.max(at - 1, 0)
+      e.preventDefault()
+      rows[next]?.focus({ preventScroll: false })
+      rows[next]?.scrollIntoView({ block: 'nearest' })
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   const build = (refinement: ShortlistRefinement | null, parentId?: string) => {
     setRateLimited(null)
@@ -77,7 +103,7 @@ export function ShortlistTab({ need, search, catalog, setSearch, refineOpen, set
         },
         onError: (error) => {
           if (hasCode(error, 'shortlist_rate_limited')) setRateLimited(retryText(error))
-          else toast.error('Не удалось сформировать подборку. Попробуйте ещё раз.')
+          else toast.error(isApiError(error) && !error.isUnavailable ? errorMessage(error) : SHORTLIST_FAILED)
         },
       },
     )
@@ -125,6 +151,10 @@ export function ShortlistTab({ need, search, catalog, setSearch, refineOpen, set
   }, [items, search.category, search.view, pairs])
 
   const onOpen = (id: string) => setSearch({ candidate: id, invite: undefined, revises: undefined })
+  // Те же аргументы, что у candidate-view, чтобы карточка открылась из кэша.
+  const onWarm = (id: string) => {
+    void queryClient.prefetchQuery(cardQuery(id, need.id, snapshotId))
+  }
 
   if (versions.isPending || (snapshotId && snapshot.isPending)) {
     return (
@@ -156,7 +186,7 @@ export function ShortlistTab({ need, search, catalog, setSearch, refineOpen, set
           text={S.emptyText}
           action={
             archived ? undefined : (
-              <Button type="button" variant="primary" loading={create.isPending} onClick={() => build({}, undefined)}>
+              <Button type="button" variant="primary" loading={create.isPending} onClick={() => build(null)}>
                 {S.build}
               </Button>
             )
@@ -188,7 +218,7 @@ export function ShortlistTab({ need, search, catalog, setSearch, refineOpen, set
   return (
     <div className={cn('grid min-w-0 gap-6', refineOpen && wide && !archived && 'grid-cols-[320px_minmax(0,1fr)]')}>
       {refineOpen && wide && !archived ? (
-        <aside aria-label={MATCHING.refine.title} className="surface-card h-fit min-w-0 p-4">
+        <aside aria-label={MATCHING.refine.title} className="h-fit min-w-0 border-r border-line pr-6">
           <div className="mb-4 flex items-center justify-between gap-2">
             <h2 className="type-h3">{MATCHING.refine.title}</h2>
             <Button type="button" variant="ghost" size="sm" onClick={() => setRefineOpen(false)}>
@@ -210,7 +240,7 @@ export function ShortlistTab({ need, search, catalog, setSearch, refineOpen, set
         </Sheet>
       ) : null}
 
-      <div className="flex min-w-0 flex-col gap-5">
+      <div ref={listRef} className="flex min-w-0 flex-col gap-5">
         {archived ? (
           <Alert variant="info">
             <AlertDescription>{S.archivedBanner}</AlertDescription>
@@ -285,7 +315,8 @@ export function ShortlistTab({ need, search, catalog, setSearch, refineOpen, set
               <ul className="mt-2 flex min-w-0 flex-col gap-1">
                 {snap.dropped.map((d) => (
                   <li key={d.candidate_id} className="type-sm min-w-0 break-words">
-                    <span className="num">{d.public_code}</span> · {d.category.title} · {d.reason_text}
+                    <span className="num">{d.public_code}</span> · <CandidateCategoryChip category={d.category} /> ·{' '}
+                    {d.reason_text}
                   </li>
                 ))}
               </ul>
@@ -293,40 +324,45 @@ export function ShortlistTab({ need, search, catalog, setSearch, refineOpen, set
           ) : null}
         </div>
 
-        <section aria-label={S.funnelTitle} className="min-w-0">
-          <p className="type-sm min-w-0 break-words text-ink-muted">
-            <span className="font-medium text-ink">{S.funnelTitle}:</span> {S.funnel[0]}{' '}
-            <span className="num">{snap.funnel.category_total ?? 0}</span> → {S.funnel[1]}{' '}
-            <span className="num">{snap.funnel.available ?? 0}</span> → {S.funnel[2]}{' '}
-            <span className="num">{snap.funnel.format_ok ?? 0}</span> → {S.funnel[3]}{' '}
-            <span className="num">{snap.funnel.must_ok ?? 0}</span> → {S.funnel[4]}{' '}
-            <span className="num">{snap.funnel.shown ?? 0}</span>.{' '}
+        <section aria-label={S.funnelTitle} className="flex min-w-0 flex-col gap-3">
+          <FunnelStrip
+            steps={[
+              { label: S.funnel[0], value: snap.funnel.category_total ?? 0 },
+              { label: S.funnel[1], value: snap.funnel.available ?? 0 },
+              { label: S.funnel[2], value: snap.funnel.format_ok ?? 0 },
+              { label: S.funnel[3], value: snap.funnel.must_ok ?? 0 },
+              { label: S.funnel[4], value: snap.funnel.shown ?? 0 },
+            ]}
+          />
+          <p className="type-sm text-ink-muted">
             <Link to="/how-it-works" hash="matching" className="text-link">
               {S.calc}
             </Link>
           </p>
-          {noSkills ? <p className="type-sm mt-1 text-ink-muted">{S.noSkills}</p> : null}
+          {noSkills ? <p className="type-sm text-ink-muted">{S.noSkills}</p> : null}
         </section>
 
         {snap.hints.length > 0 && !archived ? (
-          <section aria-label={S.hints} className="grid min-w-0 gap-3 md:grid-cols-3">
+          <ul aria-label={S.hints} className="flex min-w-0 flex-col divide-y divide-line">
             {snap.hints.slice(0, 3).map((h) => (
-              <div key={`${h.code}-${h.value}`} className="surface-card flex min-w-0 flex-col gap-2 p-4">
-                <p className="type-sm min-w-0 break-words font-medium">{h.text}</p>
-                <p className="type-caption text-ink-muted">{MATCHING.hint.source}</p>
+              <li
+                key={`${h.code}-${h.value}`}
+                className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2"
+              >
+                <p className="type-sm min-w-0 flex-1 break-words">{h.text}</p>
                 <Button
                   type="button"
-                  variant="secondary"
+                  variant="ghost"
                   size="sm"
-                  className="self-start"
                   disabled={create.isPending}
+                  title={MATCHING.hint.source}
                   onClick={() => build(h.refinement, snap.id)}
                 >
                   {MATCHING.hint.apply}
                 </Button>
-              </div>
+              </li>
             ))}
-          </section>
+          </ul>
         ) : null}
 
         {snap.categories.length > 0 ? (
@@ -337,7 +373,7 @@ export function ShortlistTab({ need, search, catalog, setSearch, refineOpen, set
                 <Button
                   type="button"
                   size="sm"
-                  variant={search.category ? 'secondary' : 'primary'}
+                  variant={search.category ? 'ghost' : 'secondary'}
                   aria-pressed={!search.category}
                   onClick={() => setSearch({ category: undefined })}
                 >
@@ -349,14 +385,14 @@ export function ShortlistTab({ need, search, catalog, setSearch, refineOpen, set
                   <Button
                     type="button"
                     size="sm"
-                    variant={search.category === c.category.code ? 'primary' : 'secondary'}
+                    variant={search.category === c.category.code ? 'secondary' : 'ghost'}
                     aria-pressed={search.category === c.category.code}
                     disabled={c.count === 0}
                     className="max-w-full"
                     onClick={() => setSearch({ category: c.category.code })}
                   >
                     <span className="min-w-0 truncate" title={`${c.category.title} — ${c.relation_label}`}>
-                      {c.category.title} — {c.relation_label} · {c.count}
+                      {c.category.title} <span className="num text-ink-subtle">{c.count}</span>
                     </span>
                   </Button>
                 </li>
@@ -379,7 +415,6 @@ export function ShortlistTab({ need, search, catalog, setSearch, refineOpen, set
                 </ToggleGroupItem>
               ))}
             </ToggleGroup>
-            <span className="type-caption text-ink-muted">{S.viewNote}</span>
           </div>
           {snap.hidden_count > 0 ? <p className="type-sm text-ink-muted">{S.hidden(snap.hidden_count)}</p> : null}
         </div>
@@ -406,28 +441,34 @@ export function ShortlistTab({ need, search, catalog, setSearch, refineOpen, set
             }
           />
         ) : (
-          sections.map(({ rel, rows }) => (
-            <section key={rel} aria-label={S.sections[rel]} className="flex min-w-0 flex-col gap-3">
-              <h2 className="type-h3 border-b border-line pb-2">{S.sections[rel]}</h2>
-              <ul className="flex min-w-0 flex-col gap-3">
-                {rows.map((item) => (
-                  <MatchCardCompact
-                    key={item.candidate_id}
-                    variant="shortlist"
-                    item={item}
-                    pair={pairs.get(item.candidate_id)}
-                    onOpen={onOpen}
-                    onPinToggle={(id, pinned) => pin.mutate({ id, pinned })}
-                  />
-                ))}
-              </ul>
-            </section>
-          ))
+          <>
+            <p className="type-caption hidden text-ink-muted [@media(hover:hover)_and_(pointer:fine)]:block">
+              <kbd className="rounded-xs border border-line px-1 font-mono">J</kbd> /{' '}
+              <kbd className="rounded-xs border border-line px-1 font-mono">K</kbd> — по списку,{' '}
+              <kbd className="rounded-xs border border-line px-1 font-mono">Enter</kbd> — открыть
+            </p>
+            {sections.map(({ rel, rows }) => (
+              <Section key={rel} title={S.sections[rel]} count={rows.length}>
+                <ul className="flex min-w-0 flex-col gap-3">
+                  {rows.map((item) => (
+                    <MatchCardCompact
+                      key={item.candidate_id}
+                      variant="shortlist"
+                      item={item}
+                      pair={pairs.get(item.candidate_id)}
+                      onOpen={onOpen}
+                      onWarm={onWarm}
+                      onPinToggle={(id, pinned) => pin.mutate({ id, pinned })}
+                    />
+                  ))}
+                </ul>
+              </Section>
+            ))}
+          </>
         )}
 
         {snap.pinned_outside.length > 0 ? (
-          <section aria-label={S.pinnedOutside} className="flex min-w-0 flex-col gap-3">
-            <h2 className="type-h3 border-b border-line pb-2">{S.pinnedOutside}</h2>
+          <Section title={S.pinnedOutside}>
             <ul className="flex min-w-0 flex-col gap-3">
               {snap.pinned_outside.map((item) => (
                 <MatchCardCompact
@@ -436,11 +477,12 @@ export function ShortlistTab({ need, search, catalog, setSearch, refineOpen, set
                   item={item}
                   pair={pairs.get(item.candidate_id)}
                   onOpen={onOpen}
+                  onWarm={onWarm}
                   onPinToggle={(id, pinned) => pin.mutate({ id, pinned })}
                 />
               ))}
             </ul>
-          </section>
+          </Section>
         ) : null}
 
         <p className="type-sm">

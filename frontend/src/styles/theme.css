@@ -9,27 +9,33 @@
 @import "tw-animate-css";
 @import "@fontsource-variable/inter";
 @import "@fontsource-variable/jetbrains-mono";
+@import "@fontsource-variable/geologica";
+@import "./motion.css";
 
 @theme static {
   --color-*: initial;
   --radius-*: initial;
 
   --font-sans: "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* Числа, вилки, даты, счётчики: пропорциональный гротеск с табличными цифрами. Моноширинный — только для кода. */
+  --font-numeric: "Geologica Variable", "Inter Variable", system-ui, sans-serif;
   --font-mono: "JetBrains Mono Variable", ui-monospace, "SF Mono", Menlo, monospace;
 
   /* Бренд ФСП: основной #402FFF, красный — только маркер (иконки, полосы), тёмный — текст. */
-  --color-brand-50: #f2f5ff;
+  --color-brand-50: #f4f5ff;
   --color-brand-100: #e5eaff;
   --color-brand-200: #cdd8fe;
   --color-brand-600: #402fff;
   --color-brand-700: #2e0aca;
   --color-brand-900: #181470;
-  --color-ink: #1b1c21;
-  --color-ink-muted: #595d69;
-  --color-canvas: #f6f7fa;
+  --color-ink: #14151a;
+  --color-ink-muted: #5c606b;
+  /* Третичный текст: 4.8 на surface, на fill запрещён (4.3). */
+  --color-ink-subtle: #6e7280;
+  --color-canvas: #fafafb;
   --color-surface: #ffffff;
-  --color-fill: #eef0f4;
-  --color-line: #e1e3e8;
+  --color-fill: #f1f2f5;
+  --color-line: #ebecf0;
   --color-line-strong: #858a99;
   --color-fsp-red: #ec1d35;
   --color-danger: #c51c2d;
@@ -43,13 +49,13 @@
 
   --radius-xs: 4px;
   --radius-sm: 6px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
 
-  --shadow-card: 0 4px 16px 0 rgb(0 0 0 / 0.04);
-  --shadow-pop: 0 4px 16px 0 rgb(0 0 0 / 0.08);
-  --shadow-bar: 0 -4px 16px 0 rgb(0 0 0 / 0.06);
+  --shadow-card: 0 0 0 1px var(--color-line);
+  --shadow-pop: 0 0 0 1px rgb(20 21 26 / 0.06), 0 12px 32px -12px rgb(20 21 26 / 0.16);
+  --shadow-bar: 0 -1px 0 var(--color-line);
   /* Тени стандартных компонентов shadcn/ui сведены к трём токенам. */
   --shadow-2xs: 0 0 #0000;
   --shadow-xs: 0 0 #0000;
@@ -64,11 +70,44 @@
   --dur-slow: 240ms;
   --ease-enter: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --dur-reveal: 420ms;
 
   --animate-skeleton: skeleton-pulse 1.2s ease-in-out infinite;
   --animate-fade-in: fade-in var(--dur-fast) var(--ease-enter) both;
   --animate-grow-x: grow-x var(--dur-slow) var(--ease-enter) both;
   --animate-pop-in: pop-in var(--dur-slow) var(--ease-enter) both;
+  --animate-rise-in: rise-in var(--dur-slow) var(--ease-enter) both;
+  --animate-stamp: stamp var(--dur-reveal) var(--ease-enter) both;
+
+  /* Стартовое состояние — только в from: при reduce анимация сжимается до 1 мс и элемент остаётся в финале. */
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes stamp {
+    from {
+      opacity: 0;
+      transform: scale(1.12);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes reveal-bg {
+    from {
+      background-color: var(--color-brand-50);
+    }
+    to {
+      background-color: transparent;
+    }
+  }
 
   @keyframes skeleton-pulse {
     0%,
@@ -131,45 +170,38 @@
 
 /* ───────────── Типографика (E §3.1). Имена без префикса text-, чтобы tailwind-merge не путал их с цветом. ───────────── */
 @utility type-display {
-  font-size: 2rem;
+  font-size: 2.25rem;
   line-height: 2.5rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-weight: 600;
+  letter-spacing: -0.035em;
   @media (width >= 48rem) {
-    font-size: 3rem;
-    line-height: 3.5rem;
+    font-size: 3.5rem;
+    line-height: 3.75rem;
   }
 }
 @utility type-h1 {
   font-size: 1.5rem;
   line-height: 2rem;
-  font-weight: 500;
-  letter-spacing: -0.01em;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   @media (width >= 48rem) {
-    font-size: 2rem;
-    line-height: 2.5rem;
+    font-size: 1.75rem;
+    line-height: 2.25rem;
   }
 }
 @utility type-h2 {
-  font-size: 1.25rem;
-  line-height: 1.75rem;
-  font-weight: 500;
-  letter-spacing: -0.005em;
-  @media (width >= 48rem) {
-    font-size: 1.375rem;
-  }
+  font-size: 1.125rem;
+  line-height: 1.625rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 @utility type-h3 {
-  font-size: 1rem;
-  line-height: 1.5rem;
-  font-weight: 500;
-  @media (width >= 48rem) {
-    font-size: 1.125rem;
-    line-height: 1.625rem;
-  }
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
+  font-weight: 600;
 }
 @utility type-body {
-  font-size: 1rem;
+  font-size: 0.9375rem;
   line-height: 1.5rem;
   font-weight: 400;
 }
@@ -181,25 +213,30 @@
 @utility type-caption {
   font-size: 0.75rem;
   line-height: 1rem;
-  font-weight: 500;
+  font-weight: 400;
 }
-/* Eyebrow — моноширинная подпись над заголовком. */
+/* Появление блока с шагом: --i задаёт порядок. */
+@utility stagger {
+  animation-delay: calc(var(--i, 0) * 50ms);
+}
+/* Eyebrow — подпись прописными над заголовком, основным шрифтом. */
 @utility type-eyebrow {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
   line-height: 1rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--color-ink-subtle);
+  letter-spacing: 0.06em;
   font-variant-numeric: tabular-nums;
-  word-spacing: -0.22em;
 }
-/* Числа, вилки, коды, даты, таймер: mono, tabular-nums, в одну строку (E §4.3). */
+/* Числа, вилки, даты, таймер: числовой шрифт, tabular-nums, в одну строку (E §4.3). Код — font-mono, не num. */
 @utility num {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
+  font-family: var(--font-numeric);
+  font-variant-numeric: tabular-nums lining-nums;
+  /* cv11 и ss03 заданы на html для Inter; в другом шрифте эти теги значат иное. */
+  font-feature-settings: normal;
   white-space: nowrap;
-  /* В моноширинном шрифте пробел шириной с цифру: разряды «180 000» и тире диапазона расползаются. Сужаем пробелы. */
-  word-spacing: -0.22em;
 }
 
 /* ───────────── Контейнеры (E §4.1) ───────────── */
@@ -219,7 +256,7 @@
 @utility surface-card {
   background-color: var(--color-surface);
   border-radius: var(--radius-lg);
-  padding: 16px;
+  padding: 20px;
   box-shadow: var(--shadow-card);
   @media (width >= 48rem) {
     border-radius: var(--radius-xl);
@@ -230,7 +267,7 @@
 @utility surface-row {
   background-color: var(--color-surface);
   border: 1px solid var(--color-line);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
 }
 /* Область нажатия не меньше 44 × 44 px у компактных элементов: расширяется невидимым псевдоэлементом. */
 @utility tap-target {
@@ -354,6 +391,11 @@
 [data-slot="popover-content"]:focus-visible,
 [data-focus-quiet]:focus-visible {
   outline: none;
+}
+
+/* RevealOnce: при первом показе в сессии фон гаснет brand-50 → transparent. */
+[data-reveal="first"] {
+  animation: reveal-bg var(--dur-reveal) var(--ease-enter) both;
 }
 
 /* Скелетон: фон fill, пульсация прозрачности 1 → 0,6 с периодом 1,2 с (E §5). */

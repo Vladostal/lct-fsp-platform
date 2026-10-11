@@ -23,6 +23,7 @@ import jinja2
 
 from app.modules.profile.constants import PDF_MAX_PAGES
 from app.modules.profile.dto import ProfilePdfModel
+from app.shared.enums import CategoryBasis
 from app.shared.text import fmt_date, plural
 
 PDF_DIR = Path(__file__).resolve().parent
@@ -79,6 +80,8 @@ def _context(model: ProfilePdfModel, compact: bool) -> dict[str, Any]:
         generated_date=fmt_date(model.generated_at),
         skills=[item.model_dump(mode="python") for item in skills_all[:limit]],
         skills_hidden=max(0, len(skills_all) - limit),
+        # Грейд заявлен кандидатом (тест по специализации готовится): блока уровня нет, подпись — «заявленный».
+        declared_grade=model.category is not None and model.category.basis == CategoryBasis.DECLARED,
         verdict_note=_VERDICT_NOTES.get(level.verdict.value, "") if level else "",
         tested_date=fmt_date(level.tested_at) if level else "",
         evidence_age=_days_ago(model.generated_at, level.last_evidence_at) if level else "",

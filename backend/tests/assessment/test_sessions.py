@@ -10,7 +10,7 @@ from typing import Any
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -458,3 +458,53 @@ def test_malformed_answer_body_is_rejected_and_keeps_the_item(db: Session, candi
     body = {grading.answer_key(variant.payload["kind"]): "не число и не вариант"}
     sessions.submit_answer(db, user.id, str(session.id), str(first.id), body, False, None, "ok", T0)
     assert first.status == "answered" and first.score == 0 and session.items_answered == 1
+
+
+QA_SURVEY = {"direction": "quality_infra", "specialization": "qa", "main_language": "other", "experience_band": "2_4"}
+
+
+def test_declared_replaces_and_is_replaced_by_test(db: Session, candidate_ready: Callable[..., Any]) -> None:
+    """Подтверждённая категория → специализация без теста (через подтверждение) → обратно в тест: `basis` следует за фактом."""
+    user = candidate_ready("junior")
+    version = get_config().survey_version
+    done = play(db, user, sessions.start_session(db, user.id, "junior", T0), lambda n, item: True)
+    tested = repo.category(db, user.id)
+    assert tested is not None and tested.basis == "test" and tested.level_session_id == done.id
+    changes = db.scalar(select(func.count()).select_from(GradeChange).where(GradeChange.candidate_id == user.id))
+
+    later = T0 + timedelta(days=1)
+    with pytest.raises(Exception) as error:
+        candidate.put_survey(db, user.id, version, QA_SURVEY, False, later)
+    assert error.value.code == "specialization_change_requires_confirm"
+    assert error.value.params == {"target_has_test": False, "replaces_confirmed_category": True}
+    assert "заявленным грейдом" in error.value.message
+    candidate.put_survey(db, user.id, version, QA_SURVEY, True, later)
+    state = candidate.state_view(db, user.id, later)
+    # До заявления грейда в новой специализации действует прежняя подтверждённая категория.
+    assert state.category.code == "backend:junior" and state.category.basis == "test" and state.next_actions == []
+    state = candidate.put_claim(db, user.id, "middle", later)
+    assert (state.category.code, state.category.basis, state.level) == ("qa:middle", "declared", None)
+    row = repo.category(db, user.id)
+    db.refresh(row)
+    assert (row.verdict, row.theta, row.se, row.items_count, row.level_session_id, row.level_updated_at, row.last_evidence_at) == (None,) * 7
+    # История смен грейда не удаляется и для заявленной категории не пополняется.
+    assert db.scalar(select(func.count()).select_from(GradeChange).where(GradeChange.candidate_id == user.id)) == changes
+    assert service.level_views(db, [user.id], later) == {}
+
+    # Уход из заявленной категории тоже требует подтверждения; тест в новой специализации делает строку подтверждённой.
+    back = {"direction": "development", "specialization": "frontend", "main_language": "typescript", "experience_band": "lt1"}
+    much_later = later + timedelta(days=100)
+    with pytest.raises(Exception) as error:
+        candidate.put_survey(db, user.id, version, back, False, much_later)
+    assert error.value.code == "specialization_change_requires_confirm" and error.value.params["replaces_confirmed_category"] is False
+    candidate.put_survey(db, user.id, version, back, True, much_later)
+    candidate.put_claim(db, user.id, "junior", much_later)
+    assert repo.category(db, user.id).basis == "declared"  # qa:middle остаётся до результата теста
+    front = play(db, user, sessions.start_session(db, user.id, "junior", much_later), lambda n, item: True, now=much_later)
+    state = candidate.state_view(db, user.id, much_later)
+    assert (state.category.code, state.category.basis) == ("frontend:junior", "test")
+    assert state.level is not None and state.category.level_session_id == str(front.id)
+    result = candidate.result_view(db, user.id, str(front.id), much_later)
+    assert result is not None and result.category.basis == "test"
+    (level,) = service.get_levels(db, candidate_ids=[user.id], now=much_later)
+    assert level.basis == "test" and level.theta is not None and level.age_days == 0

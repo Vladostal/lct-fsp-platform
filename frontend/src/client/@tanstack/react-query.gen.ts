@@ -138,6 +138,8 @@ export const assessmentGetBlueprintsQueryKey = (options?: Options<AssessmentGetB
  * Планы теста по грейдам своей специализации
  *
  * Планы теста по грейдам своей специализации. 409 `survey_required`.
+ *
+ * Пустой список — теста по специализации пока нет.
  */
 export const assessmentGetBlueprintsOptions = (options?: Options<AssessmentGetBlueprintsData>) => queryOptions<AssessmentGetBlueprintsResponse, AssessmentGetBlueprintsError, AssessmentGetBlueprintsResponse, ReturnType<typeof assessmentGetBlueprintsQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -177,7 +179,11 @@ export const assessmentPostBlueprintPreviewMutation = (options?: Partial<Options
 /**
  * Заявить грейд
  *
- * Заявить грейд. 409: `survey_required`, `claim_locked`; 422: `grade_unavailable`.
+ * Заявить грейд. 409: `survey_required`, `claim_locked`, `cooldown_active`; 422: `grade_unavailable`.
+ *
+ * В специализации без теста заявление сразу даёт категорию `basis = declared`. Первую смену заявленного грейда
+ * можно сделать сразу, следующие — раз в 90 дней: иначе 409 `cooldown_active` с `params.reason = grade_change`
+ * и `params.available_at`.
  */
 export const assessmentPutClaimMutation = (options?: Partial<Options<AssessmentPutClaimData>>): UseMutationOptions<AssessmentPutClaimResponse, AssessmentPutClaimError, Options<AssessmentPutClaimData>> => {
     const mutationOptions: UseMutationOptions<AssessmentPutClaimResponse, AssessmentPutClaimError, Options<AssessmentPutClaimData>> = {
@@ -359,7 +365,10 @@ export const assessmentGetSurveyOptions = (options?: Options<AssessmentGetSurvey
  * Сохранить ответы опроса
  *
  * Сохранить ответы опроса. 409: `survey_version_mismatch`, `session_active`,
- * `specialization_change_requires_confirm`, `cooldown_active`; 422: `specialization_unavailable`.
+ * `specialization_change_requires_confirm`, `cooldown_active`; 422 — ошибки полей и
+ * `specialization_unavailable` (тест по специализации написан, но сейчас недоступен).
+ *
+ * Специализация без теста принимается: категория в ней будет заявленной (`PUT /assessment/claim`).
  */
 export const assessmentPutSurveyMutation = (options?: Partial<Options<AssessmentPutSurveyData>>): UseMutationOptions<AssessmentPutSurveyResponse, AssessmentPutSurveyError, Options<AssessmentPutSurveyData>> => {
     const mutationOptions: UseMutationOptions<AssessmentPutSurveyResponse, AssessmentPutSurveyError, Options<AssessmentPutSurveyData>> = {
@@ -1467,7 +1476,7 @@ export const contactPrecheckInvitationOptions = (options: Options<ContactPrechec
 export const contactInvitationsQuotaQueryKey = (options?: Options<ContactInvitationsQuotaData>) => createQueryKey('contactInvitationsQuota', options);
 
 /**
- * Слоты и суточный лимит
+ * Суточный лимит отправки
  */
 export const contactInvitationsQuotaOptions = (options?: Options<ContactInvitationsQuotaData>) => queryOptions<ContactInvitationsQuotaResponse, ContactInvitationsQuotaError, ContactInvitationsQuotaResponse, ReturnType<typeof contactInvitationsQuotaQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -1536,7 +1545,7 @@ export const contactEmployerInvitationOutcomeMutation = (options?: Partial<Optio
 };
 
 /**
- * Отозвать приглашение; слот занят до исходного срока
+ * Отозвать приглашение
  */
 export const contactWithdrawEmployerInvitationMutation = (options?: Partial<Options<ContactWithdrawEmployerInvitationData>>): UseMutationOptions<ContactWithdrawEmployerInvitationResponse, ContactWithdrawEmployerInvitationError, Options<ContactWithdrawEmployerInvitationData>> => {
     const mutationOptions: UseMutationOptions<ContactWithdrawEmployerInvitationResponse, ContactWithdrawEmployerInvitationError, Options<ContactWithdrawEmployerInvitationData>> = {

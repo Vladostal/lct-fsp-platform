@@ -101,7 +101,7 @@ function SheetFooter({ className, ...props }: React.ComponentProps<'div'>) {
     <ActionRow
       data-slot="sheet-footer"
       className={cn(
-        'shrink-0 border-t border-line bg-surface px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] shadow-bar md:px-6',
+        'relative z-10 shrink-0 border-t border-line bg-surface px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] shadow-bar md:px-6 [&_[data-slot=button]]:h-11',
         className,
       )}
       {...props}

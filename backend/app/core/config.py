@@ -296,7 +296,7 @@ def module_env(prefix: str) -> SettingsConfigDict:
 
         class ContactConstants(BaseSettings):
             model_config = module_env("CONTACT_")
-            slots: int = 5            # переопределяется переменной CONTACT_SLOTS
+            pair_retry_days: int = 30  # переопределяется переменной CONTACT_PAIR_RETRY_DAYS
     """
     return SettingsConfigDict(
         env_prefix=prefix,

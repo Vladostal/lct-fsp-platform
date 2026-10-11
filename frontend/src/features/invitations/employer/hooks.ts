@@ -18,6 +18,15 @@ const OPS = [
   'matchingGetCandidateCard',
 ]
 
+// Экраны подбора держат те же данные под своими ключами (`matchingKeys`): без них строка подборки и карточка
+// показывали бы «Пригласить» до следующего опроса. Банк не трогаем: его страницы расходуют дневной лимит.
+const MATCHING_KEYS = [
+  ['employer', 'pair-states'],
+  ['employer', 'candidate-card'],
+  ['employer', 'invitation-stats'],
+  queryKeys.employer.needs,
+] as const
+
 /** Обновить списки приглашений, квоту, состояния пар и подборки после отправки или отзыва. */
 export function useRefreshEmployerInvitations() {
   const queryClient = useQueryClient()
@@ -25,6 +34,7 @@ export function useRefreshEmployerInvitations() {
     Promise.all([
       invalidateOperations(queryClient, OPS),
       queryClient.invalidateQueries({ queryKey: queryKeys.employer.quota }),
+      ...MATCHING_KEYS.map((queryKey) => queryClient.invalidateQueries({ queryKey })),
     ])
 }
 

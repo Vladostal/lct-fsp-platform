@@ -55,6 +55,7 @@ import { ErrorState } from '../error-state'
 import { EvidenceChip, EvidenceLegend } from '../evidence-chip'
 import { ExternalLink } from '../external-link'
 import { FitBadge } from '../fit-badge'
+import { FunnelStrip } from '../funnel-strip'
 import { LevelScale } from '../level-scale'
 import { PageHeader } from '../page-header'
 import { PageSkeleton } from '../page-skeleton'
@@ -63,6 +64,8 @@ import { PipelineLine } from '../pipeline-line'
 import { QuotaIndicator } from '../quota-indicator'
 import { SalaryRange } from '../salary-range'
 import { SalaryRangeInput, type SalaryRangeValue } from '../salary-range-input'
+import { Section as PageSection } from '../section'
+import { Stat } from '../stat'
 import { StatusBadge } from '../status-badge'
 import { Stepper } from '../stepper'
 import { StickyActionBar } from '../sticky-action-bar'
@@ -101,13 +104,66 @@ const CONTRIBUTIONS: Contribution[] = [
   { group: 'coverage', code: 'nice', label: 'Желательные навыки', points: 6, max_points: 20 },
   {
     group: 'strength',
-    code: 'level',
-    label: 'Уровень по результату теста: нижняя граница интервала',
-    points: 31,
-    max_points: 50,
+    code: 'test',
+    label: 'Результат теста (нижняя граница)',
+    points: 6.2,
+    max_points: 10,
+    source: 'confirmed',
   },
-  { group: 'strength', code: 'fsp', label: 'Достижения ФСП', points: 18, max_points: 30 },
-  { group: 'strength', code: 'freshness', label: 'Давность подтверждения', points: -0.8, max_points: 0 },
+  {
+    group: 'strength',
+    code: 'freshness',
+    label: 'Давность подтверждения',
+    points: -0.8,
+    max_points: 0,
+    source: 'confirmed',
+  },
+  { group: 'strength', code: 'fsp', label: 'Достижения ФСП', points: 18, max_points: 30, source: 'confirmed' },
+  {
+    group: 'strength',
+    code: 'experience',
+    label: 'Стаж (заявлен кандидатом)',
+    points: 28,
+    max_points: 35,
+    source: 'declared',
+  },
+  {
+    group: 'strength',
+    code: 'skills',
+    label: 'Навыки по специализации (заявлены кандидатом)',
+    points: 18.8,
+    max_points: 25,
+    source: 'declared',
+  },
+]
+
+/** Заявленный грейд: теста по специализации нет, строка теста — 0 баллов, ФСП нет. */
+const CONTRIBUTIONS_DECLARED: Contribution[] = [
+  {
+    group: 'strength',
+    code: 'test',
+    label: 'Тест по специализации готовится',
+    points: 0,
+    max_points: 10,
+    source: 'confirmed',
+  },
+  { group: 'strength', code: 'fsp', label: 'Достижения ФСП', points: 0, max_points: 30, source: 'confirmed' },
+  {
+    group: 'strength',
+    code: 'experience',
+    label: 'Стаж (заявлен кандидатом)',
+    points: 21,
+    max_points: 35,
+    source: 'declared',
+  },
+  {
+    group: 'strength',
+    code: 'skills',
+    label: 'Навыки по специализации (заявлены кандидатом)',
+    points: 12.5,
+    max_points: 25,
+    source: 'declared',
+  },
 ]
 
 const SKILL_OPTIONS = [
@@ -281,7 +337,7 @@ export function Showcase() {
           <Button variant="secondary" disabled>
             Пригласить
           </Button>
-          <span className="type-sm text-ink-muted">Недоступно: все слоты заняты</span>
+          <span className="type-sm text-ink-muted">Недоступно: кандидат на паузе</span>
         </Specimen>
         <Specimen title="ряд кнопок в узком контейнере" className="flex min-w-0">
           <Narrow>
@@ -326,9 +382,7 @@ export function Showcase() {
           {(['visible', 'paused', 'unpublished', 'not_ready'] as const).map((status) => (
             <StatusBadge key={status} status={status} label={VISIBILITY_LABELS[status]} />
           ))}
-          <QuotaIndicator quota={{ used: 3, limit: 10, frozen: false }} />
-          <QuotaIndicator quota={{ used: 10, limit: 10, frozen: false }} />
-          <QuotaIndicator quota={{ used: 4, limit: 10, frozen: true }} />
+          <QuotaIndicator quota={{ frozen: true }} />
         </Specimen>
         <Specimen title="категория">
           <CategoryChip title="Backend · Middle" />
@@ -336,9 +390,22 @@ export function Showcase() {
             <CategoryChip key={title} title={title} />
           ))}
           <CategoryChip title="Fullstack · Senior" size="lg" />
+          {/* Грейд заявлен, теста по специализации нет: пунктирная пометка без фирменной заливки. */}
+          <CategoryChip title="Frontend · Middle" declared />
+          <CategoryChip title="Frontend · Middle" size="lg" declared />
           <DemoChip />
         </Specimen>
         <Specimen title="тона бейджа">
+          <StatusBadge status="accepted" label="Принято" appearance="pill" />
+          <PageSection title="Раздел" count={3} as="h3">
+            <FunnelStrip
+              steps={[
+                { label: 'Найдено', value: 12 },
+                { label: 'Приглашено', value: 4 },
+              ]}
+            />
+            <Stat label="Откликов" value={7} />
+          </PageSection>
           <Badge variant="neutral">нейтральный</Badge>
           <Badge variant="info">новый</Badge>
           <Badge variant="success">из резюме</Badge>
@@ -455,12 +522,16 @@ export function Showcase() {
           <FitBadge band={null} strength="base" size="sm" />
         </Specimen>
         <Specimen title="вклады в оценку" className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_auto]">
-          <ContributionBars items={CONTRIBUTIONS} />
+          <ContributionBars items={CONTRIBUTIONS} summary />
           <Narrow>
             {/* Кандидат без истории ФСП: строка «Достижения ФСП: 0» не рисуется. */}
             <ContributionBars
               items={CONTRIBUTIONS.map((item) => (item.code === 'fsp' ? { ...item, points: 0 } : item))}
             />
+          </Narrow>
+          <Narrow>
+            {/* Заявленный грейд: тест даёт 0 из 10, в итоге подтверждено 0 из 40. */}
+            <ContributionBars items={CONTRIBUTIONS_DECLARED} summary />
           </Narrow>
         </Specimen>
       </Section>
@@ -796,7 +867,7 @@ export function Showcase() {
           </Alert>
           <Alert variant="success">
             <AlertTitle>Приглашение отправлено</AlertTitle>
-            <AlertDescription>Слот занят до ответа кандидата, но не дольше 7 дней.</AlertDescription>
+            <AlertDescription>Кандидат ответит в течение 7 дней.</AlertDescription>
           </Alert>
           <Alert variant="warning">
             <AlertTitle>Не доставлено: условия не совпали</AlertTitle>
@@ -910,10 +981,10 @@ export function Showcase() {
               </SheetHeader>
               <SheetBody>
                 <CategoryChip title="Backend · Middle" />
+                <ClampText text={STRESS.about} />
                 <LevelScale level={LEVELS.confirmed} ownGrade="middle" />
                 <EvidenceLegend />
                 <ContributionBars items={CONTRIBUTIONS} />
-                <ClampText text={STRESS.about} />
               </SheetBody>
               <SheetFooter>
                 <Button variant="ghost">Закрепить</Button>

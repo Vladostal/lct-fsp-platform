@@ -74,6 +74,13 @@ class AccessKind(StrEnum):
     EXPORT_DOWNLOADED = "export_downloaded"
 
 
+class CategoryBasis(StrEnum):
+    """Основание категории кандидата: подтверждена тестом или грейд заявлен (тест по специализации готовится)."""
+
+    TEST = "test"
+    DECLARED = "declared"
+
+
 class EvidenceKind(StrEnum):
     """Вид доказательства факта о кандидате (Арх. 1.2, п. 2); вычисляется."""
 

@@ -2,8 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { ArrowLeft, Download } from 'lucide-react'
 import { toast } from 'sonner'
-import type { CandidateContactsView } from '@/client'
-import { CategoryChip, CopyButton, EmptyState, ErrorState, StatusBadge } from '@/components/app'
+import type { CandidateContactsView, CategoryRef } from '@/client'
+import { CandidateCategoryChip, CopyButton, EmptyState, ErrorState, StatusBadge } from '@/components/app'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -31,6 +31,8 @@ export type InviteRenderProps = {
   candidateId: string
   candidateCode: string
   categoryTitle: string
+  /** Категория кандидата целиком: по ней ставится пометка «заявлен». */
+  category?: CategoryRef
   needId?: string
   onBack: () => void
 }
@@ -81,8 +83,12 @@ function Contacts({ candidateId }: { candidateId: string }) {
         {c.first_name} {c.last_name}
       </p>
       <ul className="flex min-w-0 flex-col gap-1">
-        {rows.map(([label, value]) => (
-          <li key={label} className="flex min-w-0 items-center gap-2">
+        {rows.map(([label, value], i) => (
+          <li
+            key={label}
+            style={{ '--i': i } as React.CSSProperties}
+            className="stagger animate-rise-in flex min-w-0 items-center gap-2"
+          >
             <span className="type-sm w-20 shrink-0 text-ink-muted">{label}</span>
             <span className="num min-w-0 break-all">{value}</span>
             <CopyButton value={value} label={`Скопировать: ${label}`} />
@@ -172,6 +178,7 @@ export function CandidateView({
       candidateId,
       candidateCode: card.public_code,
       categoryTitle: card.category.title,
+      category: card.category,
       needId,
       onBack: onBackFromInvite,
     })
@@ -186,7 +193,7 @@ export function CandidateView({
         </Button>
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <span className="type-body num font-medium">{card.public_code}</span>
-          <CategoryChip title={card.category.title} />
+          <CandidateCategoryChip category={card.category} />
         </div>
         <Alert variant="info">
           <AlertDescription>{T.inviteSoon}</AlertDescription>

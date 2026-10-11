@@ -1,4 +1,3 @@
-import { Mail } from 'lucide-react'
 import type { ContactMethod, WorkFormat } from '@/client'
 import { SalaryRange } from '@/components/app'
 import { WORK_FORMAT_LABELS } from '@/content/common'
@@ -39,8 +38,10 @@ export function InvitationPreview(props: InvitationPreviewProps) {
       className={cn('surface-row flex min-w-0 flex-col gap-4 p-4', props.className)}
     >
       <header className="flex min-w-0 flex-col gap-1">
-        <p className="type-eyebrow truncate text-ink-muted">{companyName}</p>
-        {trustLabel ? <p className="type-caption text-ink-muted">{trustLabel}</p> : null}
+        <p className="type-eyebrow truncate text-ink-muted">
+          {companyName}
+          {trustLabel ? ` · ${trustLabel}` : ''}
+        </p>
         <h3 className="type-h3 [overflow-wrap:anywhere] text-ink">{title}</h3>
       </header>
       <div className="flex min-w-0 flex-col gap-2">
@@ -56,11 +57,8 @@ export function InvitationPreview(props: InvitationPreviewProps) {
           {message}
         </blockquote>
       ) : null}
-      <p className="type-sm flex min-w-0 items-center gap-2 text-ink-muted">
-        <Mail className="size-4 shrink-0" aria-hidden="true" />
-        <span className="min-w-0 [overflow-wrap:anywhere]">
-          Способ связи: {CONTACT_KIND_LABELS[contactMethod.kind]}, <span className="num">{contactMethod.value}</span>
-        </span>
+      <p className="type-sm min-w-0 text-ink-muted [overflow-wrap:anywhere]">
+        Способ связи: {CONTACT_KIND_LABELS[contactMethod.kind]}, <span className="num">{contactMethod.value}</span>
       </p>
     </article>
   )

@@ -121,9 +121,9 @@ export function LoginForm({ next, demo = false }: LoginFormProps) {
       {demo ? (
         <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-line pt-4">
           <p className="type-sm min-w-0 text-ink-muted">{AUTH.login.demoText}</p>
-          <Link to="/demo" className="text-link inline-flex min-h-11 items-center text-sm">
-            {AUTH.login.demo}
-          </Link>
+          <Button variant="secondary" asChild>
+            <Link to="/demo">{AUTH.login.demo}</Link>
+          </Button>
         </div>
       ) : null}
     </AuthCard>

@@ -1,15 +1,15 @@
 {
   "summary": {
-    "generated_at": "2026-10-06T07:39:35+00:00",
+    "generated_at": "2026-10-11T11:17:44+00:00",
     "seed": 20261005,
     "n": 600,
     "versions": {
-      "contact_rules": "1.2"
+      "contact_rules": "1.3"
     },
-    "delivered_share": 0.6537,
-    "reply_in_time_share": 0.6083,
-    "accept_share": 0.474,
-    "needs_filled_share": 0.9985,
+    "delivered_share": 0.6059,
+    "reply_in_time_share": 0.5735,
+    "accept_share": 0.4048,
+    "needs_filled_share": 0.9767,
     "needs_filled_share_no_limits": 0.9928
   },
   "params": {
@@ -39,7 +39,6 @@
         0.3044,
         0.3146
       ],
-      "slot_days_bounced_share": 0.1989,
       "revision_success_share": 0.4403,
       "feasible_at_10": 0.7386,
       "feasible_at_10_median": 0.7261,
@@ -48,50 +47,25 @@
     "B": {
       "mode": "B",
       "runs": 200,
-      "invitations": 491.425,
-      "delivered_share": 0.7009,
-      "reply_in_time_share": 0.5223,
-      "accept_share": 0.4219,
-      "median_response_hours": 84.9,
-      "coverage": 0.1555,
-      "gini": 0.9234,
-      "needs_filled_share": 0.9998,
-      "median_days_to_first_accept": 1.6,
+      "invitations": 999.63,
+      "delivered_share": 0.6059,
+      "reply_in_time_share": 0.5735,
+      "accept_share": 0.4048,
+      "median_response_hours": 85.0,
+      "coverage": 0.3168,
+      "gini": 0.7878,
+      "needs_filled_share": 0.9767,
+      "median_days_to_first_accept": 1.0,
       "bounced_share_by_quartile": [
-        0.5,
-        0.3581,
-        0.3334,
-        0.298
+        0.375,
+        0.3254,
+        0.3043,
+        0.4054
       ],
-      "slot_days_bounced_share": 0.1981,
-      "revision_success_share": 0.4212,
+      "revision_success_share": 0.3344,
       "feasible_at_10": 0.7386,
       "feasible_at_10_median": 0.7261,
-      "auto_pauses": 0.0
-    },
-    "C": {
-      "mode": "C",
-      "runs": 200,
-      "invitations": 490.93,
-      "delivered_share": 0.6537,
-      "reply_in_time_share": 0.6083,
-      "accept_share": 0.474,
-      "median_response_hours": 84.4,
-      "coverage": 0.1868,
-      "gini": 0.8846,
-      "needs_filled_share": 0.9985,
-      "median_days_to_first_accept": 1.4,
-      "bounced_share_by_quartile": [
-        0.6667,
-        0.3504,
-        0.3198,
-        0.3476
-      ],
-      "slot_days_bounced_share": 0.2456,
-      "revision_success_share": 0.3907,
-      "feasible_at_10": 0.7386,
-      "feasible_at_10_median": 0.7261,
-      "auto_pauses": 31.59
+      "auto_pauses": 71.96
     }
   },
   "sensitivity": [
@@ -117,7 +91,6 @@
           0.3057,
           0.2935
         ],
-        "slot_days_bounced_share": 0.232,
         "revision_success_share": 0.4252,
         "feasible_at_10": 0.7503,
         "feasible_at_10_median": 0.7319,
@@ -126,56 +99,31 @@
       "B": {
         "mode": "B",
         "runs": 40,
-        "invitations": 402.75,
-        "delivered_share": 0.7222,
-        "reply_in_time_share": 0.8203,
-        "accept_share": 0.6778,
-        "median_response_hours": 83.5,
-        "coverage": 0.1355,
-        "gini": 0.9334,
-        "needs_filled_share": 1.0,
-        "median_days_to_first_accept": 1.0,
-        "bounced_share_by_quartile": [
-          1.0,
-          0.2308,
-          0.3469,
-          0.2762
-        ],
-        "slot_days_bounced_share": 0.2191,
-        "revision_success_share": 0.452,
-        "feasible_at_10": 0.7503,
-        "feasible_at_10_median": 0.7319,
-        "auto_pauses": 0.0
-      },
-      "C": {
-        "mode": "C",
-        "runs": 40,
-        "invitations": 432.325,
-        "delivered_share": 0.6707,
-        "reply_in_time_share": 0.8242,
-        "accept_share": 0.6546,
+        "invitations": 970.6,
+        "delivered_share": 0.6245,
+        "reply_in_time_share": 0.8214,
+        "accept_share": 0.582,
         "median_response_hours": 84.0,
-        "coverage": 0.1708,
-        "gini": 0.8947,
-        "needs_filled_share": 1.0,
-        "median_days_to_first_accept": 1.0,
+        "coverage": 0.3136,
+        "gini": 0.7926,
+        "needs_filled_share": 0.9975,
+        "median_days_to_first_accept": 0.7,
         "bounced_share_by_quartile": [
-          1.0,
-          0.3333,
-          0.3238,
-          0.3295
+          0.5714,
+          0.3103,
+          0.3115,
+          0.3837
         ],
-        "slot_days_bounced_share": 0.2642,
-        "revision_success_share": 0.3914,
+        "revision_success_share": 0.3424,
         "feasible_at_10": 0.7503,
         "feasible_at_10_median": 0.7319,
-        "auto_pauses": 9.1
+        "auto_pauses": 21.1
       }
     },
     {
       "alpha": 0.0,
       "silent_share": 0.1,
-      "order_kept": false,
+      "order_kept": true,
       "A": {
         "mode": "A",
         "runs": 40,
@@ -194,7 +142,6 @@
           0.3059,
           0.2936
         ],
-        "slot_days_bounced_share": 0.2256,
         "revision_success_share": 0.4333,
         "feasible_at_10": 0.7503,
         "feasible_at_10_median": 0.7319,
@@ -203,50 +150,25 @@
       "B": {
         "mode": "B",
         "runs": 40,
-        "invitations": 404.2,
-        "delivered_share": 0.7182,
-        "reply_in_time_share": 0.7733,
-        "accept_share": 0.6491,
-        "median_response_hours": 83.0,
-        "coverage": 0.1349,
-        "gini": 0.9333,
+        "invitations": 980.75,
+        "delivered_share": 0.6198,
+        "reply_in_time_share": 0.7826,
+        "accept_share": 0.5532,
+        "median_response_hours": 84.4,
+        "coverage": 0.3145,
+        "gini": 0.7919,
         "needs_filled_share": 1.0,
-        "median_days_to_first_accept": 1.0,
+        "median_days_to_first_accept": 0.7,
         "bounced_share_by_quartile": [
-          1.0,
-          0.4118,
-          0.3838,
-          0.2792
+          0.5714,
+          0.3148,
+          0.3148,
+          0.3886
         ],
-        "slot_days_bounced_share": 0.2156,
-        "revision_success_share": 0.4372,
+        "revision_success_share": 0.3391,
         "feasible_at_10": 0.7503,
         "feasible_at_10_median": 0.7319,
-        "auto_pauses": 0.0
-      },
-      "C": {
-        "mode": "C",
-        "runs": 40,
-        "invitations": 437.85,
-        "delivered_share": 0.6705,
-        "reply_in_time_share": 0.7844,
-        "accept_share": 0.6205,
-        "median_response_hours": 84.1,
-        "coverage": 0.173,
-        "gini": 0.8936,
-        "needs_filled_share": 1.0,
-        "median_days_to_first_accept": 1.1,
-        "bounced_share_by_quartile": [
-          1.0,
-          0.3784,
-          0.3146,
-          0.33
-        ],
-        "slot_days_bounced_share": 0.2578,
-        "revision_success_share": 0.3964,
-        "feasible_at_10": 0.7503,
-        "feasible_at_10_median": 0.7319,
-        "auto_pauses": 11.93
+        "auto_pauses": 26.48
       }
     },
     {
@@ -271,7 +193,6 @@
           0.3073,
           0.296
         ],
-        "slot_days_bounced_share": 0.2159,
         "revision_success_share": 0.4342,
         "feasible_at_10": 0.7503,
         "feasible_at_10_median": 0.7319,
@@ -280,50 +201,25 @@
       "B": {
         "mode": "B",
         "runs": 40,
-        "invitations": 420.425,
-        "delivered_share": 0.719,
-        "reply_in_time_share": 0.6916,
-        "accept_share": 0.5723,
-        "median_response_hours": 83.9,
-        "coverage": 0.1384,
-        "gini": 0.9323,
-        "needs_filled_share": 0.9992,
-        "median_days_to_first_accept": 1.1,
-        "bounced_share_by_quartile": [
-          1.0,
-          0.3889,
-          0.3744,
-          0.2786
-        ],
-        "slot_days_bounced_share": 0.2038,
-        "revision_success_share": 0.4409,
-        "feasible_at_10": 0.7503,
-        "feasible_at_10_median": 0.7319,
-        "auto_pauses": 0.0
-      },
-      "C": {
-        "mode": "C",
-        "runs": 40,
-        "invitations": 452.675,
-        "delivered_share": 0.6694,
-        "reply_in_time_share": 0.7078,
-        "accept_share": 0.5556,
-        "median_response_hours": 84.8,
-        "coverage": 0.1784,
-        "gini": 0.8905,
+        "invitations": 981.325,
+        "delivered_share": 0.6212,
+        "reply_in_time_share": 0.6991,
+        "accept_share": 0.499,
+        "median_response_hours": 84.2,
+        "coverage": 0.3163,
+        "gini": 0.79,
         "needs_filled_share": 0.9983,
-        "median_days_to_first_accept": 1.2,
+        "median_days_to_first_accept": 0.7,
         "bounced_share_by_quartile": [
-          1.0,
-          0.3721,
-          0.3257,
-          0.3307
+          0.5714,
+          0.3158,
+          0.3144,
+          0.3873
         ],
-        "slot_days_bounced_share": 0.2462,
-        "revision_success_share": 0.399,
+        "revision_success_share": 0.3448,
         "feasible_at_10": 0.7503,
         "feasible_at_10_median": 0.7319,
-        "auto_pauses": 17.6
+        "auto_pauses": 38.35
       }
     },
     {
@@ -348,7 +244,6 @@
           0.3117,
           0.3009
         ],
-        "slot_days_bounced_share": 0.2025,
         "revision_success_share": 0.4366,
         "feasible_at_10": 0.7503,
         "feasible_at_10_median": 0.7319,
@@ -357,50 +252,25 @@
       "B": {
         "mode": "B",
         "runs": 40,
-        "invitations": 436.975,
-        "delivered_share": 0.7137,
-        "reply_in_time_share": 0.6182,
-        "accept_share": 0.51,
-        "median_response_hours": 83.9,
-        "coverage": 0.1427,
-        "gini": 0.9296,
-        "needs_filled_share": 1.0,
-        "median_days_to_first_accept": 1.2,
-        "bounced_share_by_quartile": [
-          1.0,
-          0.4737,
-          0.3514,
-          0.2843
-        ],
-        "slot_days_bounced_share": 0.1994,
-        "revision_success_share": 0.4241,
-        "feasible_at_10": 0.7503,
-        "feasible_at_10_median": 0.7319,
-        "auto_pauses": 0.0
-      },
-      "C": {
-        "mode": "C",
-        "runs": 40,
-        "invitations": 451.225,
-        "delivered_share": 0.6697,
-        "reply_in_time_share": 0.7069,
-        "accept_share": 0.5593,
+        "invitations": 982.8,
+        "delivered_share": 0.6195,
+        "reply_in_time_share": 0.69,
+        "accept_share": 0.4872,
         "median_response_hours": 84.1,
-        "coverage": 0.1758,
-        "gini": 0.8914,
-        "needs_filled_share": 1.0,
-        "median_days_to_first_accept": 1.2,
+        "coverage": 0.3162,
+        "gini": 0.7897,
+        "needs_filled_share": 0.9958,
+        "median_days_to_first_accept": 0.8,
         "bounced_share_by_quartile": [
-          1.0,
-          0.4318,
-          0.3226,
-          0.3303
+          0.5714,
+          0.3121,
+          0.3087,
+          0.3899
         ],
-        "slot_days_bounced_share": 0.2458,
-        "revision_success_share": 0.3799,
+        "revision_success_share": 0.3382,
         "feasible_at_10": 0.7503,
         "feasible_at_10_median": 0.7319,
-        "auto_pauses": 21.9
+        "auto_pauses": 51.27
       }
     },
     {
@@ -425,7 +295,6 @@
           0.3125,
           0.3008
         ],
-        "slot_days_bounced_share": 0.1994,
         "revision_success_share": 0.4389,
         "feasible_at_10": 0.7503,
         "feasible_at_10_median": 0.7319,
@@ -434,50 +303,25 @@
       "B": {
         "mode": "B",
         "runs": 40,
-        "invitations": 449.825,
-        "delivered_share": 0.7151,
-        "reply_in_time_share": 0.5857,
-        "accept_share": 0.4831,
-        "median_response_hours": 84.6,
-        "coverage": 0.146,
-        "gini": 0.9281,
-        "needs_filled_share": 1.0,
-        "median_days_to_first_accept": 1.3,
-        "bounced_share_by_quartile": [
-          1.0,
-          0.32,
-          0.3815,
-          0.282
-        ],
-        "slot_days_bounced_share": 0.1943,
-        "revision_success_share": 0.4306,
-        "feasible_at_10": 0.7503,
-        "feasible_at_10_median": 0.7319,
-        "auto_pauses": 0.0
-      },
-      "C": {
-        "mode": "C",
-        "runs": 40,
-        "invitations": 460.45,
-        "delivered_share": 0.6699,
-        "reply_in_time_share": 0.6738,
-        "accept_share": 0.5287,
+        "invitations": 986.4,
+        "delivered_share": 0.6192,
+        "reply_in_time_share": 0.6537,
+        "accept_share": 0.463,
         "median_response_hours": 84.1,
-        "coverage": 0.18,
-        "gini": 0.8889,
-        "needs_filled_share": 0.9983,
-        "median_days_to_first_accept": 1.3,
+        "coverage": 0.3172,
+        "gini": 0.7885,
+        "needs_filled_share": 0.9917,
+        "median_days_to_first_accept": 0.8,
         "bounced_share_by_quartile": [
-          1.0,
-          0.4118,
-          0.3282,
-          0.3299
+          0.5714,
+          0.3112,
+          0.3109,
+          0.3901
         ],
-        "slot_days_bounced_share": 0.2414,
-        "revision_success_share": 0.3894,
+        "revision_success_share": 0.3442,
         "feasible_at_10": 0.7503,
         "feasible_at_10_median": 0.7319,
-        "auto_pauses": 24.3
+        "auto_pauses": 56.05
       }
     },
     {
@@ -502,7 +346,6 @@
           0.3145,
           0.3023
         ],
-        "slot_days_bounced_share": 0.1946,
         "revision_success_share": 0.4379,
         "feasible_at_10": 0.7503,
         "feasible_at_10_median": 0.7319,
@@ -511,50 +354,25 @@
       "B": {
         "mode": "B",
         "runs": 40,
-        "invitations": 479.05,
-        "delivered_share": 0.7123,
-        "reply_in_time_share": 0.5269,
-        "accept_share": 0.4241,
+        "invitations": 990.2,
+        "delivered_share": 0.6184,
+        "reply_in_time_share": 0.5817,
+        "accept_share": 0.4154,
         "median_response_hours": 84.1,
-        "coverage": 0.1549,
-        "gini": 0.9243,
-        "needs_filled_share": 0.9992,
-        "median_days_to_first_accept": 1.5,
+        "coverage": 0.3183,
+        "gini": 0.7873,
+        "needs_filled_share": 0.9842,
+        "median_days_to_first_accept": 0.9,
         "bounced_share_by_quartile": [
-          1.0,
-          0.4138,
-          0.3644,
-          0.2851
+          0.5714,
+          0.3221,
+          0.3129,
+          0.3906
         ],
-        "slot_days_bounced_share": 0.19,
-        "revision_success_share": 0.4225,
+        "revision_success_share": 0.344,
         "feasible_at_10": 0.7503,
         "feasible_at_10_median": 0.7319,
-        "auto_pauses": 0.0
-      },
-      "C": {
-        "mode": "C",
-        "runs": 40,
-        "invitations": 477.575,
-        "delivered_share": 0.6666,
-        "reply_in_time_share": 0.6087,
-        "accept_share": 0.4791,
-        "median_response_hours": 83.7,
-        "coverage": 0.1856,
-        "gini": 0.8856,
-        "needs_filled_share": 0.9975,
-        "median_days_to_first_accept": 1.4,
-        "bounced_share_by_quartile": [
-          1.0,
-          0.3077,
-          0.3376,
-          0.3332
-        ],
-        "slot_days_bounced_share": 0.2355,
-        "revision_success_share": 0.3855,
-        "feasible_at_10": 0.7503,
-        "feasible_at_10_median": 0.7319,
-        "auto_pauses": 29.82
+        "auto_pauses": 65.05
       }
     },
     {
@@ -579,7 +397,6 @@
           0.3131,
           0.3025
         ],
-        "slot_days_bounced_share": 0.1936,
         "revision_success_share": 0.4371,
         "feasible_at_10": 0.7503,
         "feasible_at_10_median": 0.7319,
@@ -588,50 +405,25 @@
       "B": {
         "mode": "B",
         "runs": 40,
-        "invitations": 469.5,
-        "delivered_share": 0.715,
-        "reply_in_time_share": 0.5469,
-        "accept_share": 0.443,
-        "median_response_hours": 83.8,
-        "coverage": 0.1525,
-        "gini": 0.9244,
-        "needs_filled_share": 1.0,
-        "median_days_to_first_accept": 1.5,
+        "invitations": 986.3,
+        "delivered_share": 0.618,
+        "reply_in_time_share": 0.61,
+        "accept_share": 0.4287,
+        "median_response_hours": 84.3,
+        "coverage": 0.3175,
+        "gini": 0.7876,
+        "needs_filled_share": 0.9842,
+        "median_days_to_first_accept": 0.9,
         "bounced_share_by_quartile": [
-          1.0,
-          0.3939,
-          0.3426,
-          0.283
+          0.5714,
+          0.3174,
+          0.3102,
+          0.3915
         ],
-        "slot_days_bounced_share": 0.1907,
-        "revision_success_share": 0.4358,
+        "revision_success_share": 0.3419,
         "feasible_at_10": 0.7503,
         "feasible_at_10_median": 0.7319,
-        "auto_pauses": 0.0
-      },
-      "C": {
-        "mode": "C",
-        "runs": 40,
-        "invitations": 471.675,
-        "delivered_share": 0.6658,
-        "reply_in_time_share": 0.6462,
-        "accept_share": 0.5085,
-        "median_response_hours": 84.6,
-        "coverage": 0.1839,
-        "gini": 0.8863,
-        "needs_filled_share": 1.0,
-        "median_days_to_first_accept": 1.2,
-        "bounced_share_by_quartile": [
-          1.0,
-          0.3878,
-          0.3171,
-          0.3349
-        ],
-        "slot_days_bounced_share": 0.2407,
-        "revision_success_share": 0.3964,
-        "feasible_at_10": 0.7503,
-        "feasible_at_10_median": 0.7319,
-        "auto_pauses": 29.15
+        "auto_pauses": 69.2
       }
     },
     {
@@ -656,7 +448,6 @@
           0.3144,
           0.3033
         ],
-        "slot_days_bounced_share": 0.192,
         "revision_success_share": 0.4396,
         "feasible_at_10": 0.7503,
         "feasible_at_10_median": 0.7319,
@@ -665,50 +456,25 @@
       "B": {
         "mode": "B",
         "runs": 40,
-        "invitations": 489.3,
-        "delivered_share": 0.7119,
-        "reply_in_time_share": 0.5228,
-        "accept_share": 0.4239,
-        "median_response_hours": 84.6,
-        "coverage": 0.1573,
-        "gini": 0.9224,
-        "needs_filled_share": 1.0,
-        "median_days_to_first_accept": 1.5,
+        "invitations": 988.625,
+        "delivered_share": 0.6173,
+        "reply_in_time_share": 0.5801,
+        "accept_share": 0.4084,
+        "median_response_hours": 84.8,
+        "coverage": 0.3184,
+        "gini": 0.7865,
+        "needs_filled_share": 0.9775,
+        "median_days_to_first_accept": 0.9,
         "bounced_share_by_quartile": [
-          1.0,
-          0.3529,
-          0.3627,
-          0.2855
+          0.5714,
+          0.3166,
+          0.3138,
+          0.3919
         ],
-        "slot_days_bounced_share": 0.1899,
-        "revision_success_share": 0.4189,
+        "revision_success_share": 0.3456,
         "feasible_at_10": 0.7503,
         "feasible_at_10_median": 0.7319,
-        "auto_pauses": 0.0
-      },
-      "C": {
-        "mode": "C",
-        "runs": 40,
-        "invitations": 477.9,
-        "delivered_share": 0.6682,
-        "reply_in_time_share": 0.6116,
-        "accept_share": 0.4787,
-        "median_response_hours": 83.1,
-        "coverage": 0.1855,
-        "gini": 0.885,
-        "needs_filled_share": 0.9992,
-        "median_days_to_first_accept": 1.4,
-        "bounced_share_by_quartile": [
-          1.0,
-          0.4107,
-          0.3403,
-          0.331
-        ],
-        "slot_days_bounced_share": 0.2351,
-        "revision_success_share": 0.4011,
-        "feasible_at_10": 0.7503,
-        "feasible_at_10_median": 0.7319,
-        "auto_pauses": 31.85
+        "auto_pauses": 71.47
       }
     },
     {
@@ -733,7 +499,6 @@
           0.3133,
           0.3044
         ],
-        "slot_days_bounced_share": 0.188,
         "revision_success_share": 0.4376,
         "feasible_at_10": 0.7503,
         "feasible_at_10_median": 0.7319,
@@ -742,50 +507,25 @@
       "B": {
         "mode": "B",
         "runs": 40,
-        "invitations": 517.475,
-        "delivered_share": 0.7111,
-        "reply_in_time_share": 0.4716,
-        "accept_share": 0.3779,
-        "median_response_hours": 85.0,
-        "coverage": 0.164,
-        "gini": 0.9194,
-        "needs_filled_share": 1.0,
-        "median_days_to_first_accept": 1.8,
+        "invitations": 995.425,
+        "delivered_share": 0.6175,
+        "reply_in_time_share": 0.517,
+        "accept_share": 0.368,
+        "median_response_hours": 84.4,
+        "coverage": 0.3203,
+        "gini": 0.7851,
+        "needs_filled_share": 0.9733,
+        "median_days_to_first_accept": 1.0,
         "bounced_share_by_quartile": [
-          1.0,
-          0.325,
-          0.3404,
-          0.287
+          0.5714,
+          0.3179,
+          0.3105,
+          0.3921
         ],
-        "slot_days_bounced_share": 0.1851,
-        "revision_success_share": 0.4306,
+        "revision_success_share": 0.3473,
         "feasible_at_10": 0.7503,
         "feasible_at_10_median": 0.7319,
-        "auto_pauses": 0.0
-      },
-      "C": {
-        "mode": "C",
-        "runs": 40,
-        "invitations": 502.2,
-        "delivered_share": 0.6649,
-        "reply_in_time_share": 0.5492,
-        "accept_share": 0.4284,
-        "median_response_hours": 83.0,
-        "coverage": 0.1942,
-        "gini": 0.8791,
-        "needs_filled_share": 0.9942,
-        "median_days_to_first_accept": 1.6,
-        "bounced_share_by_quartile": [
-          1.0,
-          0.3231,
-          0.3272,
-          0.3355
-        ],
-        "slot_days_bounced_share": 0.2295,
-        "revision_success_share": 0.3762,
-        "feasible_at_10": 0.7503,
-        "feasible_at_10_median": 0.7319,
-        "auto_pauses": 37.88
+        "auto_pauses": 80.05
       }
     },
     {
@@ -810,7 +550,6 @@
           0.3141,
           0.3047
         ],
-        "slot_days_bounced_share": 0.1866,
         "revision_success_share": 0.44,
         "feasible_at_10": 0.7503,
         "feasible_at_10_median": 0.7319,
@@ -819,50 +558,25 @@
       "B": {
         "mode": "B",
         "runs": 40,
-        "invitations": 521.125,
-        "delivered_share": 0.7112,
-        "reply_in_time_share": 0.4795,
-        "accept_share": 0.3812,
-        "median_response_hours": 84.1,
-        "coverage": 0.1636,
-        "gini": 0.9189,
-        "needs_filled_share": 0.9992,
-        "median_days_to_first_accept": 1.7,
+        "invitations": 990.3,
+        "delivered_share": 0.6177,
+        "reply_in_time_share": 0.5192,
+        "accept_share": 0.3649,
+        "median_response_hours": 83.6,
+        "coverage": 0.3198,
+        "gini": 0.785,
+        "needs_filled_share": 0.9583,
+        "median_days_to_first_accept": 1.0,
         "bounced_share_by_quartile": [
-          1.0,
-          0.2667,
-          0.353,
-          0.2866
+          0.5714,
+          0.3206,
+          0.3113,
+          0.3918
         ],
-        "slot_days_bounced_share": 0.1863,
-        "revision_success_share": 0.4144,
+        "revision_success_share": 0.3443,
         "feasible_at_10": 0.7503,
         "feasible_at_10_median": 0.7319,
-        "auto_pauses": 0.0
-      },
-      "C": {
-        "mode": "C",
-        "runs": 40,
-        "invitations": 498.6,
-        "delivered_share": 0.6631,
-        "reply_in_time_share": 0.5664,
-        "accept_share": 0.4417,
-        "median_response_hours": 84.0,
-        "coverage": 0.1943,
-        "gini": 0.8779,
-        "needs_filled_share": 0.995,
-        "median_days_to_first_accept": 1.5,
-        "bounced_share_by_quartile": [
-          1.0,
-          0.4098,
-          0.3253,
-          0.3373
-        ],
-        "slot_days_bounced_share": 0.2329,
-        "revision_success_share": 0.4003,
-        "feasible_at_10": 0.7503,
-        "feasible_at_10_median": 0.7319,
-        "auto_pauses": 37.12
+        "auto_pauses": 84.47
       }
     },
     {
@@ -887,7 +601,6 @@
           0.3151,
           0.3052
         ],
-        "slot_days_bounced_share": 0.1854,
         "revision_success_share": 0.4382,
         "feasible_at_10": 0.7503,
         "feasible_at_10_median": 0.7319,
@@ -896,50 +609,25 @@
       "B": {
         "mode": "B",
         "runs": 40,
-        "invitations": 529.65,
-        "delivered_share": 0.7114,
-        "reply_in_time_share": 0.4562,
-        "accept_share": 0.3632,
-        "median_response_hours": 83.9,
-        "coverage": 0.1658,
-        "gini": 0.9178,
-        "needs_filled_share": 1.0,
-        "median_days_to_first_accept": 1.8,
+        "invitations": 991.525,
+        "delivered_share": 0.6179,
+        "reply_in_time_share": 0.4935,
+        "accept_share": 0.3472,
+        "median_response_hours": 84.1,
+        "coverage": 0.32,
+        "gini": 0.7848,
+        "needs_filled_share": 0.955,
+        "median_days_to_first_accept": 1.0,
         "bounced_share_by_quartile": [
-          1.0,
-          0.3902,
-          0.3487,
-          0.2863
+          0.5714,
+          0.3186,
+          0.3115,
+          0.3916
         ],
-        "slot_days_bounced_share": 0.1838,
-        "revision_success_share": 0.414,
+        "revision_success_share": 0.345,
         "feasible_at_10": 0.7503,
         "feasible_at_10_median": 0.7319,
-        "auto_pauses": 0.0
-      },
-      "C": {
-        "mode": "C",
-        "runs": 40,
-        "invitations": 512.725,
-        "delivered_share": 0.6633,
-        "reply_in_time_share": 0.5423,
-        "accept_share": 0.4189,
-        "median_response_hours": 83.4,
-        "coverage": 0.1985,
-        "gini": 0.8756,
-        "needs_filled_share": 0.995,
-        "median_days_to_first_accept": 1.6,
-        "bounced_share_by_quartile": [
-          1.0,
-          0.375,
-          0.341,
-          0.3362
-        ],
-        "slot_days_bounced_share": 0.2298,
-        "revision_success_share": 0.3934,
-        "feasible_at_10": 0.7503,
-        "feasible_at_10_median": 0.7319,
-        "auto_pauses": 39.2
+        "auto_pauses": 87.5
       }
     },
     {
@@ -964,7 +652,6 @@
           0.3134,
           0.306
         ],
-        "slot_days_bounced_share": 0.182,
         "revision_success_share": 0.4391,
         "feasible_at_10": 0.7503,
         "feasible_at_10_median": 0.7319,
@@ -973,63 +660,37 @@
       "B": {
         "mode": "B",
         "runs": 40,
-        "invitations": 571.525,
-        "delivered_share": 0.7106,
-        "reply_in_time_share": 0.4158,
-        "accept_share": 0.3274,
-        "median_response_hours": 85.1,
-        "coverage": 0.178,
-        "gini": 0.9126,
-        "needs_filled_share": 0.9992,
-        "median_days_to_first_accept": 2.1,
+        "invitations": 994.325,
+        "delivered_share": 0.6156,
+        "reply_in_time_share": 0.4362,
+        "accept_share": 0.3112,
+        "median_response_hours": 84.6,
+        "coverage": 0.321,
+        "gini": 0.7832,
+        "needs_filled_share": 0.9308,
+        "median_days_to_first_accept": 1.1,
         "bounced_share_by_quartile": [
-          1.0,
-          0.3415,
-          0.3367,
-          0.2874
+          0.5714,
+          0.32,
+          0.3145,
+          0.3939
         ],
-        "slot_days_bounced_share": 0.1803,
-        "revision_success_share": 0.4159,
+        "revision_success_share": 0.3419,
         "feasible_at_10": 0.7503,
         "feasible_at_10_median": 0.7319,
-        "auto_pauses": 0.0
-      },
-      "C": {
-        "mode": "C",
-        "runs": 40,
-        "invitations": 536.6,
-        "delivered_share": 0.6596,
-        "reply_in_time_share": 0.4906,
-        "accept_share": 0.3802,
-        "median_response_hours": 85.7,
-        "coverage": 0.2056,
-        "gini": 0.8708,
-        "needs_filled_share": 0.9883,
-        "median_days_to_first_accept": 1.8,
-        "bounced_share_by_quartile": [
-          0.6667,
-          0.3553,
-          0.33,
-          0.341
-        ],
-        "slot_days_bounced_share": 0.2258,
-        "revision_success_share": 0.3811,
-        "feasible_at_10": 0.7503,
-        "feasible_at_10_median": 0.7319,
-        "auto_pauses": 44.77
+        "auto_pauses": 92.78
       }
     }
   ],
   "salary_check": {
-    "bounced_share": 0.3463,
+    "bounced_share": 0.3941,
     "bounced_share_by_strength_quartile": [
-      0.6667,
-      0.3504,
-      0.3198,
-      0.3476
+      0.375,
+      0.3254,
+      0.3043,
+      0.4054
     ],
-    "slot_days_bounced_share": 0.2456,
-    "revision_success_share": 0.3907,
+    "revision_success_share": 0.3344,
     "feasible_at_10": 0.7386,
     "feasible_at_10_at_median": 0.7261
   },
@@ -1062,6 +723,5 @@
       "same_day_share": 1.0
     }
   ],
-  "revision_pass_blocked": true,
-  "mode_b_reply_in_time_share": 0.5223
+  "revision_pass_blocked": true
 }

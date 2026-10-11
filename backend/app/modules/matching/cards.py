@@ -58,7 +58,15 @@ from app.modules.profile.dto import (
     PoolProfile,
     ProfilePdfModel,
 )
-from app.shared.enums import AccessKind, DiffMark, EvidenceKind, ExposureSource, TestOutcome, WorkFormat
+from app.shared.enums import (
+    AccessKind,
+    CategoryBasis,
+    DiffMark,
+    EvidenceKind,
+    ExposureSource,
+    TestOutcome,
+    WorkFormat,
+)
 from app.shared.schemas import EvidenceItem, Ref
 
 _HOUR_SECONDS = 3600
@@ -93,7 +101,7 @@ def _load_subject(db: Session, employer_id: UUID, candidate_id: UUID, now: datet
 
 def _strength_view(features: CandidateFeatures) -> StrengthView:
     value = strength(features)
-    return StrengthView(label=value.label, contributions=strength_contributions(value, features.fsp_signal))
+    return StrengthView(label=value.label, contributions=strength_contributions(value))
 
 
 def _skills(
@@ -153,6 +161,7 @@ def _rules(db: Session, subject: _Subject, expl: MatchExplanation) -> MatchExpla
         expl,
         ReadRules(
             declared_hidden=not subject.person.privacy.show_declared_stack,
+            experience_hidden=not subject.person.privacy.show_experience,
             fsp_visible=subject.live.fsp_visible(cid),
             fsp_texts=fsp_texts(db, subject.live, cid, _fact_ids(subject.features)),
         ),
@@ -199,7 +208,8 @@ def _card(
 ) -> CandidateCardEmployerView:
     features, person, cid = subject.features, subject.person, subject.candidate_id
     level = assessment.level_views(db, [cid], now).get(cid)
-    if level is None:
+    # У заявленного грейда уровня по тесту нет — это не ошибка; 404 только если теста ждали, а уровня нет.
+    if level is None and features.basis == CategoryBasis.TEST:
         raise not_found()
     block: FspEmployerBlock = fsp.employer_block(
         db,
@@ -218,7 +228,7 @@ def _card(
         available=person.visible,
         is_demo=person.is_demo,
         pinned=pinned,
-        category=support.category_ref(features.specialization_code, features.grade_code),
+        category=support.category_ref(features.specialization_code, features.grade_code, features.basis),
         level=level,
         fsp=block,
         work_formats=[WorkFormat(value) for value in person.work_formats],
@@ -394,7 +404,7 @@ def _pdf_model(
     if subject is None:
         return model
     features, person, cid = subject.features, subject.person, subject.candidate_id
-    model.category = support.category_ref(features.specialization_code, features.grade_code)
+    model.category = support.category_ref(features.specialization_code, features.grade_code, features.basis)
     model.level = assessment.level_views(db, [cid], now).get(cid)
     skills = _skills(features, own=audience == "self")
     model.skills = [item for item in skills if item.kind in CONFIRMED_KINDS]
@@ -482,7 +492,12 @@ def candidate_export(db: Session, employer_id: UUID, candidate_id: UUID, now: da
 def _employer_saw(subject: _Subject) -> list[str]:
     """Что было видно работодателю до согласия — готовые подписи для кандидата (Арх. 4.9)."""
     privacy, person = subject.person.privacy, subject.person
-    seen = ["категория и уровень по тесту", "подтверждённые навыки", "формат работы"]
+    declared = subject.features.basis == CategoryBasis.DECLARED
+    seen = [
+        "заявленный грейд (тест готовится)" if declared else "категория и уровень по тесту",
+        "подтверждённые навыки",
+        "формат работы",
+    ]
     if privacy.show_declared_stack and person.declared_skills:
         seen.append("заявленные навыки")
     if privacy.show_city and person.city:
@@ -506,7 +521,7 @@ def explain_for_invitation(
     features = subject.features
     saw = _employer_saw(subject)
     scorer_version = subject.pool.scorer_version()
-    own_category = support.category_ref(features.specialization_code, features.grade_code)
+    own_category = support.category_ref(features.specialization_code, features.grade_code, features.basis)
     if need_id is None:
         why = project_why_bank(features.evidence, own_category, saw, support.skill_title)
         return InvitationExplain(why=why, fit_band=None, scorer_version=scorer_version)
@@ -581,7 +596,7 @@ def score_for_query(
             public_code=person.public_code,
             display_name=names.get(cid),
             is_demo=person.is_demo,
-            category=support.category_ref(features.specialization_code, features.grade_code),
+            category=support.category_ref(features.specialization_code, features.grade_code, features.basis),
             relation=scored.relation,
             grade_margin=features.verdict == TestOutcome.CONFIRMED_WITH_MARGIN,
             position=row.position,

@@ -38,7 +38,7 @@ export function BlueprintPreview({ preview, className }: BlueprintPreviewProps) 
   const coverage = preview.coverage ?? []
   const needs = preview.need_slots ?? []
   return (
-    <div className={cn('surface-card flex min-w-0 flex-col gap-5 p-4 md:p-6', className)}>
+    <div className={cn('surface-card flex min-w-0 flex-col gap-5', className)}>
       <div className="flex min-w-0 flex-wrap items-center gap-2">
         <CategoryChip title={preview.target.title} />
         {preview.grade_guessed ? (

@@ -24,13 +24,13 @@ export function Numbers({ title, metrics, n, expert, note }: Props) {
   const rows = metrics.map((m) => ({ m, v: show(m) })).filter((r): r is { m: Metric; v: string } => r.v !== null)
   if (rows.length === 0) return null
   return (
-    <section className="surface-card flex min-w-0 flex-col gap-3 p-5" aria-label={title}>
-      <h3 className="type-h3">{title}</h3>
+    <section className="flex min-w-0 flex-col gap-3 border-t border-line pt-4" aria-label={title}>
+      <h3 className="type-eyebrow">{title}</h3>
       <dl className="grid min-w-0 gap-x-6 gap-y-3 sm:grid-cols-2">
         {rows.map(({ m, v }) => (
           <div key={m.label} className="min-w-0">
             <dt className="type-sm min-w-0 break-words text-ink-muted">{m.label}</dt>
-            <dd className="type-h2 num">{v}</dd>
+            <dd className="num text-xl font-semibold">{v}</dd>
           </div>
         ))}
       </dl>

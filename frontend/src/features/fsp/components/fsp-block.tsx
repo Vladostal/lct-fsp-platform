@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { CalendarDays, ChevronDown, Lock } from 'lucide-react'
+import { CalendarDays, ChevronDown } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import type { FspCalendarView, FspLinkView } from '@/client'
@@ -143,6 +143,15 @@ function NotLinked({ data }: { data: FspLinkView }) {
   const consent = useQuery({ ...fspConsentQuery(), retry: false })
   const start = useStartFspLink()
   const [accepted, setAccepted] = useState(false)
+  // Возврат кнопкой «Назад» со страницы ФСП ID восстанавливает экран из кэша браузера: снимаем вечную загрузку.
+  const resetStart = start.reset
+  useEffect(() => {
+    const onShow = (event: PageTransitionEvent) => {
+      if (event.persisted) resetStart()
+    }
+    window.addEventListener('pageshow', onShow)
+    return () => window.removeEventListener('pageshow', onShow)
+  }, [resetStart])
 
   const failure = start.error
   useEffect(() => {
@@ -187,8 +196,8 @@ function NotLinked({ data }: { data: FspLinkView }) {
                 ))}
               </ul>
             </section>
-            <Collapsible className="min-w-0 rounded-md border border-line">
-              <CollapsibleTrigger className="type-sm tap-target group flex w-full min-w-0 items-center justify-between gap-2 px-3 text-left font-medium">
+            <Collapsible className="min-w-0">
+              <CollapsibleTrigger className="type-sm tap-target group flex w-full min-w-0 items-center justify-between gap-2 text-left font-medium">
                 <span className="min-w-0">
                   {T.consentToggle} <span className="num font-normal text-ink-muted">· {consent.data.version}</span>
                 </span>
@@ -198,7 +207,7 @@ function NotLinked({ data }: { data: FspLinkView }) {
                 />
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <p className="type-sm max-h-64 min-w-0 overflow-y-auto border-t border-line p-3 whitespace-pre-line text-ink-muted [overflow-wrap:anywhere]">
+                <p className="type-sm max-h-64 min-w-0 overflow-y-auto bg-fill rounded-md p-3 whitespace-pre-line text-ink-muted [overflow-wrap:anywhere]">
                   {consent.data.text}
                 </p>
               </CollapsibleContent>
@@ -391,10 +400,7 @@ function Linked({ data }: { data: FspLinkView }) {
           {data.employer_preview ? (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Lock className="size-4 text-ink-muted" aria-hidden="true" />
-                  {FSP.employerView.title}
-                </CardTitle>
+                <CardTitle>{FSP.employerView.title}</CardTitle>
               </CardHeader>
               <p className="type-body min-w-0 text-ink [overflow-wrap:anywhere]" data-testid="fsp-employer-line">
                 {data.employer_preview.headline}
@@ -422,9 +428,9 @@ function Linked({ data }: { data: FspLinkView }) {
           <h2 id="fsp-credentials" className="type-h3">
             {FSP.credentials}
           </h2>
-          <ul className="flex min-w-0 flex-col divide-y divide-line rounded-md border border-line">
+          <ul className="flex min-w-0 flex-col divide-y divide-line">
             {data.credentials.map((credential) => (
-              <li key={credential.id} className="flex min-w-0 flex-col gap-0.5 p-3">
+              <li key={credential.id} className="flex min-w-0 flex-col gap-0.5 py-3">
                 <span className="type-body min-w-0 font-medium text-ink [overflow-wrap:anywhere]">
                   {credential.label}
                 </span>

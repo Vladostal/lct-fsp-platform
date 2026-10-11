@@ -18,9 +18,20 @@ from app.modules.fsp.dto import FspEmployerBlock
 from app.modules.matching import constants as C
 from app.modules.matching.dto import RelaxationHint, ShortlistItemView, ShortlistQuery, ShortlistRefinement
 from app.shared.enums import DiffMark, FitBand, NeedStatus, Relation, WorkFormat
-from app.shared.schemas import CategoryRef, Contribution, EvidenceItem, Page, Ref
+from app.shared.schemas import CategoryRef, EvidenceItem, Page, Ref
+from app.shared.schemas import Contribution as _ContributionBase
 
 StrengthLabel = Literal["high", "medium", "base"]
+
+
+class Contribution(_ContributionBase):
+    """Строка вклада с источником данных: по нему экран складывает «подтверждено» и «заявлено кандидатом».
+
+    `confirmed` — тест и достижения ФСП (в сумме до 40 баллов силы); `declared` — стаж и навыки из профиля
+    (до 60 баллов). У вкладов покрытия и у объяснений прежней версии оценщика — `None`.
+    """
+
+    source: Literal["confirmed", "declared"] | None = None
 
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -232,13 +243,15 @@ class BankItemView(BaseModel):
     category: CategoryRef
     grade_margin: bool = False
     strength_label: StrengthLabel
-    level: LevelView
+    #: `None` — грейд заявлен кандидатом (`category.basis = declared`): тестом уровень не измерен.
+    level: LevelView | None = None
     confirmed_skills: list[EvidenceItem] = []
     confirmed_more: int = 0
     fsp_summary: str | None = None
     work_formats: list[WorkFormat] = []
     relocation_ready: bool = False
-    freshness_days: int = 0
+    #: Давность подтверждения тестом, сутки; `None` — грейд заявлен, подтверждения не было.
+    freshness_days: int | None = None
     stale: bool = False
 
 
@@ -319,7 +332,7 @@ class DeclaredView(BaseModel):
 
 
 class StrengthView(BaseModel):
-    """Сила подтверждённого профиля: подпись с абсолютными порогами и вклады (тест, давность, ФСП)."""
+    """Сила профиля: подпись с абсолютными порогами и вклады (тест, давность, ФСП, заявленные стаж и навыки)."""
 
     label: StrengthLabel
     contributions: list[Contribution]
@@ -338,7 +351,8 @@ class CandidateCardEmployerView(BaseModel):
     #: `None` вне контекста потребности.
     pinned: bool | None = None
     category: CategoryRef
-    level: LevelView
+    #: `None` — грейд заявлен кандидатом (`category.basis = declared`): тестом уровень не измерен.
+    level: LevelView | None = None
     fsp: FspEmployerBlock
     work_formats: list[WorkFormat]
     relocation_ready: bool

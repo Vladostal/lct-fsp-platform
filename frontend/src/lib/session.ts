@@ -32,7 +32,7 @@ export function installSessionGuard(onLost: SessionLostListener): void {
     const here = `${window.location.pathname}${window.location.search}`
     listener?.(
       me.is_demo
-        ? { href: '/demo?restarted=1', reason: 'demo_restarted' }
+        ? { href: '/demo?reason=restarted', reason: 'demo_restarted' }
         : { href: loginHref(here), reason: 'expired' },
     )
     window.setTimeout(() => {

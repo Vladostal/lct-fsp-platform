@@ -42,6 +42,8 @@ SKILLS_VERSION: str = _data.skills_version
 MISS_LOG_RETENTION_DAYS = 90
 #: Сколько новых терминов принимает один вызов `log_miss`.
 MISS_LOG_MAX_TERMS = 10
+#: Значение `SkillEntry.kind` у софт-скиллов.
+SOFT_KIND = "soft"
 
 _skills_by_code: dict[str, SkillEntry] = {skill.code: skill for skill in _data.skills}
 _specializations = {spec.code: spec for spec in _data.specializations}
@@ -151,6 +153,32 @@ def specialization(code: str) -> SpecializationDTO:
 def specialization_codes() -> tuple[str, ...]:
     """Коды специализаций в порядке справочника (им же разрешаются ничьи при голосовании)."""
     return tuple(spec.code for spec in _data.specializations)
+
+
+def skills_for_specialization(code: str) -> tuple[str, ...]:
+    """Коды навыков специализации без софт-скиллов: сначала те, для кого она основная, затем остальные.
+
+    Внутри обеих частей — порядок справочника. Неизвестная специализация — пустой кортеж.
+    """
+    tagged = [s for s in _data.skills if s.kind != SOFT_KIND and code in s.specializations]
+    primary = [s.code for s in tagged if s.specializations[0] == code]
+    secondary = [s.code for s in tagged if s.specializations[0] != code]
+    return (*primary, *secondary)
+
+
+def generic_skills() -> tuple[str, ...]:
+    """Коды навыков без привязки к специализации (git, sql, …), без софт-скиллов; порядок справочника."""
+    return tuple(s.code for s in _data.skills if s.kind != SOFT_KIND and not s.specializations)
+
+
+def is_skill_relevant(skill_code: str, specialization_code: str) -> bool:
+    """Относится ли навык к специализации: он есть в справочнике, не софт-скилл и помечен этой специализацией.
+
+    Общие навыки (без специализаций) сюда не входят: по этому признаку считается вклад навыков в силу профиля,
+    и общий список не должен насыщать его у всех подряд. Неизвестный код — `False`.
+    """
+    skill = _skills_by_code.get(skill_code)
+    return skill is not None and skill.kind != SOFT_KIND and specialization_code in skill.specializations
 
 
 def skill_entries() -> tuple[SkillEntry, ...]:
