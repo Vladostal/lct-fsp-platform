@@ -9,6 +9,10 @@ sha=${2:?commit required}
 mkdir -p "$ROOT/releases" "$ROOT/backups" "$ROOT/state"
 exec 9>"$ROOT/state/deploy.lock"
 flock -w 1800 9
+schema=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["schema"])' "$incoming/manifest.json")
+if [[ -f $ROOT/state/schema-fingerprint ]]; then
+  [[ $(cat "$ROOT/state/schema-fingerprint") == "$schema" ]] || { echo 'Schema changed: reviewed migration required.'; exit 1; }
+fi
 previous=$(readlink -f "$ROOT/current" || true)
 release="$ROOT/releases/$sha"
 if [[ -n $previous && -f $previous/manifest.json ]]; then
@@ -54,6 +58,7 @@ rollback() {
 trap rollback ERR
 compose "$release" up -d --wait --wait-timeout 150 db mailpit
 compose "$release" run --rm --no-deps migrate
+printf '%s\n' "$schema" > "$ROOT/state/schema-fingerprint"
 compose "$release" up -d --wait --wait-timeout 180 api web caddy
 url=$(python3 - "$ROOT/shared/.env" <<'PY'
 import sys

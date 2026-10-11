@@ -96,3 +96,5 @@ networks:
     ipam:
       config:
         - subnet: ${STAND_SUBNET:-172.28.8.0/24}
+          # Dynamic allocation cannot occupy the fixed TLS-proxy address .2.
+          ip_range: ${STAND_IP_RANGE:-172.28.8.128/25}
