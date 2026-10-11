@@ -1,7 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link } from '@tanstack/react-router'
+import { LogIn, MonitorPlay } from 'lucide-react'
 import { useForm } from 'react-hook-form'
-import { PasswordInput } from '@/components/app'
+import { IconTile, PasswordInput } from '@/components/app'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
@@ -47,6 +48,7 @@ export function LoginForm({ next, demo = false }: LoginFormProps) {
   return (
     <AuthCard
       title={AUTH.login.title}
+      icon={LogIn}
       footer={
         <>
           <span>{AUTH.login.noAccount}</span>
@@ -119,9 +121,10 @@ export function LoginForm({ next, demo = false }: LoginFormProps) {
       </Form>
 
       {demo ? (
-        <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-line pt-4">
-          <p className="type-sm min-w-0 text-ink-muted">{AUTH.login.demoText}</p>
-          <Button variant="secondary" asChild>
+        <div className="flex min-w-0 flex-wrap items-center gap-3 rounded-md bg-brand-50 p-3">
+          <IconTile icon={MonitorPlay} tone="plain" className="text-brand-700" />
+          <p className="type-sm min-w-0 flex-1 basis-40 text-ink">{AUTH.login.demoText}</p>
+          <Button variant="secondary" className="bg-surface" asChild>
             <Link to="/demo">{AUTH.login.demo}</Link>
           </Button>
         </div>

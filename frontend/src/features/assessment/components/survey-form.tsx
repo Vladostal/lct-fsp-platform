@@ -1,10 +1,24 @@
 // biome-ignore-all lint/a11y/useSemanticElements: группа чекбокс-карточек с заголовком вопроса
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { Check } from 'lucide-react'
+import {
+  BadgeCheck,
+  Braces,
+  Briefcase,
+  Building2,
+  Check,
+  CircleHelp,
+  Code,
+  Compass,
+  FileText,
+  Hourglass,
+  ListChecks,
+  type LucideIcon,
+  PencilLine,
+} from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { SurveyQuestion, SurveySchema } from '@/client'
-import { ErrorState, PageHeader, StickyActionBar } from '@/components/app'
+import { ErrorState, IconTile, PageHeader, SoftPill, StickyActionBar } from '@/components/app'
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -17,8 +31,24 @@ import { assessmentStateQuery, candidateProfileQuery, catalogQuery } from '@/lib
 import { cn } from '@/lib/utils'
 import { draft, putSurvey, surveyQuery } from '../api'
 import { ASSESSMENT } from '../content'
+import { RuleList, specIcon } from './parts'
 
 type Answers = Record<string, string | string[]>
+
+/** Карточка-вариант: белая с границей; выбранная — граница бренда и заливка brand-50. */
+const OPTION =
+  'flex min-h-14 min-w-0 cursor-pointer items-center gap-3 rounded-md border border-line bg-surface p-3 font-normal transition-colors'
+const OPTION_ON = 'border-brand-600 bg-brand-50'
+
+const QUESTION_ICONS: Record<string, LucideIcon> = {
+  direction: Compass,
+  specialization: Code,
+  main_language: Braces,
+  experience_band: Briefcase,
+  industry_domains: Building2,
+}
+/** Значки строк `ASSESSMENT.survey.facts` — по порядку. */
+const FACT_ICONS: readonly LucideIcon[] = [ListChecks, BadgeCheck, PencilLine]
 
 const GRID = 'grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(min(100%,200px),1fr))]'
 
@@ -206,7 +236,13 @@ function SurveyFormBody({
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
-      <PageHeader title={ASSESSMENT.survey.title} description={ASSESSMENT.survey.description} />
+      <PageHeader title={ASSESSMENT.survey.title} />
+      <section className="surface-card brand-band min-w-0 animate-rise-in" aria-label={ASSESSMENT.survey.factsTitle}>
+        <RuleList
+          columns={3}
+          items={ASSESSMENT.survey.facts.map((text, i) => ({ icon: FACT_ICONS[i] ?? ListChecks, tone: 'plain', text }))}
+        />
+      </section>
       {resetNote ? (
         <Alert variant="info" live>
           {ASSESSMENT.survey.resetNote}
@@ -218,18 +254,25 @@ function SurveyFormBody({
         const titleId = `q-${question.id}`
         const title = question.id === 'industry_domains' ? ASSESSMENT.survey.industryTitle : question.title
         const count = Array.isArray(value) ? value.length : 0
+        const answered = typeof value === 'string' ? value !== '' : count > 0
+        const withIcons = question.id === 'direction' || question.id === 'specialization'
         return (
           <section key={question.id} aria-labelledby={titleId} className="surface-card flex min-w-0 flex-col gap-3">
-            <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-              <h2 id={titleId} className="type-h3 min-w-0">
+            <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+              <IconTile icon={QUESTION_ICONS[question.id] ?? CircleHelp} tone={answered ? 'solid' : 'brand'} />
+              <h2 id={titleId} className="type-h3 min-w-0 flex-1">
                 {title}
                 {question.required ? <span aria-hidden="true"> *</span> : null}
               </h2>
               {fromResume.current.has(question.id) ? (
-                <span className="type-sm text-ink-muted">{ASSESSMENT.survey.fromResume}</span>
+                <SoftPill tone="brand" size="sm" icon={FileText}>
+                  {ASSESSMENT.survey.fromResume}
+                </SoftPill>
               ) : null}
               {question.kind === 'multi' && question.max ? (
-                <span className="type-sm num text-ink-muted">{ASSESSMENT.survey.chosen(count, question.max)}</span>
+                <SoftPill size="sm" tone={count > 0 ? 'brand' : 'neutral'}>
+                  <span className="num">{ASSESSMENT.survey.chosen(count, question.max)}</span>
+                </SoftPill>
               ) : null}
             </div>
             {question.kind === 'single' ? (
@@ -243,18 +286,36 @@ function SurveyFormBody({
                   <Label
                     key={option.code}
                     className={cn(
-                      'flex min-h-14 min-w-0 cursor-pointer items-center gap-3 rounded-md hover:bg-fill p-3 font-normal',
-                      value === option.code && 'bg-brand-50 hover:bg-brand-50',
+                      OPTION,
+                      value === option.code ? OPTION_ON : 'hover:border-brand-200',
+                      !option.available && value !== option.code && 'border-dashed border-line-strong',
+                      !option.available && 'flex-wrap gap-y-1.5',
                     )}
                   >
                     {/* `available === false` — теста нет: вариант выбирается, грейд по нему будет заявленным. */}
                     <RadioGroupItem value={option.code} />
-                    <span className="min-w-0 break-words">
-                      {option.title}
-                      {!option.available ? (
-                        <span className="type-caption block text-ink-muted">{ASSESSMENT.survey.notReady}</span>
-                      ) : null}
-                    </span>
+                    {withIcons ? (
+                      <IconTile
+                        icon={specIcon(option.code)}
+                        size="sm"
+                        tone={value === option.code ? 'solid' : option.available ? 'brand' : 'neutral'}
+                      />
+                    ) : null}
+                    <span className="min-w-0 flex-1 break-words">{option.title}</span>
+                    {!option.available ? (
+                      // Пилюля — отдельной строкой во всю ширину карточки: рядом с названием она не помещается.
+                      <span className="flex min-w-0 basis-full pl-8">
+                        <SoftPill
+                          size="sm"
+                          icon={Hourglass}
+                          className="border border-dashed border-line-strong bg-transparent"
+                        >
+                          <span className="min-w-0 truncate" title={ASSESSMENT.survey.notReady}>
+                            {ASSESSMENT.grade.notReady}
+                          </span>
+                        </SoftPill>
+                      </span>
+                    ) : null}
                   </Label>
                 ))}
               </RadioGroup>
@@ -267,9 +328,9 @@ function SurveyFormBody({
                     <Label
                       key={option.code}
                       className={cn(
-                        'flex min-h-14 min-w-0 cursor-pointer items-center gap-3 rounded-md hover:bg-fill p-3 font-normal',
-                        checked && 'bg-brand-50 hover:bg-brand-50',
-                        (!option.available || blocked) && 'cursor-not-allowed opacity-60',
+                        OPTION,
+                        checked ? OPTION_ON : 'hover:border-brand-200',
+                        (!option.available || blocked) && 'cursor-not-allowed opacity-60 hover:border-line',
                       )}
                     >
                       <Checkbox

@@ -79,7 +79,6 @@ export function CommandPalette({ role, onLogout }: CommandPaletteProps) {
       >
         <Search aria-hidden="true" className="size-4" />
         Найти…
-        <kbd className="ml-auto text-xs whitespace-nowrap">⌘K</kbd>
       </button>
       <Button
         variant="ghost"

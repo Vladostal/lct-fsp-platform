@@ -1,6 +1,7 @@
 /*
  * Токены дизайн-системы (Арх. 11.6; приложение E, §3.1). Tailwind 4: токены живут в CSS, tailwind.config.js нет.
- * Светлая тема, одна. Палитра Tailwind по умолчанию отключена намеренно: в интерфейсе допустимы только токены ниже
+ * Две темы: светлая (значения в @theme) и тёмная — те же токены, переопределённые ниже под
+ * :root[data-theme="dark"]; атрибут ставит скрипт в index.html и src/lib/theme.ts. Палитра Tailwind по умолчанию отключена намеренно: в интерфейсе допустимы только токены ниже
  * (чек-лист E §9.1, G18), а класс вроде text-gray-500 просто не даст стиля.
  * `static`: все токены попадают в :root, даже если утилита с ними ещё нигде не использована, — на них можно
  * ссылаться и в inline-стилях (var(--color-…)).
@@ -11,6 +12,9 @@
 @import "@fontsource-variable/jetbrains-mono";
 @import "@fontsource-variable/geologica";
 @import "./motion.css";
+
+/* dark: — только для единичных мест, где одного токена на обе темы не хватает (заливка ↔ текст). */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme static {
   --color-*: initial;
@@ -45,6 +49,8 @@
   --color-warning: #8a5300;
   --color-warning-bg: #fff1d1;
   --color-white: #ffffff;
+  /* Текст и значки на сплошной заливке бренда, brand-900, danger и на градиентах: белый в обеих темах. */
+  --color-on-brand: #ffffff;
   --color-black: #000000;
 
   --radius-xs: 4px;
@@ -155,7 +161,7 @@
   --color-popover: var(--color-surface);
   --color-popover-foreground: var(--color-ink);
   --color-primary: var(--color-brand-600);
-  --color-primary-foreground: #ffffff;
+  --color-primary-foreground: var(--color-on-brand);
   --color-secondary: var(--color-fill);
   --color-secondary-foreground: var(--color-ink);
   --color-muted: var(--color-fill);
@@ -166,6 +172,53 @@
   --color-border: var(--color-line);
   --color-input: var(--color-line-strong);
   --color-ring: var(--color-brand-600);
+}
+
+/*
+ * Тёмная тема: те же токены, другие значения. Правила:
+ *  - canvas — глубокий нейтрально-синий, surface на ступень светлее, fill ещё на ступень;
+ *  - brand-600 и brand-900 остаются заливками под белый текст (5.2 и 10.8 к on-brand); brand-600 чуть светлее
+ *    #402FFF, чтобы значки и крупные цифры этим цветом давали 3.3 на surface. Мелкий текст им не красится;
+ *  - brand-700 — цвет ТЕКСТА и ссылок (9.1 на surface), заливкой в тёмной теме не служит;
+ *  - brand-50/100/200, success-bg, warning-bg, danger-bg — тёмные подкрашенные поверхности, текст тона на них светлый.
+ */
+:root {
+  color-scheme: light;
+  /* Тёмная ступень бренда в графике (полосы, сегменты): в тёмной теме brand-900 сливается с дорожкой. */
+  --chart-brand-deep: var(--color-brand-900);
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --chart-brand-deep: var(--color-brand-700);
+  --color-brand-50: #1a1f47;
+  --color-brand-100: #232a5e;
+  --color-brand-200: #39439a;
+  --color-brand-600: #5d4fff;
+  --color-brand-700: #aeb7ff;
+  --color-brand-900: #2c22ad;
+  --color-ink: #f1f3f8;
+  --color-ink-muted: #aab1c3;
+  --color-ink-subtle: #939bb0;
+  --color-canvas: #0d111e;
+  --color-surface: #151a2b;
+  --color-fill: #1f2539;
+  --color-line: #323a54;
+  --color-line-strong: #7f879d;
+  --color-fsp-red: #ff6071;
+  --color-danger: #ff8f93;
+  --color-danger-bg: #3b1a1f;
+  --color-success: #4fcf8f;
+  --color-success-bg: #0f3021;
+  --color-warning: #f2b450;
+  --color-warning-bg: #35280c;
+  --shadow-pop: 0 0 0 1px var(--color-line), 0 16px 40px -12px rgb(0 0 0 / 0.7);
+  --glass-bg: rgb(21 26 43 / 0.78);
+  --shadow-float: 0 8px 32px 0 rgb(0 0 0 / 0.5);
+}
+/* Знак ФСП: файл с тёмными буквами — в светлой теме, копия с белыми буквами — в тёмной. */
+[data-theme="dark"] .only-light,
+:root:not([data-theme="dark"]) .only-dark {
+  display: none;
 }
 
 /* ───────────── Типографика (E §3.1). Имена без префикса text-, чтобы tailwind-merge не путал их с цветом. ───────────── */
@@ -380,7 +433,7 @@
 }
 /* На залитой brand-600 поверхности кольцо белое. */
 .on-brand :focus-visible {
-  outline-color: #ffffff;
+  outline-color: var(--color-on-brand);
 }
 /* Контейнеры слоёв получают фокус программно и кольцом не обводятся: фокус внутри них виден на заголовке. */
 [role="dialog"]:focus-visible,
@@ -423,6 +476,95 @@
   }
   [data-slot="skeleton"] {
     animation: none !important;
+  }
+}
+
+/*
+ * Карточки единого стиля. Правила вне слоёв (как кольцо фокуса): они должны менять границу, заданную
+ * утилитой surface-row.
+ *  - lift-card   — кликабельная карточка: при наведении граница brand-200, тень и подъём на 2 px;
+ *  - accent-card — лёгкий градиент бренда от угла и линия 3 px по верхнему краю (нужен position: relative);
+ *  - brand-band  — акцентная полоса сводки (SummaryStrip);
+ *  - go-chip     — кружок со стрелкой внутри lift-card (GoChevron);
+ *  - ping-dot    — пульс точки «новое» (CountChip live).
+ * Сдвиги и пульс — только при no-preference: без движения меняется лишь цвет.
+ */
+.lift-card {
+  transition:
+    border-color var(--dur-base),
+    box-shadow var(--dur-base),
+    translate var(--dur-base) var(--ease-enter);
+}
+.lift-card:hover,
+.lift-card:focus-within {
+  border-color: var(--color-brand-200);
+  box-shadow: 0 10px 28px -16px color-mix(in srgb, var(--color-brand-600) 45%, transparent);
+}
+.go-chip {
+  transition:
+    translate var(--dur-base) var(--ease-enter),
+    background-color var(--dur-base),
+    color var(--dur-base);
+}
+.lift-card:hover .go-chip {
+  background-color: var(--color-brand-600);
+  color: var(--color-on-brand);
+}
+.accent-card {
+  position: relative;
+  overflow: hidden;
+  background-image: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--color-brand-600) 7%, var(--color-surface)),
+    var(--color-surface) 46%
+  );
+}
+.accent-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--color-brand-600),
+    color-mix(in srgb, var(--color-brand-600) 25%, var(--color-surface))
+  );
+}
+.brand-band {
+  background-image: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--color-brand-600) 12%, var(--color-surface)),
+    var(--color-surface) 62%
+  );
+}
+.ping-dot {
+  position: relative;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lift-card:hover {
+    translate: 0 -2px;
+  }
+  .lift-card:hover .go-chip {
+    translate: 2px 0;
+  }
+  .ping-dot::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background: currentColor;
+    animation: ping-dot 1.8s var(--ease-enter, ease-out) infinite;
+  }
+}
+@keyframes ping-dot {
+  0% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(2.8);
   }
 }
 

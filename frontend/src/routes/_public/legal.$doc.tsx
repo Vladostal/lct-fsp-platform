@@ -1,6 +1,6 @@
 import { createFileRoute, notFound } from '@tanstack/react-router'
-import { PageHeader } from '@/components/app'
-import { Card } from '@/components/ui/card'
+import { FileText, History } from 'lucide-react'
+import { IconTile, PageHeader, SoftPill } from '@/components/app'
 import { LEGAL_DOCS } from '@/content/common'
 import { hasStatus } from '@/lib/api'
 import { legalDocQuery } from '@/lib/query'
@@ -52,10 +52,23 @@ function LegalDocument() {
   const doc = Route.useLoaderData()
   return (
     <div className="page-container flex flex-col gap-6 py-8 md:py-12">
-      <PageHeader title={doc.title} eyebrow={`версия ${doc.version}`} />
-      <Card className="max-w-[calc(72ch+48px)]">
-        <article className="flex max-w-[72ch] min-w-0 flex-col gap-4">{renderBlocks(doc.text)}</article>
-      </Card>
+      <div className="mx-auto flex w-full max-w-[calc(72ch+64px)] min-w-0 flex-col gap-6">
+        <div className="flex min-w-0 items-start gap-3 md:gap-4">
+          <IconTile icon={FileText} tone="solid" size="xl" />
+          <PageHeader
+            title={doc.title}
+            className="min-w-0 flex-1"
+            meta={
+              <SoftPill tone="brand" icon={History}>
+                <span className="num">версия {doc.version}</span>
+              </SoftPill>
+            }
+          />
+        </div>
+        <div data-slot="card" className="accent-card surface-card min-w-0 md:p-8">
+          <article className="flex max-w-[72ch] min-w-0 flex-col gap-4">{renderBlocks(doc.text)}</article>
+        </div>
+      </div>
     </div>
   )
 }

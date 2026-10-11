@@ -7,6 +7,7 @@ import {
   Clock,
   Eye,
   EyeOff,
+  Hourglass,
   type LucideIcon,
   MailX,
   Send,
@@ -17,16 +18,23 @@ import { cn } from '@/lib/utils'
 
 export type StatusTone = 'info' | 'success' | 'warning' | 'neutral' | 'danger'
 
-/** Иконка и тон по статусу (E §3.3): приглашение, исход теста, видимость профиля. */
+/**
+ * Иконка и тон по статусу: приглашение, исход теста, видимость профиля. Тона едины для всех экранов:
+ * отказ — красный, отправка и просмотр — фирменный, «ждёт ответа» и истёкшее — янтарные, отозванное и
+ * недоставленное — серые. Глаз значит только «просмотрено»; ожидание ответа — всегда песочные часы.
+ */
 const STATUS_VIEW: Record<string, { icon: LucideIcon; tone: StatusTone }> = {
   // приглашение
   sent: { icon: Send, tone: 'info' },
   viewed: { icon: Eye, tone: 'info' },
+  // глазами кандидата просмотренное приглашение «ждёт ответа»: код `awaiting` вместо `viewed`
+  awaiting: { icon: Hourglass, tone: 'warning' },
   accepted: { icon: CircleCheck, tone: 'success' },
-  declined: { icon: CircleX, tone: 'neutral' },
+  declined: { icon: CircleX, tone: 'danger' },
   expired: { icon: Clock, tone: 'warning' },
   withdrawn: { icon: Undo2, tone: 'neutral' },
-  bounced: { icon: MailX, tone: 'warning' },
+  // не дошло до кандидата: нейтрально, как пунктирная строка сводки
+  bounced: { icon: MailX, tone: 'neutral' },
   // исход теста: у «не подтверждён» нет красного
   confirmed: { icon: CircleCheck, tone: 'success' },
   confirmed_with_margin: { icon: ChevronsUp, tone: 'success' },
@@ -44,10 +52,12 @@ export type StatusBadgeProps = {
   status: string
   /** Подпись: `status_label` сервера; запасные подписи — в content/common.ts. */
   label: string
+  /** Подсказка вместо подписи: причина состояния («нет категории»). */
+  title?: string
   /** Переопределить тон. */
   tone?: StatusTone
   size?: 'sm' | 'md'
-  /** `dot` — точка и подпись без фона (по умолчанию); `pill` — плашка с иконкой: accepted и индикатор в шапке. */
+  /** `pill` — плашка-пилюля с иконкой (по умолчанию, единый вид); `dot` — точка и подпись без фона для плотных таблиц. */
   appearance?: 'dot' | 'pill'
   /** Объявлять смену статуса скринридеру (при обновлении опросом). */
   live?: boolean
@@ -66,9 +76,10 @@ const DOT_TONE: Record<StatusTone, string> = {
 export function StatusBadge({
   status,
   label,
+  title,
   tone,
   size = 'md',
-  appearance = 'dot',
+  appearance = 'pill',
   live = false,
   className,
 }: StatusBadgeProps) {
@@ -82,6 +93,7 @@ export function StatusBadge({
         data-status={status}
         data-tone={tone ?? view.tone}
         role={live ? 'status' : undefined}
+        title={title}
         className={cn(
           'inline-flex max-w-full items-center gap-2 text-[13px] leading-5 text-ink animate-fade-in',
           className,
@@ -100,10 +112,13 @@ export function StatusBadge({
       size={size}
       data-status={status}
       role={live ? 'status' : undefined}
-      className={cn('animate-fade-in', className)}
+      className={cn('animate-fade-in rounded-full px-2.5', className)}
     >
       <Icon aria-hidden="true" />
-      {label}
+      {/* В узкой ячейке длинная подпись усекается, полный текст — в title. */}
+      <span title={title ?? label} className="min-w-0 truncate">
+        {label}
+      </span>
     </Badge>
   )
 }

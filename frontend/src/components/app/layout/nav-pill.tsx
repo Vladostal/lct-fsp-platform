@@ -24,7 +24,7 @@ function Badge({ value, className }: { value: number; className?: string }) {
   return (
     <span
       className={cn(
-        'num grid h-5 min-w-5 shrink-0 place-items-center rounded-full bg-brand-600 px-1.5 text-xs leading-none font-medium text-white',
+        'num grid h-5 min-w-5 shrink-0 place-items-center rounded-full bg-brand-600 px-1.5 text-xs leading-none font-medium text-on-brand',
         className,
       )}
     >

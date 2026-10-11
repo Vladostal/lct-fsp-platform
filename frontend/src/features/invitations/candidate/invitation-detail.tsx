@@ -1,7 +1,22 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
+import {
+  AtSign,
+  Building2,
+  CalendarDays,
+  FileText,
+  Globe,
+  History,
+  type LucideIcon,
+  Mail,
+  MessageSquareText,
+  Phone,
+  Send,
+  ShieldCheck,
+  Sparkles,
+} from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import type { DeclineReason, DiscloseField, InvitationCandidateView, WorkFormat } from '@/client'
+import type { ContactKind, DeclineReason, DiscloseField, InvitationCandidateView, WorkFormat } from '@/client'
 import {
   contactAcceptCandidateInvitationMutation,
   contactDeclineCandidateInvitationMutation,
@@ -11,7 +26,10 @@ import {
 } from '@/client/@tanstack/react-query.gen'
 import {
   CopyButton,
+  DeadlinePill,
   ErrorState,
+  FormatLabel,
+  IconTile,
   PageHeader,
   SalaryRange,
   Section,
@@ -37,13 +55,16 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { WORK_FORMAT_LABELS } from '@/content/common'
 import { errorMessage, hasCode } from '@/lib/api'
-import { formatDate, formatDeadline, formatMoney } from '@/lib/format'
+import { formatDate, formatMoney } from '@/lib/format'
 import { polling } from '@/lib/query'
-import { CONTACT_KIND_LABELS, FIELD_LABELS, InvitationTimeline, tidy, useCatalogLimits } from '../shared'
+import { CONTACT_KIND_LABELS, FIELD_LABELS, tidy, useCatalogLimits } from '../shared'
 import { useRefreshCandidateInvitations } from './hooks'
+import { CandidateTimeline, CompanyTile, candidateStatusCode, OfferPills } from './parts'
 import { WhyInvited } from './why-invited'
 
 const CHANNELS: DiscloseField[] = ['email', 'phone', 'telegram', 'link']
+
+const CONTACT_ICON: Record<ContactKind, LucideIcon> = { email: Mail, phone: Phone, telegram: Send, other: AtSign }
 
 const REASONS: { value: DeclineReason; label: string }[] = [
   { value: 'salary', label: 'Зарплата' },
@@ -237,7 +258,9 @@ function DeclineDialog({
                 {ownFormats.map((f) => (
                   <div key={f} className="flex min-h-11 items-center gap-3">
                     <RadioGroupItem id={`format-${f}`} value={f} />
-                    <Label htmlFor={`format-${f}`}>{WORK_FORMAT_LABELS[f]}</Label>
+                    <Label htmlFor={`format-${f}`}>
+                      <FormatLabel format={f} />
+                    </Label>
                   </div>
                 ))}
               </RadioGroup>
@@ -312,10 +335,15 @@ function CompanyAside({ inv }: { inv: InvitationCandidateView }) {
   const [full, setFull] = useState(false)
   const c = inv.company
   return (
-    <Section title="О компании">
-      <div className="flex min-w-0 flex-col gap-2">
-        <p className="type-body font-medium [overflow-wrap:anywhere] text-ink">{c.name}</p>
-        <p className="type-sm text-ink-muted">{c.sphere}</p>
+    <Section title="О компании" icon={Building2} iconTone="brand">
+      <div className="flex min-w-0 flex-col gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <CompanyTile name={c.name} size="md" />
+          <div className="flex min-w-0 flex-col">
+            <p className="type-body font-medium [overflow-wrap:anywhere] text-ink">{c.name}</p>
+            <p className="type-sm text-ink-muted [overflow-wrap:anywhere]">{c.sphere}</p>
+          </div>
+        </div>
         <p className={`type-sm whitespace-pre-line text-ink [overflow-wrap:anywhere] ${full ? '' : 'line-clamp-6'}`}>
           {c.description}
         </p>
@@ -326,16 +354,25 @@ function CompanyAside({ inv }: { inv: InvitationCandidateView }) {
         ) : null}
         {c.site ? (
           <a
-            className="type-sm text-link min-w-0 [overflow-wrap:anywhere] underline"
+            className="type-sm text-link flex min-h-6 min-w-0 items-center gap-1.5 underline"
             href={c.site}
             target="_blank"
             rel="noreferrer noopener"
           >
-            {c.site}
+            <Globe aria-hidden="true" className="size-4 shrink-0" />
+            <span className="min-w-0 [overflow-wrap:anywhere]">{c.site}</span>
           </a>
         ) : null}
-        <p className="type-sm text-ink-muted">На платформе с {formatDate(c.on_platform_since)}</p>
-        <p className="type-caption text-ink-muted">{c.trust_label}</p>
+        <div className="flex min-w-0 flex-col gap-1.5 border-t border-line pt-3">
+          <p className="type-sm flex min-w-0 items-center gap-1.5 text-ink-muted">
+            <CalendarDays aria-hidden="true" className="size-4 shrink-0" />
+            <span className="num">На платформе с {formatDate(c.on_platform_since)}</span>
+          </p>
+          <p className="type-sm flex min-w-0 items-start gap-1.5 text-ink-muted">
+            <ShieldCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+            <span className="min-w-0 [overflow-wrap:anywhere]">{c.trust_label}</span>
+          </p>
+        </div>
       </div>
     </Section>
   )
@@ -379,11 +416,17 @@ export function CandidateInvitationDetail({ id }: { id: string }) {
       <PageHeader
         back={{ label: 'Приглашения', href: '/candidate/invitations' }}
         eyebrow={inv.company.name}
-        title={inv.title}
+        documentTitle={inv.title}
+        title={
+          <span className="flex min-w-0 items-start gap-3">
+            <CompanyTile name={inv.company.name} status={inv.status} size="lg" />
+            <span className="min-w-0 [overflow-wrap:anywhere]">{inv.title}</span>
+          </span>
+        }
         meta={
           <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <StatusBadge status={inv.status} label={inv.status_label} live />
-            {actionable ? <span className="type-sm text-ink-muted">{formatDeadline(inv.expires_at)}</span> : null}
+            <StatusBadge status={candidateStatusCode(inv.status)} label={inv.status_label} live />
+            {actionable ? <DeadlinePill until={inv.expires_at} /> : null}
           </div>
         }
       />
@@ -402,50 +445,59 @@ export function CandidateInvitationDetail({ id }: { id: string }) {
         </Alert>
       ) : null}
       <ResultAlert inv={inv} />
-      <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="surface-card flex min-w-0 flex-col gap-6 animate-rise-in">
-          <div className="flex min-w-0 flex-col gap-2">
-            <SalaryRange from={inv.salary_from} to={inv.salary_to} size="lg" />
-            <p className="type-sm text-ink-muted [overflow-wrap:anywhere]">
-              {[
-                WORK_FORMAT_LABELS[inv.work_format],
-                inv.city,
-                inv.is_demo ? 'демо' : null,
-                inv.below_my_min ? 'ниже вашего минимума' : null,
-              ]
-                .filter(Boolean)
-                .join(' · ')}
+      <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-6">
+        <div className="accent-card surface-card flex min-w-0 animate-rise-in flex-col gap-6">
+          <div className="flex min-w-0 flex-col gap-3">
+            {/* Крупная вилка; знак рубля уже стоит в самой вилке, поэтому подпись — только «в месяц». */}
+            <p className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+              <SalaryRange
+                from={inv.salary_from}
+                to={inv.salary_to}
+                className="text-[length:clamp(1.125rem,6vw,1.5rem)] leading-8 font-bold md:text-[2rem] md:leading-10"
+              />
+              <span className="type-sm text-ink-muted" aria-hidden="true">
+                в месяц
+              </span>
             </p>
+            <OfferPills offer={inv} salary={false} />
           </div>
-          <Section title="Описание предложения">
+          <Section title="Описание предложения" icon={FileText} iconTone="brand">
             <p className="type-body max-w-[72ch] whitespace-pre-line [overflow-wrap:anywhere] text-ink">
               {inv.description}
             </p>
           </Section>
           {inv.message ? (
-            <Section title="Сообщение от работодателя">
-              <p className="type-body max-w-[72ch] whitespace-pre-line [overflow-wrap:anywhere] text-ink">
+            <Section title="Сообщение от работодателя" icon={MessageSquareText} iconTone="brand">
+              <p className="type-body max-w-[72ch] rounded-md bg-brand-50 p-4 whitespace-pre-line [overflow-wrap:anywhere] text-ink">
                 {inv.message}
               </p>
             </Section>
           ) : null}
-          <Section title="Почему вас пригласили">
+          <Section title="Почему вас пригласили" icon={Sparkles} iconTone="brand">
             <WhyInvited why={inv.why} />
           </Section>
-          <Section title="Способ связи">
-            <p className="type-body flex min-w-0 items-center gap-2 text-ink">
-              <span className="min-w-0 [overflow-wrap:anywhere]">
-                {CONTACT_KIND_LABELS[inv.contact_method.kind]}: <span className="num">{inv.contact_method.value}</span>
-              </span>
+          <Section title="Способ связи" icon={CONTACT_ICON[inv.contact_method.kind]} iconTone="brand">
+            <div className="surface-row flex min-w-0 items-center gap-3 p-3">
+              <IconTile icon={CONTACT_ICON[inv.contact_method.kind]} tone="brand" />
+              <p className="flex min-w-0 flex-1 flex-col">
+                <span className="type-caption text-ink-muted">{CONTACT_KIND_LABELS[inv.contact_method.kind]}</span>
+                <span className="num type-body font-medium [overflow-wrap:anywhere] text-ink">
+                  {inv.contact_method.value}
+                </span>
+              </p>
               <CopyButton value={inv.contact_method.value} label="Скопировать способ связи" />
-            </p>
+            </div>
           </Section>
         </div>
-        <aside className="surface-card flex min-w-0 flex-col gap-6 self-start">
-          <CompanyAside inv={inv} />
-          <Section title="Ход приглашения">
-            <InvitationTimeline events={inv.timeline} />
-          </Section>
+        <aside className="flex min-w-0 flex-col gap-4 self-start lg:gap-6">
+          <div className="surface-card min-w-0">
+            <CompanyAside inv={inv} />
+          </div>
+          <div className="surface-card min-w-0">
+            <Section title="Ход приглашения" icon={History} iconTone="brand">
+              <CandidateTimeline events={inv.timeline} />
+            </Section>
+          </div>
         </aside>
       </div>
       {actionable ? (

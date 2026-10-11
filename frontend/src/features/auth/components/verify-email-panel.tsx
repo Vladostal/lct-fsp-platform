@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link } from '@tanstack/react-router'
-import { CircleAlert, Loader2, MailWarning, ShieldCheck } from 'lucide-react'
+import { CircleAlert, Loader2, MailCheck, MailWarning, ShieldCheck } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { PasswordInput } from '@/components/app'
@@ -57,7 +57,7 @@ export function VerifyEmailPanel({ token }: { token: string | undefined }) {
 
   if (stage === 'pending') {
     return (
-      <AuthCard title={AUTH.verify.title}>
+      <AuthCard title={AUTH.verify.title} icon={MailCheck}>
         <p className="type-body flex items-center gap-3 text-ink-muted" role="status">
           <Loader2 className="size-5 animate-spin" aria-hidden="true" />
           {AUTH.verify.pending}

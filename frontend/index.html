@@ -5,6 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#402FFF" />
     <meta name="description" content="Подбор ИТ-специалистов по грейду — подтверждённому тестом или заявленному с пометкой: работодатель приходит к кандидату с вилкой." />
+    <script>
+      // Тема до первой отрисовки: выбор из localStorage («fsp-theme»), иначе системная. Логика та же, что в src/lib/theme.ts.
+      ;(function () {
+        var t = null
+        try {
+          t = localStorage.getItem('fsp-theme')
+        } catch (e) {}
+        if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        document.documentElement.setAttribute('data-theme', t)
+      })()
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>ФСП.Подбор</title>
   </head>

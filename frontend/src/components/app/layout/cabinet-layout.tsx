@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { COMMON, NAV, ROLE_LABELS, USER_MENU, VISIBILITY_LABELS } from '@/content/common'
+import { COMMON, NAV, ROLE_LABELS, USER_MENU, VISIBILITY_LABELS, visibilityTitle } from '@/content/common'
 import { CommandPalette } from '@/features/command/command-palette'
 import type { CatalogFeatures } from '@/lib/features'
 import { initials } from '@/lib/format'
@@ -21,6 +21,7 @@ import { AppLogo } from '../app-logo'
 import { DemoChip } from '../demo-chip'
 import { QuotaIndicator } from '../quota-indicator'
 import { StatusBadge } from '../status-badge'
+import { ThemeMenuItems } from '../theme-switch'
 import { AppHeader } from './app-header'
 import { NavPill } from './nav-pill'
 import { SkipLink } from './skip-link'
@@ -72,8 +73,9 @@ export function CabinetLayout({ me, onLogout, loggingOut = false, children }: Ca
         <StatusBadge
           status={summary.data.visibility.state}
           label={VISIBILITY_LABELS[summary.data.visibility.state]}
+          title={visibilityTitle(summary.data.visibility.state)}
           live
-          className="h-9"
+          className="h-8 px-3"
         />
       </Link>
     ) : null
@@ -122,6 +124,8 @@ export function CabinetLayout({ me, onLogout, loggingOut = false, children }: Ca
                     <Link to={item.to}>{item.label}</Link>
                   </DropdownMenuItem>
                 ))}
+                <DropdownMenuSeparator />
+                <ThemeMenuItems />
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={onLogout} disabled={loggingOut}>
                   <LogOut aria-hidden="true" />

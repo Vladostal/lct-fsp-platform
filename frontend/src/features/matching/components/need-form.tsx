@@ -1,22 +1,37 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useBlocker, useNavigate } from '@tanstack/react-router'
+import {
+  Banknote,
+  ClipboardPaste,
+  Layers,
+  Lightbulb,
+  ListChecks,
+  type LucideIcon,
+  Shuffle,
+  Sparkles,
+  Star,
+  UserSearch,
+  UsersRound,
+  Wand2,
+} from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import type { Catalog, NeedDraft, NeedView, WorkFormat } from '@/client'
 import {
   EmptyState,
   ErrorState,
+  FormatChoice,
   PageHeader,
   SalaryRangeInput,
   type SalaryRangeValue,
   Stepper,
+  StickyActionBar,
   TagInput,
   type TagValue,
   validateSalaryRange,
 } from '@/components/app'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -27,6 +42,7 @@ import { applyFieldErrors, errorMessage, errorText, hasCode, hasStatus, isApiErr
 import { formatMoney } from '@/lib/format'
 import { invalidateGuardData } from '@/lib/guards'
 import { invalidateOperations, needsQuery, queryKeys } from '@/lib/query'
+import { cn } from '@/lib/utils'
 import {
   createNeed,
   createShortlist,
@@ -42,8 +58,12 @@ import { NeedBlueprint } from './need-blueprint'
 import { noticeKey } from './need-screen'
 import { salaryLimits } from './refine-panel'
 import { retryText } from './shortlist-tab'
+import { PANEL, PanelHead } from './visuals'
 
 const F = MATCHING.form
+
+/** Значки подсказки «Как подбор использует поля» — в порядке строк `F.help.items`. */
+const HELP_ICONS: readonly LucideIcon[] = [Layers, Shuffle, Star, Sparkles, Banknote]
 
 type Draft = {
   title: string
@@ -396,17 +416,21 @@ function NeedForm({
         </Alert>
       ) : null}
       <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <aside className="min-w-0 lg:order-2 lg:sticky lg:top-24 lg:h-fit">
-          <h2 className="type-h3 mb-3">{F.help.title}</h2>
+        <aside className={cn(PANEL, 'brand-band lg:order-2 lg:sticky lg:top-24 lg:h-fit')}>
+          <PanelHead icon={Lightbulb} tone="solid" title={F.help.title} />
           <dl className="flex min-w-0 flex-col gap-3">
-            {F.help.items.map(([k, v]) => (
-              <div key={k} className="min-w-0">
-                <dt className="type-sm font-medium">{k}</dt>
-                <dd className="type-sm text-ink-muted">{v}</dd>
-              </div>
-            ))}
+            {F.help.items.map(([k, v], i) => {
+              const Icon = HELP_ICONS[i] ?? Lightbulb
+              return (
+                <div key={k} className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-x-2.5">
+                  <Icon aria-hidden="true" className="row-span-2 mt-0.5 size-4 text-brand-700" />
+                  <dt className="type-sm font-medium">{k}</dt>
+                  <dd className="type-sm text-ink-muted">{v}</dd>
+                </div>
+              )
+            })}
           </dl>
-          <a href="/how-it-works#matching" className="text-link tap-target type-sm mt-3 inline-block">
+          <a href="/how-it-works#matching" className="text-link tap-target type-sm inline-block w-fit">
             {F.help.link}
           </a>
         </aside>
@@ -429,13 +453,8 @@ function NeedForm({
           {parsed ? <ParseNotes parsed={parsed} /> : null}
 
           {!need ? (
-            <section
-              className="flex min-w-0 flex-col gap-3 border-t border-line pt-6 first:border-t-0 first:pt-0"
-              aria-labelledby="n-text"
-            >
-              <h2 id="n-text" className="type-h3">
-                {F.textLabel}
-              </h2>
+            <section className={PANEL} aria-labelledby="n-text">
+              <PanelHead id="n-text" icon={ClipboardPaste} tone={'soft'} title={F.textLabel} />
               <Textarea
                 aria-labelledby="n-text"
                 rows={5}
@@ -460,19 +479,15 @@ function NeedForm({
                 disabled={text.trim().length === 0}
                 onClick={() => parse.mutate()}
               >
+                <Wand2 aria-hidden="true" />
                 {F.parse}
               </Button>
             </section>
           ) : null}
 
           <fieldset disabled={archived} className="contents">
-            <section
-              className="flex min-w-0 flex-col gap-4 border-t border-line pt-6 first:border-t-0 first:pt-0"
-              aria-labelledby="n-whom"
-            >
-              <h2 id="n-whom" className="type-h3">
-                {F.whom}
-              </h2>
+            <section className={PANEL} aria-labelledby="n-whom">
+              <PanelHead id="n-whom" icon={UserSearch} tone={'soft'} title={F.whom} />
               <div className="flex min-w-0 flex-col gap-1.5">
                 <Label htmlFor="n-title">
                   {F.titleField} *{chip('title')}
@@ -534,13 +549,8 @@ function NeedForm({
               </div>
             </section>
 
-            <section
-              className="flex min-w-0 flex-col gap-4 border-t border-line pt-6 first:border-t-0 first:pt-0"
-              aria-labelledby="n-skills"
-            >
-              <h2 id="n-skills" className="type-h3">
-                {F.skills}
-              </h2>
+            <section className={PANEL} aria-labelledby="n-skills">
+              <PanelHead id="n-skills" icon={ListChecks} tone={'soft'} title={F.skills} />
               <div className="flex min-w-0 flex-col gap-1">
                 <TagInput label={F.must} value={draft.must} onChange={onMust} options={skillOptions} max={8} />
                 {chip('must')}
@@ -551,28 +561,23 @@ function NeedForm({
               </div>
             </section>
 
-            <section
-              className="flex min-w-0 flex-col gap-4 border-t border-line pt-6 first:border-t-0 first:pt-0"
-              aria-labelledby="n-cond"
-            >
-              <h2 id="n-cond" className="type-h3">
-                {F.conditions}
-              </h2>
+            <section className={PANEL} aria-labelledby="n-cond">
+              <PanelHead id="n-cond" icon={Banknote} tone={'success'} title={F.conditions} />
               <fieldset className="flex min-w-0 flex-col gap-1">
                 <legend className="type-sm mb-1 font-medium">
                   {F.formats} *{chip('formats')}
                 </legend>
-                <div className="flex min-w-0 flex-wrap gap-x-5 gap-y-1">
+                <div className="flex min-w-0 flex-wrap gap-2">
                   {WORK_FORMATS.map((f) => (
-                    <Label key={f} className="tap-target flex items-center gap-2 font-normal">
-                      <Checkbox
-                        checked={draft.formats.includes(f)}
-                        onCheckedChange={(on) =>
-                          set('formats', on ? [...draft.formats, f] : draft.formats.filter((x) => x !== f))
-                        }
-                      />
-                      {F.formats_[f]}
-                    </Label>
+                    <FormatChoice
+                      key={f}
+                      id={`n-format-${f}`}
+                      format={f}
+                      checked={draft.formats.includes(f)}
+                      onCheckedChange={(on) =>
+                        set('formats', on ? [...draft.formats, f] : draft.formats.filter((x) => x !== f))
+                      }
+                    />
                   ))}
                 </div>
                 {err('formats')}
@@ -613,13 +618,8 @@ function NeedForm({
               </div>
             </section>
 
-            <section
-              className="flex min-w-0 flex-col gap-3 border-t border-line pt-6 first:border-t-0 first:pt-0"
-              aria-labelledby="n-team"
-            >
-              <h2 id="n-team" className="type-h3">
-                {F.team}
-              </h2>
+            <section className={PANEL} aria-labelledby="n-team">
+              <PanelHead id="n-team" icon={UsersRound} tone={'soft'} title={F.team} />
               <div className="flex min-w-0 flex-col gap-1.5">
                 <Label htmlFor="n-team-f">
                   {F.teamField} *{chip('team')}
@@ -640,7 +640,7 @@ function NeedForm({
 
           {/* Покрытие требований тестом имеет смысл только там, где тест есть. */}
           {draft.spec && draft.grade && !unavailable && mustCodes.length + niceCodes.length > 0 ? (
-            <details className="min-w-0 border-t border-line pt-6" open>
+            <details className="surface-row min-w-0 p-4 md:p-5" open>
               <summary className="tap-target type-h3 cursor-pointer">{F.blueprint}</summary>
               <div className="mt-3">
                 <NeedBlueprint specialization={draft.spec} grade={draft.grade} must={mustCodes} nice={niceCodes} />
@@ -649,30 +649,30 @@ function NeedForm({
           ) : null}
 
           {!archived ? (
-            <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
+            <StickyActionBar note={need ? F.saveOnlyHint : undefined}>
+              {need ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  loading={save.isPending && mode === 'only'}
+                  disabled={save.isPending && mode !== 'only'}
+                  onClick={submit('only')}
+                >
+                  {F.saveOnly}
+                </Button>
+              ) : null}
               <Button
                 type="submit"
                 variant="primary"
                 loading={save.isPending && mode !== 'only'}
                 disabled={save.isPending && mode === 'only'}
+                // Длинная подпись: на узком экране переносится внутри кнопки, а не выходит за неё.
+                className="max-[479px]:h-auto max-[479px]:min-h-10 max-[479px]:py-2 max-[479px]:whitespace-normal"
               >
+                <Sparkles aria-hidden="true" />
                 {need ? F.saveUpdate : F.save}
               </Button>
-              {need ? (
-                <div className="flex min-w-0 flex-col gap-1">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    loading={save.isPending && mode === 'only'}
-                    disabled={save.isPending && mode !== 'only'}
-                    onClick={submit('only')}
-                  >
-                    {F.saveOnly}
-                  </Button>
-                  <span className="type-caption text-ink-muted">{F.saveOnlyHint}</span>
-                </div>
-              ) : null}
-            </div>
+            </StickyActionBar>
           ) : (
             <EmptyState compact text={F.archivedAlert} />
           )}

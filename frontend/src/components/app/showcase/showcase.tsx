@@ -1,4 +1,23 @@
-import { Inbox, Plus, Search } from 'lucide-react'
+import {
+  BellRing,
+  CircleCheck,
+  CircleX,
+  Clock,
+  Eye,
+  Hourglass,
+  Inbox,
+  Laptop,
+  MailX,
+  Plus,
+  Search,
+  Send,
+  Server,
+  Sparkles,
+  Timer,
+  UserRoundCheck,
+  UserRoundX,
+  Users,
+} from 'lucide-react'
 import type * as React from 'react'
 import { useState } from 'react'
 import type { Contribution, LevelView } from '@/client'
@@ -56,16 +75,22 @@ import { EvidenceChip, EvidenceLegend } from '../evidence-chip'
 import { ExternalLink } from '../external-link'
 import { FitBadge } from '../fit-badge'
 import { FunnelStrip } from '../funnel-strip'
+import { IconTile } from '../icon-tile'
 import { LevelScale } from '../level-scale'
+import { FunnelBars, LegendList, MiniBar } from '../mini-bar'
 import { PageHeader } from '../page-header'
 import { PageSkeleton } from '../page-skeleton'
 import { PasswordInput } from '../password-input'
+import { DashedNote, Pipeline, StageCell } from '../pipeline'
 import { PipelineLine } from '../pipeline-line'
+import { ProgressRing } from '../progress-ring'
 import { QuotaIndicator } from '../quota-indicator'
 import { SalaryRange } from '../salary-range'
 import { SalaryRangeInput, type SalaryRangeValue } from '../salary-range-input'
 import { Section as PageSection } from '../section'
+import { CountChip, GoChevron, SoftPill } from '../soft-pill'
 import { Stat } from '../stat'
+import { StatTile, SummaryStrip } from '../stat-tile'
 import { StatusBadge } from '../status-badge'
 import { Stepper } from '../stepper'
 import { StickyActionBar } from '../sticky-action-bar'
@@ -242,6 +267,7 @@ function Narrow({ children }: { children: React.ReactNode }) {
 const SECTIONS = [
   ['buttons', 'Кнопки'],
   ['badges', 'Бейджи и статусы'],
+  ['visual', 'Визуальные блоки'],
   ['evidence', 'Доказательства'],
   ['salary', 'Вилка'],
   ['level', 'Уровень'],
@@ -396,7 +422,7 @@ export function Showcase() {
           <DemoChip />
         </Specimen>
         <Specimen title="тона бейджа">
-          <StatusBadge status="accepted" label="Принято" appearance="pill" />
+          <StatusBadge status="accepted" label="Принято" appearance="dot" />
           <PageSection title="Раздел" count={3} as="h3">
             <FunnelStrip
               steps={[
@@ -415,6 +441,139 @@ export function Showcase() {
           <Badge variant="neutral" size="sm">
             по опросу
           </Badge>
+        </Specimen>
+      </Section>
+
+      <Section
+        id="visual"
+        title="Визуальные блоки"
+        description="Единый стиль кабинетов: смысл читается по форме, цвету, значку и числу; подписи — одно-два слова."
+      >
+        <Specimen title="плитка со значком — тона и размеры">
+          {(
+            [
+              'brand',
+              'soft',
+              'solid',
+              'deep',
+              'ink',
+              'accent',
+              'success',
+              'warning',
+              'danger',
+              'neutral',
+              'dashed',
+            ] as const
+          ).map((tone) => (
+            <IconTile key={tone} icon={Server} tone={tone} />
+          ))}
+          {(['xs', 'sm', 'md', 'lg', 'xl'] as const).map((size) => (
+            <IconTile key={size} icon={Send} size={size} />
+          ))}
+          <IconTile tone="success">РЮ</IconTile>
+        </Specimen>
+        <Specimen title="плашки и счётчики">
+          <SoftPill tone="success">
+            <SalaryRange from={180_000} to={240_000} size="sm" className="text-success" />
+          </SoftPill>
+          <SoftPill icon={Laptop}>Удалённо</SoftPill>
+          <SoftPill tone="brand" icon={Eye}>
+            Виден
+          </SoftPill>
+          <SoftPill tone="warning" icon={Hourglass}>
+            до 17 окт.
+          </SoftPill>
+          <SoftPill tone="danger" size="sm">
+            Отказ
+          </SoftPill>
+          <CountChip icon={BellRing} value={9} label="Новые ответы" tone="solid" live />
+          <CountChip icon={Hourglass} value={3} label="Ждут ответа" tone="warning" />
+          <CountChip icon={UserRoundX} value={3} label="Отклонили" tone="danger" />
+          <GoChevron />
+        </Specimen>
+        {/* Полоса сводки лежит прямо на странице, как на экранах: во всю ширину контейнера. */}
+        <SummaryStrip
+          label="Сводка"
+          aside={
+            <ProgressRing label="Приняли 2 из 11" value={2 / 11}>
+              <span aria-hidden="true" className="num text-sm font-semibold text-ink">
+                18%
+              </span>
+            </ProgressRing>
+          }
+        >
+          <StatTile icon={Send} value={11} label="приглашено" tone="solid" />
+          <StatTile icon={Hourglass} value={3} label="ждут ответа" tone="warning" />
+          <StatTile icon={UserRoundCheck} value={2} label="приняли" tone="success" />
+        </SummaryStrip>
+        <Specimen title="показатели" className="flex min-w-0 flex-col gap-4">
+          <div className="flex min-w-0 flex-wrap items-center gap-6">
+            <StatTile icon={Timer} value="20 ч" label="медиана ответа" tone="soft" size="lg" />
+            <Stat icon={Eye} label="просмотров" value={7} />
+          </div>
+          <FunnelStrip
+            steps={[
+              { label: 'показы', value: 42, icon: Eye },
+              { label: 'приглашения', value: 4, icon: Send, tone: 'solid' },
+              { label: 'принято', value: 1, icon: CircleCheck, tone: 'success' },
+            ]}
+          />
+        </Specimen>
+        <Specimen title="пайплайн карточки" className="flex min-w-0 flex-col gap-4">
+          <article className="lift-card accent-card surface-row flex min-w-0 flex-col gap-4 p-4 md:p-5">
+            <div className="flex min-w-0 items-start gap-3">
+              <IconTile icon={Server} size="lg" />
+              <h4 className="type-h2 min-w-0 flex-1 text-ink">{STRESS.needTitle}</h4>
+              <GoChevron className="mt-1" />
+            </div>
+            <Pipeline label="Воронка потребности">
+              <StageCell icon={Users} value={50} label="подборка" />
+              <StageCell icon={Send} value={11} label="приглашено" share={11 / 50} tone="deep" />
+              <StageCell icon={UserRoundCheck} value={0} label="приняли" share={0} tone="success" />
+            </Pipeline>
+          </article>
+          <DashedNote icon={Sparkles}>Подборки пока нет</DashedNote>
+        </Specimen>
+        <Specimen title="воронка, кольцо и легенда" className="grid min-w-0 gap-6 md:grid-cols-2">
+          <FunnelBars
+            label="Воронка приглашений"
+            conversionLabel="конверсия"
+            steps={[
+              { key: 'delivered', label: 'Доставлено', value: 10, icon: Send, tone: 'soft', color: 'brandSoft' },
+              { key: 'viewed', label: 'Просмотрено', value: 8, icon: Eye },
+              { key: 'accepted', label: 'Принято', value: 2, icon: CircleCheck, tone: 'success', color: 'success' },
+            ]}
+          />
+          <div className="flex min-w-0 flex-wrap items-center justify-center gap-5">
+            <ProgressRing
+              label="Исходы: принято 2 из 10, ждут 3, отклонено 3, истекло 1"
+              className="size-32"
+              segments={[
+                { key: 'accepted', value: 2, color: 'success' },
+                { key: 'waiting', value: 3, color: 'brandSoft' },
+                { key: 'declined', value: 3, color: 'danger' },
+                { key: 'expired', value: 1, color: 'warning' },
+              ]}
+            >
+              <span className="num text-2xl leading-7 font-semibold text-ink">2</span>
+              <span className="num type-caption text-ink-muted">из 10</span>
+            </ProgressRing>
+            <LegendList
+              items={[
+                { key: 'accepted', label: 'Принято', value: 2, icon: CircleCheck, tone: 'success' },
+                { key: 'waiting', label: 'Ждут', value: 3, icon: Hourglass, tone: 'warning', color: 'brandSoft' },
+                { key: 'declined', label: 'Отклонено', value: 3, icon: CircleX, tone: 'danger' },
+                { key: 'expired', label: 'Истекло', value: 0, icon: Clock, tone: 'warning' },
+                { key: 'bounced', label: 'Не доставлено', value: 1, icon: MailX, tone: 'dashed' },
+              ]}
+            />
+          </div>
+          <PageSection as="h4" title="Отказы" icon={CircleX} iconTone="danger">
+            <div className="flex min-w-0 flex-col gap-2.5">
+              <MiniBar label="Формат работы" value={2} max={2} color="danger" />
+              <MiniBar label={STRESS.needTitle} value={1} max={2} color="danger" index={1} />
+            </div>
+          </PageSection>
         </Specimen>
       </Section>
 

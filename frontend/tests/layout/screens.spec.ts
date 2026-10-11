@@ -248,9 +248,9 @@ const SCREENS: Screen[] = [
       await page.getByRole('radio', { name: 'Senior' }).click()
       await expect(change).toBeEnabled()
       await expect(page.getByRole('button', { name: 'Опубликовать профиль' })).toBeVisible()
-      // Итог под полосами: тест и ФСП — подтверждено, стаж и навыки — заявлено.
+      // Итог двумя плитками рядом с полосами: тест и ФСП — подтверждено, стаж и навыки — заявлено.
       await expect(page.locator('[data-slot="contribution-summary"]')).toHaveText(
-        /Подтверждено: 0 из 40 \(тест и ФСП\) · Заявлено кандидатом: 33,5 из 60 \(стаж и навыки\)/,
+        /Подтверждено\s*0 из 40 \(тест и ФСП\)\s*Заявлено вами\s*33,5 из 60 \(стаж и навыки\)/,
       )
       // Нажатие прокрутило страницу: флажок согласия ушёл под липкую шапку, и axe счёл бы его область нажатия
       // перекрытой. Раскладка проверяется с начала страницы, как на остальных экранах.
@@ -296,7 +296,7 @@ const SCREENS: Screen[] = [
     prepare: async (page) => {
       const option = page.getByRole('radio', { name: /Frontend-разработка/ })
       await expect(option).toBeEnabled()
-      await expect(page.getByText('тест готовится — грейд будет заявленным')).toBeVisible()
+      await expect(page.getByTitle('тест готовится — грейд будет заявленным')).toBeVisible()
       await option.click()
       await expect(page.getByRole('button', { name: 'Продолжить' })).toBeEnabled()
       await page.evaluate(() => window.scrollTo(0, 0))
@@ -376,7 +376,8 @@ const SCREENS: Screen[] = [
     mock: { me: CANDIDATE, handlers: DECLARED_CANDIDATE },
     heading: 'Обзор',
     prepare: async (page) => {
-      await expect(page.getByText('Грейд заявлен, профиль не опубликован')).toBeVisible()
+      await expect(page.getByText('Не виден работодателям').first()).toBeVisible()
+      await expect(page.getByText(/Заявленный грейд/)).toBeVisible()
       await expect(page.getByRole('link', { name: 'Опубликовать профиль' })).toHaveAttribute(
         'href',
         '/candidate/category#publish',
@@ -387,7 +388,7 @@ const SCREENS: Screen[] = [
     name: 'E5 карточка кандидата без уровня: грейд заявлен',
     path: `/employer/candidates/${DECLARED_CARD_ID}`,
     mock: { me: EMPLOYER, handlers: DECLARED_CARD },
-    heading: 'Карточка кандидата',
+    heading: 'Кандидат К-20417',
     prepare: async (page) => {
       await expect(page.locator('[data-slot="category-chip-declared"]')).toContainText('заявлен')
       await expect(page.getByText('Грейд заявлен, тест готовится')).toBeVisible()

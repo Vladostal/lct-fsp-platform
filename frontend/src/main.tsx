@@ -10,9 +10,11 @@ import { COMMON } from '@/content/common'
 import { setupApiClient } from '@/lib/api'
 import { queryClient } from '@/lib/query'
 import { installSessionGuard } from '@/lib/session'
+import { initTheme } from '@/lib/theme'
 import { router } from './router'
 
 setupApiClient()
+initTheme()
 
 // 401 на запрос кабинета: кэш `me` уже очищен, остаётся увести пользователя и объяснить, что произошло (Арх. 11.3).
 installSessionGuard(({ href, reason }) => {

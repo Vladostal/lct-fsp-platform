@@ -1,6 +1,7 @@
+import { FileSearch, Play } from 'lucide-react'
 import { useState } from 'react'
 import type { BlueprintPreview } from '@/client'
-import { CategoryChip } from '@/components/app'
+import { CategoryChip, IconTile, SoftPill } from '@/components/app'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -22,32 +23,36 @@ function Slots({ data }: { data: BlueprintPreview }) {
   })
   if (rows.length === 0) return null
   return (
-    <div className="min-w-0 overflow-x-auto">
+    <div className="surface-row min-w-0 overflow-x-auto">
       <table className="type-sm w-full min-w-[420px] border-collapse text-left">
-        <caption className="type-sm mb-2 text-left font-medium">{T.slots}</caption>
+        <caption className="type-sm px-4 pt-3 pb-2 text-left font-semibold">{T.slots}</caption>
         <thead>
-          <tr className="text-ink-muted">
-            <th scope="col" className="py-2 pr-3 font-medium">
+          <tr className="bg-fill text-ink-muted">
+            <th scope="col" className="px-4 py-2 font-medium">
               {T.group}
             </th>
-            <th scope="col" className="py-2 pr-3 font-medium">
+            <th scope="col" className="px-3 py-2 font-medium">
               {T.standard}
             </th>
-            <th scope="col" className="py-2 font-medium">
+            <th scope="col" className="px-4 py-2 font-medium">
               {T.forNeed}
             </th>
           </tr>
         </thead>
         <tbody>
           {rows.map((r) => (
-            <tr key={r.group}>
-              <td className="min-w-0 break-words py-2 pr-3">{r.group}</td>
-              <td className="num py-2 pr-3">{r.standard}</td>
-              <td className="num py-2">
-                {r.own}
-                {r.delta !== 0 ? (
-                  <span className="ml-2 text-ink-muted">({r.delta > 0 ? `+${r.delta}` : `−${Math.abs(r.delta)}`})</span>
-                ) : null}
+            <tr key={r.group} className="border-t border-line">
+              <td className="min-w-0 break-words px-4 py-2.5">{r.group}</td>
+              <td className="num px-3 py-2.5 text-ink-muted">{r.standard}</td>
+              <td className="px-4 py-2.5">
+                <span className="flex items-center gap-2">
+                  <span className="num font-semibold">{r.own}</span>
+                  {r.delta !== 0 ? (
+                    <SoftPill size="sm" tone={r.delta > 0 ? 'brand' : 'neutral'}>
+                      <span className="num">{r.delta > 0 ? `+${r.delta}` : `−${Math.abs(r.delta)}`}</span>
+                    </SoftPill>
+                  ) : null}
+                </span>
               </td>
             </tr>
           ))}
@@ -74,9 +79,14 @@ export function BlueprintDemo({ min, max }: { min: number; max: number }) {
   }
 
   return (
-    <div className="surface-card flex min-w-0 flex-col gap-4 p-5 md:p-6">
-      <h3 className="type-h3">{T.demoTitle}</h3>
-      <p className="type-body text-ink-muted">{T.demoLead}</p>
+    <div className="accent-card surface-row flex min-w-0 flex-col gap-4 p-4 md:p-6">
+      <div className="flex min-w-0 items-center gap-3">
+        <IconTile icon={FileSearch} tone="solid" size="lg" />
+        <div className="flex min-w-0 flex-col">
+          <h3 className="type-h3">{T.demoTitle}</h3>
+          <p className="type-sm min-w-0 break-words text-ink-muted">{T.demoLead}</p>
+        </div>
+      </div>
       <ToggleGroup type="single" value={choice} aria-label={T.examplesLabel} onValueChange={(v) => v && setChoice(v)}>
         {HOW.examples.map((e) => (
           <ToggleGroupItem key={e.id} value={e.id}>
@@ -97,7 +107,9 @@ export function BlueprintDemo({ min, max }: { min: number; max: number }) {
           />
         </div>
       ) : (
-        <blockquote className="type-sm min-w-0 break-words text-ink-muted">{example?.text}</blockquote>
+        <blockquote className="type-sm min-w-0 break-words rounded-md bg-fill p-3 text-ink md:p-4">
+          {example?.text}
+        </blockquote>
       )}
       {localError ? (
         <p role="alert" className="type-sm text-danger">
@@ -105,6 +117,7 @@ export function BlueprintDemo({ min, max }: { min: number; max: number }) {
         </p>
       ) : null}
       <Button type="button" variant="secondary" className="self-start" loading={preview.isPending} onClick={run}>
+        <Play aria-hidden="true" />
         {T.run}
       </Button>
       {preview.isError ? (
@@ -121,7 +134,7 @@ export function BlueprintDemo({ min, max }: { min: number; max: number }) {
             <CategoryChip title={preview.data.target.title} />
           </div>
           <div className="flex min-w-0 flex-col gap-2">
-            <h4 className="type-sm font-medium">{T.coverage}</h4>
+            <h4 className="type-sm font-semibold">{T.coverage}</h4>
             <CoverageTable data={preview.data} />
           </div>
           <Slots data={preview.data} />

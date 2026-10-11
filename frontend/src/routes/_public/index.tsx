@@ -49,8 +49,7 @@ function Landing() {
       <section className="page-container grid items-center gap-10 pt-10 pb-4 md:pt-16 md:pb-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,440px)] lg:gap-16">
         <div className="flex min-w-0 flex-col gap-8">
           <h1 data-page-title tabIndex={-1} className="type-display leading-[1.25] text-ink outline-none">
-            Платформа <span className="min-[480px]:whitespace-nowrap">ИТ-специалистов,</span>{' '}
-            <span className="whitespace-nowrap">проверенных ФСП</span>
+            Платформа <span className="min-[360px]:whitespace-nowrap">ИТ-специалистов,</span> проверенных ФСП
           </h1>
           <div className="flex min-w-0 flex-col gap-3 min-[480px]:flex-row min-[480px]:flex-wrap">
             <Button variant="primary" size="lg" asChild>
@@ -82,7 +81,7 @@ function Landing() {
               className="surface-row stagger group relative flex min-w-0 animate-rise-in flex-col gap-3 rounded-lg p-5 transition-[border-color,translate] duration-200 hover:-translate-y-1 hover:border-brand-600 md:rounded-xl md:p-6"
             >
               <div className="flex items-center justify-between gap-3">
-                <span className="flex size-11 items-center justify-center rounded-md bg-brand-50 text-brand-700 transition-colors duration-200 group-hover:bg-brand-600 group-hover:text-surface">
+                <span className="flex size-11 items-center justify-center rounded-md bg-brand-50 text-brand-700 transition-colors duration-200 group-hover:bg-brand-600 group-hover:text-on-brand">
                   <step.icon className="size-5" aria-hidden="true" />
                 </span>
                 <span aria-hidden="true" className="num text-[2rem] leading-none font-semibold text-brand-600">

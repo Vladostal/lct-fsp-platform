@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { ArrowLeft, Download } from 'lucide-react'
+import { ArrowLeft, Download, History, Send } from 'lucide-react'
+import { useEffect } from 'react'
 import { toast } from 'sonner'
 import type { CandidateContactsView, CategoryRef } from '@/client'
-import { CandidateCategoryChip, CopyButton, EmptyState, ErrorState, StatusBadge } from '@/components/app'
+import { CandidateCategoryChip, CopyButton, EmptyState, ErrorState, SoftPill, StatusBadge } from '@/components/app'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -14,6 +15,7 @@ import { cardQuery, matchingKeys, pinCandidate, unpinCandidate } from '../api'
 import { MATCHING } from '../content'
 import { usePairStates } from '../hooks'
 import { MatchCardDetailed } from './match-card-detailed'
+import { CandidateTile } from './visuals'
 
 const T = MATCHING.card
 
@@ -72,7 +74,7 @@ function Contacts({ candidateId }: { candidateId: string }) {
     )
   }
   const rows = [
-    ['E-mail', c.email],
+    ['Почта', c.email],
     ['Телефон', c.phone],
     ['Telegram', c.telegram],
     ['Ссылка', c.link],
@@ -87,10 +89,13 @@ function Contacts({ candidateId }: { candidateId: string }) {
           <li
             key={label}
             style={{ '--i': i } as React.CSSProperties}
-            className="stagger animate-rise-in flex min-w-0 items-center gap-2"
+            className="stagger animate-rise-in flex min-w-0 items-center gap-2 rounded-md bg-fill py-1 pr-1 pl-3"
           >
-            <span className="type-sm w-20 shrink-0 text-ink-muted">{label}</span>
-            <span className="num min-w-0 break-all">{value}</span>
+            {/* Уже 640 px подпись встаёт над значением: адрес и телефон не рвутся посреди слова. */}
+            <span className="flex min-w-0 flex-1 flex-col gap-x-2 sm:flex-row sm:items-center">
+              <span className="type-sm shrink-0 text-ink-muted max-sm:text-xs sm:w-20">{label}</span>
+              <span className="num min-w-0 flex-1 [overflow-wrap:anywhere] whitespace-normal">{value}</span>
+            </span>
             <CopyButton value={value} label={`Скопировать: ${label}`} />
           </li>
         ))}
@@ -130,6 +135,17 @@ export function CandidateView({
     onError: (error) =>
       toast.error(hasCode(error, 'pin_limit') ? MATCHING.shortlist.pinLimit : 'Не удалось изменить закрепление'),
   })
+
+  // Страница: липкая панель действий не должна закрывать элемент в фокусе — та же переменная, что у
+  // StickyActionBar, задаёт scroll-padding-bottom. В боковой панели прокручивается сама панель.
+  useEffect(() => {
+    if (layout !== 'page') return
+    const root = document.documentElement
+    root.style.setProperty('--action-bar-space', '104px')
+    return () => {
+      root.style.removeProperty('--action-bar-space')
+    }
+  }, [layout])
 
   if (query.isPending) {
     return (
@@ -191,7 +207,8 @@ export function CandidateView({
           <ArrowLeft aria-hidden="true" />
           {T.back}
         </Button>
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <div className="surface-row flex min-w-0 flex-wrap items-center gap-3 p-3">
+          <CandidateTile />
           <span className="type-body num font-medium">{card.public_code}</span>
           <CandidateCategoryChip category={card.category} />
         </div>
@@ -206,9 +223,9 @@ export function CandidateView({
   if (!card.available) action = <p className="type-sm">{T.hiddenProfile}</p>
   else if (block?.code === 'conditions_mismatch')
     action = (
-      <p className="type-sm">
-        {T.mismatch} · {T.cooldown.toLowerCase()} {formatDate(block.until)}
-      </p>
+      <SoftPill icon={History}>
+        {T.mismatch} · {T.cooldown.toLowerCase()} <span className="num">{formatDate(block.until)}</span>
+      </SoftPill>
     )
   else if (block?.code === 'pair_cooldown' && inv?.status === 'declined')
     action = (
@@ -219,9 +236,9 @@ export function CandidateView({
     )
   else if (block?.code === 'pair_cooldown')
     action = (
-      <p className="type-sm">
-        {T.cooldown} {formatDate(block.until)}
-      </p>
+      <SoftPill icon={History}>
+        {T.cooldown} <span className="num">{formatDate(block.until)}</span>
+      </SoftPill>
     )
   else if (inv && (inv.status === 'sent' || inv.status === 'viewed'))
     action = (
@@ -242,6 +259,7 @@ export function CandidateView({
   else
     action = (
       <Button type="button" variant="primary" onClick={onInvite}>
+        <Send aria-hidden="true" />
         {T.invite}
       </Button>
     )
@@ -259,9 +277,11 @@ export function CandidateView({
         className={
           layout === 'sheet'
             ? 'sticky bottom-0 -mx-4 flex min-w-0 flex-wrap items-center justify-end gap-3 border-t border-line bg-surface px-4 py-3 md:-mx-6 md:px-6'
-            : 'sticky bottom-0 flex min-w-0 flex-wrap items-center justify-end gap-3 border-t border-line bg-surface py-3'
+            : 'surface-row sticky bottom-3 z-10 flex min-w-0 flex-wrap items-center justify-end gap-3 px-4 py-3 shadow-(--shadow-pop)'
         }
         aria-live="polite"
+        // Липкая панель: проверка наложений вёрстки не считает её перекрытием текста под ней.
+        data-sticky
       >
         {action}
       </div>

@@ -1,5 +1,6 @@
-import { FileText, Upload } from 'lucide-react'
+import { FileCheck2, FolderOpen, Upload } from 'lucide-react'
 import { useRef, useState } from 'react'
+import { IconTile, SoftPill } from '@/components/app'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
@@ -59,32 +60,43 @@ export function ResumeDropzone({ status, error, fileName, onFile, className }: R
           take(event.dataTransfer.files[0])
         }}
         className={cn(
-          'flex min-w-0 flex-col items-center gap-3 rounded-lg border border-dashed border-line-strong bg-surface px-4 py-6 text-center transition-colors',
+          'flex min-w-0 flex-col items-center gap-x-4 gap-y-3 rounded-lg border-2 border-dashed border-brand-200 bg-[color-mix(in_srgb,var(--color-brand-600)_4%,var(--color-surface))] px-4 py-5 text-center transition-colors sm:flex-row sm:px-5 sm:text-left',
           dragging && 'border-brand-600 bg-brand-50',
         )}
       >
-        <span
-          className="flex size-10 items-center justify-center rounded-full bg-fill text-ink-muted"
-          aria-hidden="true"
-        >
-          {status === 'parsed' ? <FileText className="size-5" /> : <Upload className="size-5" />}
-        </span>
-        <p className="type-body min-w-0 max-w-full text-ink [overflow-wrap:anywhere]">
-          {status === 'uploading' ? R.uploading : status === 'parsing' ? R.parsing : (fileName ?? R.hint)}
-        </p>
-        {busy ? (
-          <Progress
-            className="max-w-xs"
-            value={status === 'uploading' ? 30 : 75}
-            aria-label={status === 'uploading' ? R.uploading : R.parsing}
-          />
-        ) : (
-          <>
-            <Button type="button" variant="secondary" onClick={() => inputRef.current?.click()}>
-              {status === 'parsed' ? R.replace : R.choose}
-            </Button>
-            <p className="type-caption text-ink-muted">{status === 'parsed' ? R.hint : R.note}</p>
-          </>
+        <IconTile
+          icon={status === 'parsed' ? FileCheck2 : Upload}
+          tone={status === 'parsed' ? 'success' : 'brand'}
+          size="xl"
+          className={cn(dragging && 'animate-pop-in')}
+        />
+        <div className="flex min-w-0 max-w-full flex-1 flex-col gap-1">
+          <p className="type-body min-w-0 max-w-full font-medium text-ink [overflow-wrap:anywhere]">
+            {status === 'uploading' ? R.uploading : status === 'parsing' ? R.parsing : (fileName ?? R.hint)}
+          </p>
+          {busy ? (
+            <Progress
+              className="max-w-xs max-sm:mx-auto"
+              value={status === 'uploading' ? 30 : 75}
+              aria-label={status === 'uploading' ? R.uploading : R.parsing}
+            />
+          ) : (
+            <ul className="flex min-w-0 flex-wrap gap-1.5 max-sm:justify-center">
+              {R.limits.map((limit) => (
+                <li key={limit}>
+                  <SoftPill size="sm">
+                    <span className="num">{limit}</span>
+                  </SoftPill>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        {busy ? null : (
+          <Button type="button" variant="secondary" onClick={() => inputRef.current?.click()}>
+            <FolderOpen aria-hidden="true" />
+            {status === 'parsed' ? R.replace : R.choose}
+          </Button>
         )}
         <input
           ref={inputRef}

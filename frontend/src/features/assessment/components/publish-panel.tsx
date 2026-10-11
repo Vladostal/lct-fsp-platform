@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
+import { Megaphone } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { ConsentCheckbox } from '@/components/app'
@@ -9,6 +10,7 @@ import { errorMessage, hasCode } from '@/lib/api'
 import { invalidateGuardData } from '@/lib/guards'
 import { grantPublication } from '../api'
 import { ASSESSMENT } from '../content'
+import { CardHead } from './parts'
 
 /**
  * Публикация профиля: согласие и кнопка. Показывается на результате теста (категория подтверждена) и на экране
@@ -58,12 +60,10 @@ export function PublishCard({
   return (
     <section
       id="publish"
-      className="surface-card flex min-w-0 scroll-mt-24 flex-col gap-3 p-4 md:p-6"
+      className="surface-card accent-card flex min-w-0 scroll-mt-24 flex-col gap-3 p-4 md:p-6"
       aria-labelledby="r-publish"
     >
-      <h2 id="r-publish" className="type-h3">
-        {ASSESSMENT.result.publishTitle}
-      </h2>
+      <CardHead id="r-publish" icon={Megaphone} tone="solid" title={ASSESSMENT.result.publishTitle} />
       <p className="type-sm min-w-0">
         {declared ? ASSESSMENT.result.publishTextDeclared : ASSESSMENT.result.publishText}
       </p>

@@ -1,5 +1,6 @@
-import { Lock } from 'lucide-react'
+import { TrendingUp } from 'lucide-react'
 import { useId } from 'react'
+import { SoftPill } from '@/components/app'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { formatMoney, formatSalaryRange } from '@/lib/format'
 import { useSalaryHint } from '../api'
@@ -30,8 +31,7 @@ export function MinSalarySelect({ value, onChange, category, showFutureNote = fa
 
   return (
     <div className="flex min-w-0 flex-col gap-2">
-      <label htmlFor={id} className="type-sm flex items-center gap-1.5 font-medium text-ink">
-        <Lock className="size-3.5 text-ink-muted" aria-hidden="true" />
+      <label htmlFor={id} className="type-sm font-medium text-ink">
         {S.label}
       </label>
       <Select
@@ -39,7 +39,7 @@ export function MinSalarySelect({ value, onChange, category, showFutureNote = fa
         onValueChange={(next) => onChange(next === NONE ? null : Number(next))}
         disabled={disabled}
       >
-        <SelectTrigger id={id} className="max-w-xs">
+        <SelectTrigger id={id} className="max-w-xs bg-surface">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -54,11 +54,12 @@ export function MinSalarySelect({ value, onChange, category, showFutureNote = fa
       <p className="type-caption text-ink-muted">{S.note}</p>
       {showFutureNote ? <p className="type-caption text-ink-muted">{S.futureOnly}</p> : null}
       {hint.data ? (
-        <p className="type-caption text-ink-muted" data-testid="salary-hint">
-          <span className="font-medium text-ink">
-            {S.hint} <span className="num">{formatSalaryRange(hint.data.from, hint.data.to)}</span>
-          </span>
-          <span className="block">{S.hintSource}</span>
+        <p className="type-caption mt-1 flex min-w-0 flex-col gap-1.5 text-ink-muted" data-testid="salary-hint">
+          <span className="font-medium text-ink">{S.hint}</span>
+          <SoftPill tone="success" icon={TrendingUp} className="self-start font-medium">
+            <span className="num">{formatSalaryRange(hint.data.from, hint.data.to)}</span>
+          </SoftPill>
+          <span>{S.hintSource}</span>
         </p>
       ) : null}
     </div>

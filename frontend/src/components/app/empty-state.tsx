@@ -2,9 +2,10 @@ import type { LucideIcon } from 'lucide-react'
 import { Inbox } from 'lucide-react'
 import type * as React from 'react'
 import { cn } from '@/lib/utils'
+import { IconTile } from './icon-tile'
 
 export type EmptyStateProps = {
-  /** Иконка 24 px без круга; по умолчанию — «входящие». */
+  /** Значок в мягкой плитке бренда; по умолчанию — «входящие». */
   icon?: LucideIcon
   title?: string
   /** Одно-два предложения; переносится, никогда не усекается. */
@@ -18,7 +19,7 @@ export type EmptyStateProps = {
   className?: string
 }
 
-/** Пустое состояние: иконка, заголовок, пояснение и не больше одного действия — отвечает на «что дальше». */
+/** Пустое состояние: плитка со значком, заголовок, пояснение и не больше одного действия — отвечает на «что дальше». */
 export function EmptyState({
   icon: Icon = Inbox,
   title,
@@ -38,7 +39,7 @@ export function EmptyState({
         className,
       )}
     >
-      <Icon className="size-6 text-ink-subtle" strokeWidth={1.5} aria-hidden="true" />
+      <IconTile icon={Icon} tone="soft" size={compact ? 'md' : 'xl'} />
       <div className="flex max-w-[52ch] min-w-0 flex-col gap-2">
         {title ? <Heading className="type-h3 text-ink">{title}</Heading> : null}
         {text ? <p className="type-body text-ink-muted">{text}</p> : null}

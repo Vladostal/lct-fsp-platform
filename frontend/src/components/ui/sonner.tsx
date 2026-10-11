@@ -1,6 +1,7 @@
 import { CircleAlert, CircleCheck, Info, Loader2, TriangleAlert } from 'lucide-react'
 import { Toaster as Sonner, type ToasterProps } from 'sonner'
 import { useIsMobile } from '@/lib/hooks/use-media-query'
+import { useTheme } from '@/lib/theme'
 
 /**
  * Toast (E §4.4): ≥ 768 px — справа снизу со сдвигом над панелью действий (--action-bar-space выставляет
@@ -8,9 +9,10 @@ import { useIsMobile } from '@/lib/hooks/use-media-query'
  */
 function Toaster(props: ToasterProps) {
   const mobile = useIsMobile()
+  const { theme } = useTheme()
   return (
     <Sonner
-      theme="light"
+      theme={theme}
       position={mobile ? 'top-center' : 'bottom-right'}
       visibleToasts={3}
       duration={5000}

@@ -38,7 +38,7 @@ export function Stepper({ steps, current, linkCompleted = true, label = 'Шаг�
             <span
               className={cn(
                 'num grid size-6 shrink-0 place-items-center rounded-full border text-xs leading-none font-medium',
-                state === 'done' && 'border-brand-600 bg-brand-600 text-white',
+                state === 'done' && 'border-brand-600 bg-brand-600 text-on-brand',
                 state === 'current' && 'border-brand-600 bg-surface text-brand-700',
                 state === 'todo' && 'border-line-strong bg-surface text-ink-muted',
               )}

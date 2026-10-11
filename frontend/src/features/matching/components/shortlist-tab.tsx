@@ -1,9 +1,41 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
+import {
+  ArrowDown,
+  ArrowRight,
+  ArrowUp,
+  CircleCheckBig,
+  Eye,
+  EyeOff,
+  GitCompareArrows,
+  History,
+  Layers,
+  Lightbulb,
+  ListChecks,
+  type LucideIcon,
+  Shuffle,
+  SlidersHorizontal,
+  Sparkles,
+  Target,
+  TrendingDown,
+  TrendingUp,
+  UserRoundMinus,
+  Users,
+} from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import type { Catalog, NeedView, ShortlistItemView, ShortlistRefinement, ShortlistSnapshotView } from '@/client'
-import { CandidateCategoryChip, EmptyState, ErrorState, FunnelStrip, Section } from '@/components/app'
+import {
+  CandidateCategoryChip,
+  CountChip,
+  EmptyState,
+  ErrorState,
+  IconTile,
+  Pipeline,
+  SoftPill,
+  StageCell,
+  type Tone,
+} from '@/components/app'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -23,6 +55,48 @@ import { MatchCardCompact } from './match-card-compact'
 import { RefinePanel } from './refine-panel'
 
 const S = MATCHING.shortlist
+
+/** Раздел подборки: значок и тон вместо заголовка прописными. */
+const SECTION_LOOK: Record<'exact' | 'lower_with_margin' | 'higher', { icon: LucideIcon; tone: Tone }> = {
+  exact: { icon: Target, tone: 'brand' },
+  lower_with_margin: { icon: TrendingDown, tone: 'success' },
+  higher: { icon: TrendingUp, tone: 'neutral' },
+}
+
+/** Заголовок раздела списка: пилюля со значком и числом строк. */
+function SectionPill({ icon, tone, title, count }: { icon: LucideIcon; tone: Tone; title: string; count?: number }) {
+  return (
+    <h2 className="flex min-w-0 items-center gap-2">
+      <SoftPill tone={tone} icon={icon} className="h-auto min-h-8 shrink py-1 font-medium">
+        <span className="min-w-0 [overflow-wrap:anywhere]">{title}</span>
+        {count !== undefined ? (
+          <span className="num rounded-full bg-surface px-1.5 text-xs leading-5 font-semibold text-ink">{count}</span>
+        ) : null}
+      </SoftPill>
+    </h2>
+  )
+}
+
+/*
+ * Ступени отбора: ключи счётчиков снимка в порядке сужения, `at` — номер подписи в `S.funnel`. Полоса по
+ * нижнему краю ячейки — доля от предыдущей ступени, как на карточке потребности. `must_ok` — справочное
+ * число, а не ступень (показанных может быть больше): оно стоит отдельным чипом под воронкой.
+ */
+const FUNNEL_STEPS = [
+  { key: 'category_total', icon: Users, tone: 'brand', at: 0 },
+  { key: 'available', icon: Eye, tone: 'brand', at: 1 },
+  { key: 'format_ok', icon: Shuffle, tone: 'deep', at: 2 },
+  { key: 'shown', icon: CircleCheckBig, tone: 'success', at: 4 },
+] as const
+
+/** Пилюля-переключатель категории: счётчик справа, выбранная — заливка бренда. */
+const CATEGORY_PILL = cn(
+  'tap-target group/cat inline-flex h-9 max-w-full min-w-0 items-center gap-2 rounded-full border border-line bg-surface pr-1.5 pl-3.5 text-sm font-medium text-ink transition-colors',
+  'hover:border-brand-200 hover:bg-brand-50 disabled:pointer-events-none disabled:border-dashed disabled:text-ink-muted',
+  'aria-pressed:border-brand-600 aria-pressed:bg-brand-600 aria-pressed:text-on-brand',
+)
+const CATEGORY_COUNT =
+  'num min-w-6 rounded-full bg-fill px-1.5 text-center text-xs leading-6 font-semibold text-ink group-aria-pressed/cat:bg-surface group-aria-pressed/cat:text-brand-700 group-disabled/cat:bg-transparent group-disabled/cat:text-ink-muted'
 
 const SHORTLIST_FAILED = 'Не удалось сформировать подборку. Попробуйте ещё раз.'
 
@@ -218,9 +292,12 @@ export function ShortlistTab({ need, search, catalog, setSearch, refineOpen, set
   return (
     <div className={cn('grid min-w-0 gap-6', refineOpen && wide && !archived && 'grid-cols-[320px_minmax(0,1fr)]')}>
       {refineOpen && wide && !archived ? (
-        <aside aria-label={MATCHING.refine.title} className="h-fit min-w-0 border-r border-line pr-6">
+        <aside aria-label={MATCHING.refine.title} className="surface-row h-fit min-w-0 p-4">
           <div className="mb-4 flex items-center justify-between gap-2">
-            <h2 className="type-h3">{MATCHING.refine.title}</h2>
+            <h2 className="type-h3 flex min-w-0 items-center gap-2.5">
+              <IconTile icon={SlidersHorizontal} tone="soft" size="sm" />
+              {MATCHING.refine.title}
+            </h2>
             <Button type="button" variant="ghost" size="sm" onClick={() => setRefineOpen(false)}>
               {MATCHING.refine.close}
             </Button>
@@ -252,16 +329,17 @@ export function ShortlistTab({ need, search, catalog, setSearch, refineOpen, set
           </Alert>
         ) : null}
 
-        <div className="flex min-w-0 flex-wrap items-end justify-between gap-3">
-          <div className="flex min-w-0 flex-col gap-1.5">
-            <span id="ver-label" className="type-sm font-medium">
+        <div className="surface-row flex min-w-0 flex-wrap items-center justify-between gap-3 p-3 md:px-4">
+          <div className="flex min-w-0 flex-1 basis-64 items-center gap-3">
+            <IconTile icon={History} tone="soft" className="max-[479px]:hidden" />
+            <span id="ver-label" className="sr-only">
               {S.versionLabel}
             </span>
             <Select
               value={snap.id}
               onValueChange={(id) => setSearch({ snapshot: id === latest?.id ? undefined : id, category: undefined })}
             >
-              <SelectTrigger aria-labelledby="ver-label" className="w-full max-w-[min(28rem,calc(100vw-2rem))]">
+              <SelectTrigger aria-labelledby="ver-label" className="w-full max-w-[28rem] min-w-0">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -280,7 +358,9 @@ export function ShortlistTab({ need, search, catalog, setSearch, refineOpen, set
               variant="secondary"
               onClick={() => setRefineOpen(!refineOpen)}
               aria-expanded={refineOpen}
+              className="max-[479px]:w-full"
             >
+              <SlidersHorizontal aria-hidden="true" />
               {S.refine}
             </Button>
           ) : null}
@@ -297,26 +377,39 @@ export function ShortlistTab({ need, search, catalog, setSearch, refineOpen, set
           </Alert>
         ) : null}
 
-        <div ref={diffRef} tabIndex={-1} className="min-w-0 outline-none" aria-live="polite">
+        <div
+          ref={diffRef}
+          tabIndex={-1}
+          // Без сравнения и без выпавших блок пуст: он остаётся только областью объявлений.
+          className={cn('min-w-0 outline-none', !snap.parent_id && 'sr-only')}
+          aria-live="polite"
+        >
           <span className="sr-only">{live}</span>
           {snap.diff && snap.parent_id ? (
-            <p className="type-sm min-w-0 break-words">
-              {S.diff(Math.max(1, snap.version_no - 1))}: новых <span className="num">{snap.diff.added ?? 0}</span> ·
-              выпало <span className="num">{snap.diff.dropped ?? 0}</span> · выше{' '}
-              <span className="num">{snap.diff.moved_up ?? 0}</span> · ниже{' '}
-              <span className="num">{snap.diff.moved_down ?? 0}</span>
-            </p>
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <SoftPill icon={GitCompareArrows} className="font-medium text-ink">
+                {S.diff(Math.max(1, snap.version_no - 1))}
+              </SoftPill>
+              <CountChip icon={Sparkles} value={snap.diff.added ?? 0} label="новых" tone="brand" />
+              <CountChip icon={UserRoundMinus} value={snap.diff.dropped ?? 0} label="выпало" tone="danger" />
+              <CountChip icon={ArrowUp} value={snap.diff.moved_up ?? 0} label="выше" tone="success" />
+              <CountChip icon={ArrowDown} value={snap.diff.moved_down ?? 0} label="ниже" />
+            </div>
           ) : null}
           {snap.dropped.length > 0 && snap.parent_id ? (
-            <details className="mt-2 min-w-0">
-              <summary className="tap-target type-sm cursor-pointer">
-                {S.droppedTitle} ({snap.dropped.length})
+            <details className="surface-row mt-2 min-w-0 px-4 py-1">
+              <summary className="tap-target type-sm cursor-pointer py-2 font-medium">
+                {S.droppedTitle} <span className="num text-ink-muted">({snap.dropped.length})</span>
               </summary>
-              <ul className="mt-2 flex min-w-0 flex-col gap-1">
+              <ul className="flex min-w-0 flex-col divide-y divide-line pb-1">
                 {snap.dropped.map((d) => (
-                  <li key={d.candidate_id} className="type-sm min-w-0 break-words">
-                    <span className="num">{d.public_code}</span> · <CandidateCategoryChip category={d.category} /> ·{' '}
-                    {d.reason_text}
+                  <li
+                    key={d.candidate_id}
+                    className="type-sm flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 py-2 break-words"
+                  >
+                    <span className="num font-medium">{d.public_code}</span>
+                    <CandidateCategoryChip category={d.category} className="text-ink-muted" />
+                    <span className="min-w-0 text-ink-muted">{d.reason_text}</span>
                   </li>
                 ))}
               </ul>
@@ -325,31 +418,54 @@ export function ShortlistTab({ need, search, catalog, setSearch, refineOpen, set
         </div>
 
         <section aria-label={S.funnelTitle} className="flex min-w-0 flex-col gap-3">
-          <FunnelStrip
-            steps={[
-              { label: S.funnel[0], value: snap.funnel.category_total ?? 0 },
-              { label: S.funnel[1], value: snap.funnel.available ?? 0 },
-              { label: S.funnel[2], value: snap.funnel.format_ok ?? 0 },
-              { label: S.funnel[3], value: snap.funnel.must_ok ?? 0 },
-              { label: S.funnel[4], value: snap.funnel.shown ?? 0 },
-            ]}
-          />
-          <p className="type-sm text-ink-muted">
-            <Link to="/how-it-works" hash="matching" className="text-link">
-              {S.calc}
-            </Link>
-          </p>
-          {noSkills ? <p className="type-sm text-ink-muted">{S.noSkills}</p> : null}
+          <div className="surface-row flex min-w-0 flex-col gap-3 p-3 md:p-4">
+            <Pipeline label={S.funnelTitle} className="max-[559px]:flex-wrap">
+              {FUNNEL_STEPS.map((step, i) => {
+                const value = snap.funnel[step.key] ?? 0
+                const prevKey = FUNNEL_STEPS[i - 1]?.key
+                const prev = prevKey ? (snap.funnel[prevKey] ?? 0) : 0
+                return (
+                  <StageCell
+                    key={step.key}
+                    icon={step.icon}
+                    value={value}
+                    label={S.funnelShort[step.at] ?? S.funnel[step.at] ?? ''}
+                    share={i === 0 ? undefined : prev > 0 ? value / prev : 1}
+                    shareText={MATCHING.needs.share}
+                    tone={step.tone}
+                    index={i}
+                    className="max-[559px]:min-w-[40%]"
+                  />
+                )
+              })}
+            </Pipeline>
+            <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1">
+              <Link to="/how-it-works" hash="matching" className="text-link tap-target type-sm">
+                {S.calc}
+              </Link>
+              {noSkills ? (
+                <p className="type-sm min-w-0 text-ink-muted">{S.noSkills}</p>
+              ) : (
+                <CountChip
+                  icon={ListChecks}
+                  value={snap.funnel.must_ok ?? 0}
+                  label={S.mustOk}
+                  tone={(snap.funnel.must_ok ?? 0) > 0 ? 'success' : 'neutral'}
+                />
+              )}
+            </div>
+          </div>
         </section>
 
         {snap.hints.length > 0 && !archived ? (
-          <ul aria-label={S.hints} className="flex min-w-0 flex-col divide-y divide-line">
+          <ul aria-label={S.hints} className="flex min-w-0 flex-col gap-2">
             {snap.hints.slice(0, 3).map((h) => (
               <li
                 key={`${h.code}-${h.value}`}
-                className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2"
+                className="surface-row flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 p-3 md:px-4"
               >
-                <p className="type-sm min-w-0 flex-1 break-words">{h.text}</p>
+                <IconTile icon={Lightbulb} tone="warning" size="sm" />
+                <p className="type-sm min-w-0 flex-1 basis-56 break-words">{h.text}</p>
                 <Button
                   type="button"
                   variant="ghost"
@@ -367,34 +483,38 @@ export function ShortlistTab({ need, search, catalog, setSearch, refineOpen, set
 
         {snap.categories.length > 0 ? (
           <section aria-label={S.categories} className="flex min-w-0 flex-col gap-2">
-            <h2 className="type-sm font-medium">{S.categories}</h2>
+            <h2 className="type-eyebrow flex min-w-0 items-center gap-1.5">
+              <Layers aria-hidden="true" className="size-3.5 text-brand-700" />
+              {S.categories}
+            </h2>
             <ul className="flex min-w-0 flex-wrap gap-2">
               <li>
-                <Button
+                <button
                   type="button"
-                  size="sm"
-                  variant={search.category ? 'ghost' : 'secondary'}
                   aria-pressed={!search.category}
+                  className={CATEGORY_PILL}
                   onClick={() => setSearch({ category: undefined })}
                 >
                   {S.allCategories}
-                </Button>
+                  <span className={CATEGORY_COUNT}>{items.length}</span>
+                </button>
               </li>
               {snap.categories.map((c) => (
                 <li key={c.category.code} className="min-w-0 max-w-full">
-                  <Button
+                  <button
                     type="button"
-                    size="sm"
-                    variant={search.category === c.category.code ? 'secondary' : 'ghost'}
                     aria-pressed={search.category === c.category.code}
                     disabled={c.count === 0}
-                    className="max-w-full"
+                    className={CATEGORY_PILL}
+                    title={`${c.category.title} — ${c.relation_label}`}
                     onClick={() => setSearch({ category: c.category.code })}
                   >
-                    <span className="min-w-0 truncate" title={`${c.category.title} — ${c.relation_label}`}>
-                      {c.category.title} <span className="num text-ink-subtle">{c.count}</span>
+                    <span className="num min-w-0 truncate">{c.category.title}</span>
+                    {/* Та же база, что у «Все категории» и разделов списка: без скрытых профилей (они — чипом ниже). */}
+                    <span className={CATEGORY_COUNT}>
+                      {c.count === 0 ? 0 : items.filter((i) => i.category.code === c.category.code).length}
                     </span>
-                  </Button>
+                  </button>
                 </li>
               ))}
             </ul>
@@ -416,7 +536,7 @@ export function ShortlistTab({ need, search, catalog, setSearch, refineOpen, set
               ))}
             </ToggleGroup>
           </div>
-          {snap.hidden_count > 0 ? <p className="type-sm text-ink-muted">{S.hidden(snap.hidden_count)}</p> : null}
+          {snap.hidden_count > 0 ? <CountChip icon={EyeOff} value={snap.hidden_count} label={S.hiddenLabel} /> : null}
         </div>
 
         {items.length === 0 ? (
@@ -448,7 +568,13 @@ export function ShortlistTab({ need, search, catalog, setSearch, refineOpen, set
               <kbd className="rounded-xs border border-line px-1 font-mono">Enter</kbd> — открыть
             </p>
             {sections.map(({ rel, rows }) => (
-              <Section key={rel} title={S.sections[rel]} count={rows.length}>
+              <section key={rel} className="flex min-w-0 flex-col gap-3">
+                <SectionPill
+                  icon={SECTION_LOOK[rel].icon}
+                  tone={SECTION_LOOK[rel].tone}
+                  title={S.sections[rel]}
+                  count={rows.length}
+                />
                 <ul className="flex min-w-0 flex-col gap-3">
                   {rows.map((item) => (
                     <MatchCardCompact
@@ -462,13 +588,14 @@ export function ShortlistTab({ need, search, catalog, setSearch, refineOpen, set
                     />
                   ))}
                 </ul>
-              </Section>
+              </section>
             ))}
           </>
         )}
 
         {snap.pinned_outside.length > 0 ? (
-          <Section title={S.pinnedOutside}>
+          <section className="flex min-w-0 flex-col gap-3">
+            <SectionPill icon={Eye} tone="neutral" title={S.pinnedOutside} count={snap.pinned_outside.length} />
             <ul className="flex min-w-0 flex-col gap-3">
               {snap.pinned_outside.map((item) => (
                 <MatchCardCompact
@@ -482,14 +609,16 @@ export function ShortlistTab({ need, search, catalog, setSearch, refineOpen, set
                 />
               ))}
             </ul>
-          </Section>
+          </section>
         ) : null}
 
-        <p className="type-sm">
-          <Link to="/employer/search" search={{ category: need.target.code }} className="text-link">
+        <Button asChild variant="secondary" className="self-start max-[479px]:w-full">
+          <Link to="/employer/search" search={{ category: need.target.code }}>
+            <Users aria-hidden="true" />
             {S.bankLink}
+            <ArrowRight aria-hidden="true" />
           </Link>
-        </p>
+        </Button>
       </div>
     </div>
   )

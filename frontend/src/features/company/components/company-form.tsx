@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { useBlocker, useNavigate } from '@tanstack/react-router'
+import { AtSign, Building2, type LucideIcon, Mail, MessageCircle, Phone, Send, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import type { CompanyView, ContactKind } from '@/client'
-import { ErrorState, PageHeader, StickyActionBar } from '@/components/app'
+import { ErrorState, IconTile, PageHeader, StickyActionBar } from '@/components/app'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -32,6 +33,8 @@ function toDraft(c: CompanyView | undefined): CompanyDraft {
 }
 
 type Props = { mode: 'wizard' | 'cabinet'; demo: boolean }
+
+const KIND_ICON: Record<string, LucideIcon> = { email: Mail, phone: Phone, telegram: Send, other: MessageCircle }
 
 export function CompanyScreen({ mode, demo }: Props) {
   const query = useQuery(companyQuery)
@@ -128,11 +131,13 @@ function CompanyForm({ company, mode, demo }: { company: CompanyView; mode: 'wiz
           ) : null}
           <section aria-labelledby="c-about" className="flex min-w-0 flex-col gap-4">
             <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
-              <h2 id="c-about" className="type-eyebrow">
+              <h2 id="c-about" className="type-h3 flex min-w-0 items-center gap-3">
+                <IconTile icon={Building2} tone="soft" size="sm" />
                 {COMPANY.sections.about}
               </h2>
               {demo ? (
                 <Button type="button" variant="secondary" size="sm" onClick={fillExample}>
+                  <Sparkles aria-hidden="true" />
                   {COMPANY.fillExample}
                 </Button>
               ) : null}
@@ -189,7 +194,8 @@ function CompanyForm({ company, mode, demo }: { company: CompanyView; mode: 'wiz
           </section>
 
           <section aria-labelledby="c-contact" className="flex min-w-0 flex-col gap-4 border-t border-line pt-6">
-            <h2 id="c-contact" className="type-eyebrow">
+            <h2 id="c-contact" className="type-h3 flex min-w-0 items-center gap-3">
+              <IconTile icon={AtSign} tone="soft" size="sm" />
               {COMPANY.sections.contact}
             </h2>
             <fieldset className="flex min-w-0 flex-col gap-2">
@@ -202,9 +208,10 @@ function CompanyForm({ company, mode, demo }: { company: CompanyView; mode: 'wiz
                 {COMPANY.contactKinds.map((k) => (
                   <Label
                     key={k.value}
-                    className="tap-target flex min-w-0 cursor-pointer items-center gap-2 rounded-md bg-fill px-3 font-normal"
+                    className="flex min-h-11 min-w-0 cursor-pointer items-center gap-2 rounded-md border border-transparent bg-fill px-3 font-normal transition-colors has-[[data-state=checked]]:border-brand-600 has-[[data-state=checked]]:bg-brand-50 has-[[data-state=checked]]:text-brand-700"
                   >
                     <RadioGroupItem value={k.value} />
+                    <KindIcon kind={k.value} />
                     <span className="min-w-0 break-words">{k.label}</span>
                   </Label>
                 ))}
@@ -239,4 +246,9 @@ function CompanyForm({ company, mode, demo }: { company: CompanyView; mode: 'wiz
       </form>
     </div>
   )
+}
+
+function KindIcon({ kind }: { kind: string }) {
+  const Icon = KIND_ICON[kind]
+  return Icon ? <Icon aria-hidden="true" className="size-4 shrink-0" /> : null
 }
