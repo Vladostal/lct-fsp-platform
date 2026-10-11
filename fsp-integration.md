@@ -4,6 +4,7 @@ subtitle: Привязка профиля кандидата, получение
 eyebrow: ФСП.Подбор · специальный трек ФСП
 header: ФСП.Подбор · схема интеграции с ФСП
 toc_depth: 2
+Команда: WellWheel
 Дата: 11.10.2026
 Репозиторий: github.com/Vladostal/lct-fsp-platform
 ---

@@ -6,7 +6,7 @@ header: ФСП.Подбор · сопроводительная документ
 toc_depth: 2
 table_break: auto
 compact: true
-Команда: команда проекта «ФСП.Подбор»
+Команда: WellWheel
 Дата: 11.10.2026
 Репозиторий: github.com/Vladostal/lct-fsp-platform
 ---
