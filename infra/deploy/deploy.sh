@@ -23,10 +23,20 @@ if old['schema'] != new['schema']:
     raise SystemExit('Schema changed: automatic deployment stopped. Prepare and apply a reviewed migration first.')
 PY
 fi
+image_source="$incoming"
 if [[ -d $release ]]; then
-  cmp "$release/manifest.json" "$incoming/manifest.json"
+  # Rebuilt CI images for the same source commit may have different archive checksums.
+  python3 - "$release/manifest.json" "$incoming/manifest.json" <<'PY_COMPARE'
+import json, sys
+old, new = (json.load(open(p)) for p in sys.argv[1:])
+for manifest in [old, new]:
+    manifest['files'] = {k: v for k, v in manifest['files'].items() if not k.startswith('images/')}
+if old != new:
+    raise SystemExit('Runtime files changed for an existing commit SHA.')
+PY_COMPARE
 else
   mv "$incoming" "$release"
+  image_source="$release"
 fi
 ln -sfn "$ROOT/shared/.env" "$release/.env"
 printf 'FSP_API_IMAGE=fsp-podbor-backend:%s\nFSP_WEB_IMAGE=fsp-podbor-frontend:%s\n' "$sha" "$sha" > "$release/.images.env"
@@ -35,14 +45,13 @@ compose() {
     -f "$1/compose.production.yml" "${@:2}"
 }
 compose "$release" config --quiet
-# Only this project's images are loaded. No global prune, stop or daemon reconfiguration.
-for component in backend frontend; do
-  if ! docker image inspect "fsp-podbor-$component:$sha" >/dev/null 2>&1; then
-    gzip -dc "$release/images/$component.tar.gz" | docker image load
-  fi
-  docker image inspect "fsp-podbor-$component:$sha" >/dev/null
- done
+rollback_images="$ROOT/state/rollback.images.env"
 if [[ -n $previous && -f $previous/.images.env ]]; then
+  api_id=$(compose "$previous" ps -q api)
+  web_id=$(compose "$previous" ps -q web)
+  printf 'FSP_API_IMAGE=%s\nFSP_WEB_IMAGE=%s\n' \
+    "$(docker inspect "$api_id" --format '{{.Image}}')" \
+    "$(docker inspect "$web_id" --format '{{.Image}}')" > "$rollback_images"
   compose "$previous" exec -T db pg_dump -U app -d app -Fc > "$ROOT/backups/$(date -u +%Y%m%dT%H%M%SZ)-$sha.dump"
 fi
 rollback() {
@@ -50,12 +59,18 @@ rollback() {
   trap - ERR
   echo "Deployment failed (exit $result)."
   if [[ -n $previous && -f $previous/.images.env ]]; then
-    echo 'Restoring previous application images; database backup is retained for manual recovery.'
-    compose "$previous" up -d --wait --wait-timeout 180 db mailpit api web caddy || true
+    echo 'Restoring previous application image IDs; database backup is retained for manual recovery.'
+    docker compose -p fsp-platform --env-file "$ROOT/shared/.env" --env-file "$rollback_images" \
+      -f "$previous/compose.production.yml" up -d --wait --wait-timeout 180 db mailpit api web caddy || true
   fi
   exit "$result"
 }
 trap rollback ERR
+# Always load the checked archives, including a retry of the same commit after a CI rebuild.
+for component in backend frontend; do
+  gzip -dc "$image_source/images/$component.tar.gz" | docker image load
+  docker image inspect "fsp-podbor-$component:$sha" >/dev/null
+ done
 compose "$release" up -d --wait --wait-timeout 150 db mailpit
 compose "$release" run --rm --no-deps migrate
 printf '%s\n' "$schema" > "$ROOT/state/schema-fingerprint"
@@ -79,6 +94,9 @@ for attempt in $(seq 1 60); do
   sleep 3
  done
 [[ $ready == true ]]
+if [[ $image_source != "$release" ]]; then
+  cp "$image_source/manifest.json" "$release/manifest.json"
+fi
 ln -sfn "$release" "$ROOT/current.next"
 mv -Tf "$ROOT/current.next" "$ROOT/current"
 printf '%s\n' "$sha" > "$ROOT/state/deployed-sha"

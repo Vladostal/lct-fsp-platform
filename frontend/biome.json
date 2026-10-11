@@ -14,7 +14,8 @@
       "!src/routeTree.gen.ts",
       "!test-results",
       "!playwright-report",
-      "!tests/layout/__screenshots__"
+      "!tests/layout/__screenshots__",
+      "!tests/.auth"
     ]
   },
   "formatter": {

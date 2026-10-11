@@ -178,10 +178,8 @@ jobs:
       - name: Build production image
         run: docker build --tag fsp-podbor-${{ matrix.component }}:${{ github.sha }} --file ${{ matrix.component }}/Dockerfile ${{ matrix.component }}
       - name: Save immutable release image
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: docker image save fsp-podbor-${{ matrix.component }}:${{ github.sha }} | gzip -1 > "${{ runner.temp }}/${{ matrix.component }}.tar.gz"
       - name: Upload private deployment image
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: fsp-image-${{ matrix.component }}
@@ -199,3 +197,71 @@ jobs:
           persist-credentials: false
       - run: python3 -m unittest discover -s infra/deploy/tests -v
       - run: bash -n infra/deploy/deploy.sh
+
+  frontend-e2e:
+    name: Frontend / live Compose scenarios
+    needs: docker-images
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      E2E_BASE_URL: http://localhost:8080
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: fsp-image-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/images
+      - name: Load the tested images
+        env:
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          for component in backend frontend; do
+            gzip -dc "$RUNNER_TEMP/images/$component.tar.gz" | docker image load
+          done
+          docker tag "fsp-podbor-backend:$SHA" fsp-podbor-api:latest
+          docker tag "fsp-podbor-frontend:$SHA" fsp-podbor-web:latest
+      - name: Install browser dependencies
+        working-directory: frontend
+        run: npm ci && npx playwright install --with-deps chromium
+      - name: Start an isolated disposable stand
+        run: |
+          set -euo pipefail
+          cp .env.example .env
+          docker compose -p fsp-ci up --no-build -d web
+          for attempt in $(seq 1 120); do
+            if curl --fail --silent --max-time 3 "$E2E_BASE_URL/api/v1/health" >/dev/null; then
+              exit 0
+            fi
+            sleep 3
+          done
+          docker compose -p fsp-ci logs --no-color migrate api web
+          exit 1
+      - name: Check real UI and API together
+        working-directory: frontend
+        run: npm run test:e2e
+      - name: Save stand logs
+        if: ${{ !cancelled() }}
+        run: docker compose -p fsp-ci logs --no-color > "$RUNNER_TEMP/stand.log"
+      - name: Upload live test report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: frontend-e2e
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+            ${{ runner.temp }}/stand.log
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Remove disposable CI containers and volumes
+        if: ${{ always() }}
+        run: docker compose -p fsp-ci down -v --remove-orphans

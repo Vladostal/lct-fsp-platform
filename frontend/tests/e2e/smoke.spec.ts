@@ -26,7 +26,7 @@ test.describe('работодатель', () => {
 
     await page.goto(`/employer/needs/${need.id}`)
     await expect(page.getByRole('heading', { level: 1, name: need.title })).toBeVisible()
-    await expect(page.getByText('Как сформирована подборка')).toBeVisible()
+    await expect(page.getByRole('region', { name: 'Как сформирована подборка' })).toBeVisible()
     await expect(page.getByText(/из \d+ обязательных навыков/).first()).toBeVisible()
 
     const versions = await (await page.request.get(`/api/v1/employer/needs/${need.id}/shortlists`)).json()
@@ -220,7 +220,7 @@ test.describe('без входа', () => {
 
   test('блок ведущего: неверный ключ виден сразу, часы и сброс без ключа закрыты', async ({ page }) => {
     await page.goto('/demo')
-    await page.getByRole('button', { name: 'Для ведущего' }).click()
+    await page.locator('summary').filter({ hasText: 'Для ведущего' }).click()
     await page.getByLabel('Ключ ведущего').fill('not-the-key')
     await page.getByRole('button', { name: 'Применить ключ' }).click()
     await expect(page.getByText('Ключ не подошёл')).toBeVisible()
