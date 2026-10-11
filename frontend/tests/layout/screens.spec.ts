@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
+import type { TestSessionView } from '../../src/client'
 import { apiError, CANDIDATE, EMPLOYER, json, type MockOptions, mockApi } from '../utils/api-mock'
 import { expectCleanLayout } from '../utils/layout'
 import { STRESS } from '../utils/stress'
@@ -140,10 +141,47 @@ const SCREENS: Screen[] = [
     heading: 'Направление и специализация',
   },
   {
-    name: 'C5 каркас теста',
+    name: 'C5 активное задание теста',
     path: '/candidate/test/session-1',
-    mock: { me: CANDIDATE },
-    heading: 'Тест',
+    mock: {
+      me: CANDIDATE,
+      handlers: {
+        'GET /assessment/sessions/session-1': (route) => {
+          const now = Date.now()
+          const session: TestSessionView = {
+            id: 'session-1',
+            status: 'in_progress',
+            target: {
+              code: 'backend:middle',
+              title: 'Backend · Middle',
+              specialization: { code: 'backend', title: 'Backend' },
+              grade: { code: 'middle', title: 'Middle' },
+            },
+            server_now: new Date(now).toISOString(),
+            expires_at: new Date(now + 40 * 60 * 1000).toISOString(),
+            progress: { answered: 0, min_total: 14, max_total: 26 },
+            item: {
+              id: 'item-1',
+              kind: 'single_choice',
+              prompt: 'Какое свойство транзакции обеспечивает атомарность?',
+              skill_label: 'Базы данных',
+              options: [
+                { id: 'a', text: 'Все изменения фиксируются вместе либо полностью отменяются' },
+                { id: 'b', text: 'Операции всегда выполняются последовательно' },
+              ],
+            },
+          }
+          return json(route, session)
+        },
+      },
+    },
+    heading: 'Какое свойство транзакции обеспечивает атомарность?',
+    prepare: async (page) => {
+      const submit = page.getByRole('button', { name: 'Ответить' })
+      await expect(submit).toBeDisabled()
+      await page.getByRole('radio', { name: 'Все изменения фиксируются вместе либо полностью отменяются' }).click()
+      await expect(submit).toBeEnabled()
+    },
   },
   { name: 'E2 каркас кабинета работодателя', path: '/employer/needs', mock: { me: EMPLOYER }, heading: 'Потребности' },
   { name: 'E10 аккаунт работодателя', path: '/employer/settings/account', mock: { me: EMPLOYER }, heading: 'Аккаунт' },

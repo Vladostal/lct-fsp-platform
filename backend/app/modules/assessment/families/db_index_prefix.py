@@ -110,7 +110,8 @@ def _random_query(rng: Random, schema: tuple, level: int) -> _Query:
     if level == 2:
         picked = sorted(rng.sample(cols, rng.choice([1, 2, 2, 3])))
         atoms = tuple(_atom(rng, schema, c, ops=("=", "=", ">", "<", ">=") if c != 1 else ("=",)) for c in picked)
-        select: tuple[int, ...] | str = rng.choice(["*", "payload", "payload", (0, 1), (1, 2), (0, 2), (0, 1, 2)])
+        selections: list[tuple[int, ...] | str] = ["*", "payload", "payload", (0, 1), (1, 2), (0, 2), (0, 1, 2)]
+        select = rng.choice(selections)
         if isinstance(select, tuple):
             select = tuple(select)
         return _Query(select, atoms)
@@ -123,7 +124,7 @@ def _random_query(rng: Random, schema: tuple, level: int) -> _Query:
         return _Query(rng.choice(["*", "payload"]), tuple(sorted(atoms, key=lambda a: a.col)))
     if kind == "or_same":
         a = _atom(rng, schema, 0, ops=("=",))
-        return _Query("payload", (a, _Atom(0, "=", int(a.value) + rng.randint(1, 9))), True)  # type: ignore[arg-type]
+        return _Query("payload", (a, _Atom(0, "=", int(a.value) + rng.randint(1, 9))), True)
     if kind == "or_diff":
         pair = sorted(rng.sample(cols, 2))
         return _Query("payload", tuple(_atom(rng, schema, c, ops=("=",)) for c in pair), True)

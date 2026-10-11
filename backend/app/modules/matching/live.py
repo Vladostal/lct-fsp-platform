@@ -2,7 +2,7 @@
 
 Единственное место, где решается, можно ли отдать работодателю строку кандидата: кандидат сейчас `visible` либо
 пара раскрыта. Скрытый кандидат нераскрытой пары не отдаётся ни в одном списке — только числом `hidden_count`.
-Правило демо-стенда (R3-tz-compliance-1) действует здесь же: живой кандидат для демо-работодателя скрыт всегда.
+Правило демо-стенда (R3-tz-compliance-1) и скрытие от домена компании действуют здесь же, включая раскрытые пары.
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 from app.core import clock
 from app.modules.fsp import service as fsp
 from app.modules.fsp.dto import FspSignal, FspSubject
-from app.modules.matching.evidence import blocked_for_demo
+from app.modules.matching.evidence import blocked_for_employer
 from app.modules.matching.explain import MatchExplanation, ReadRules, apply_read_rules
 from app.modules.profile import service as profile
 from app.modules.profile.dto import PoolProfile
@@ -83,7 +83,7 @@ def load_live(
     ids = list(specializations)
     if not ids:
         return Live()
-    live = Live(blocked=blocked_for_demo(db, employer_id, ids))
+    live = Live(blocked=blocked_for_employer(db, employer_id, ids))
     live.profiles = profile.pool_view(db, ids, now)
     present = [cid for cid in ids if cid in live.profiles and cid not in live.blocked]
     if not present:

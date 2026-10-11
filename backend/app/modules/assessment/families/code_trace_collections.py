@@ -105,27 +105,27 @@ def _level3(rng: Random) -> tuple[str, Model, int]:
                 else:
                     b.pop()
 
-        def model(flag: str | None) -> int:
+        def _alias_model(flag: str | None) -> int:
             a = list(data)
             b = list(a) if flag == "copy_instead_of_alias" else a
             apply(a, b)
             return sum(a)
 
-        return src, model, 3
+        return src, _alias_model, 3
     rows = [[rng.randint(1, 9) for _ in range(rng.randint(1, 3))] for _ in range(3)]
     extra, add = rng.randint(1, 9), rng.randint(1, 9)
     row = rng.randrange(3)
     copier = rng.choice(["a[:]", "list(a)", "a.copy()"])
     src = f"a = {rows}\nb = {copier}\nb[{row}].append({add})\nb.append([{extra}])\nprint(sum(a[{row}]) + len(a))"
 
-    def model(flag: str | None) -> int:
+    def _shallow_copy_model(flag: str | None) -> int:
         a = copy.deepcopy(rows)
         b = copy.deepcopy(a) if flag == "copy_instead_of_alias" else list(a)
         b[row].append(add)
         b.append([extra])
         return sum(a[row]) + len(a)
 
-    return src, model, 4
+    return src, _shallow_copy_model, 4
 
 
 def generate(level: int, seed: int) -> Variant:

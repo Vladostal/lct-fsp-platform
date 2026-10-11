@@ -24,8 +24,8 @@ export function HowItWorks({ limits, demo }: Props) {
   const c = s?.contact
   const testMetrics: Metric[] = t
     ? [
-        { label: 'Точность определения грейда', value: t.v1_accuracy },
-        { label: 'Согласие результатов при повторе', value: t.v2_agreement },
+        { label: 'Верное решение «подтверждён или нет» среди определённых исходов', value: t.v1_accuracy },
+        { label: 'Совпадение решения «подтверждён или нет» при повторе', value: t.v2_agreement },
         { label: 'Точное попадание в грейд', value: t.v3_exact },
         { label: 'Завышение грейда', value: t.v3_overgrade },
         { label: 'Корреляция с эталонным уровнем', value: t.v6_correlation, kind: 'plain' },

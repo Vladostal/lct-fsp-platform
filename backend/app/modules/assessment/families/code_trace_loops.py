@@ -108,7 +108,7 @@ def _level3(rng: Random, total: str, i: str, j: str) -> tuple[str, Model, int, i
             f"        {nums}[{i}] = {nums}[{i} - 1] + {add}\nprint(sum({nums}))"
         )
 
-        def model(flag: str | None) -> int:
+        def _prefix_model(flag: str | None) -> int:
             a = list(data)
             stop = len(a) - 1 if flag == "off_by_one" else len(a)
             for x in range(1, stop):
@@ -116,7 +116,7 @@ def _level3(rng: Random, total: str, i: str, j: str) -> tuple[str, Model, int, i
                     a[x] = a[x - 1] + add
             return sum(a)
 
-        return src, model, 1, 4
+        return src, _prefix_model, 1, 4
     if kind == "pairs":
         src = (
             f"{nums} = {lit}\n{total} = 0\nfor {i} in range(len({nums})):\n"
@@ -125,7 +125,7 @@ def _level3(rng: Random, total: str, i: str, j: str) -> tuple[str, Model, int, i
             f"            {total} = {nums}[{j}] - {nums}[{i}]\nprint({total})"
         )
 
-        def model(flag: str | None) -> int:
+        def _pairs_model(flag: str | None) -> int:
             best = 0
             stop = len(data) - 1 if flag == "off_by_one" else len(data)
             for x in range(len(data)):
@@ -133,14 +133,14 @@ def _level3(rng: Random, total: str, i: str, j: str) -> tuple[str, Model, int, i
                     best = max(best, data[y] - data[x])
             return best
 
-        return src, model, 2, 5
+        return src, _pairs_model, 2, 5
     pos = rng.randint(1, size - 2)
     src = (
         f"{nums} = {lit}\nfor {i} in range(len({nums}) - 1):\n    if {nums}[{i}] > {nums}[{i} + 1]:\n"
         f"        {nums}[{i}], {nums}[{i} + 1] = {nums}[{i} + 1], {nums}[{i}]\nprint({nums}[{pos}] * 10 + {nums}[-1])"
     )
 
-    def model(flag: str | None) -> int:
+    def _bubble_model(flag: str | None) -> int:
         a = list(data)
         stop = len(a) - 2 if flag == "off_by_one" else len(a) - 1
         for x in range(stop):
@@ -148,7 +148,7 @@ def _level3(rng: Random, total: str, i: str, j: str) -> tuple[str, Model, int, i
                 a[x], a[x + 1] = a[x + 1], a[x]
         return a[pos] * 10 + a[-1]
 
-    return src, model, 1, 4
+    return src, _bubble_model, 1, 4
 
 
 def generate(level: int, seed: int) -> Variant:

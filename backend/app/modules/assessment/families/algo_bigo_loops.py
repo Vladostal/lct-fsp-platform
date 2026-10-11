@@ -108,10 +108,10 @@ def growth(node: Node, mode: str = "correct") -> Growth | str:
             for part in parts:
                 total = _add(total, part)  # type: ignore[arg-type]
             return total
-        return max(parts)  # type: ignore[type-var]
+        return max(parts)
     own, body = _factor(node.kind, mode), growth(node.body, mode)
     if mode == "add_nested":
-        return max(own, body)  # type: ignore[type-var]
+        return max(own, body)
     return _add(own, body)  # type: ignore[arg-type]
 
 
@@ -169,6 +169,7 @@ def _loop(kind: str, body: Loop | Seq | None = None, count: int = 0) -> Loop:
 def _build_loops(level: int, target: str, rng: Random) -> Node:
     """Дерево циклов с заданным порядком роста; всегда содержит конструкцию-ловушку для одной из моделей ошибок."""
     c = rng.randint(2, 5)
+    choices: list[Loop | Seq]
     const = _loop("const", None, c)
     if target == "1":
         return _loop("const", const if rng.random() < 0.5 else None, c)
@@ -176,25 +177,29 @@ def _build_loops(level: int, target: str, rng: Random) -> Node:
         kind = rng.choice(["log", "halve"])
         if level == 1:
             return _loop(kind, const if rng.random() < 0.4 else None)
-        return rng.choice([_loop(kind), Seq((_loop(kind), const)), Seq((const, _loop(kind)))])
+        choices = [_loop(kind), Seq((_loop(kind), const)), Seq((const, _loop(kind)))]
+        return rng.choice(choices)
     if target == "sqrt":
         if level == 3:
-            return rng.choice([_loop("sqrt"), _loop("sqrt", const), Seq((_loop("sqrt"), _loop("log")))])
+            choices = [_loop("sqrt"), _loop("sqrt", const), Seq((_loop("sqrt"), _loop("log")))]
+            return rng.choice(choices)
         if level == 2:
             return Seq((_loop("sqrt"), _loop("log"))) if rng.random() < 0.5 else Seq((_loop("log"), _loop("sqrt")))
         return _loop("sqrt", const if rng.random() < 0.5 else None)
     if target == "n":
         if level == 1:
             return rng.choice([_loop("n", const), _loop("const", _loop("n"), c)])
-        return rng.choice([Seq((_loop("n"), _loop("log"))), Seq((_loop("log"), _loop("n"))),
-                           Seq((_loop("n", const), _loop("sqrt")))])  # fmt: skip
+        choices = [Seq((_loop("n"), _loop("log"))), Seq((_loop("log"), _loop("n"))),
+                   Seq((_loop("n", const), _loop("sqrt")))]  # fmt: skip
+        return rng.choice(choices)
     if target == "nlogn":
         return rng.choice([_loop("n", _loop("log")), _loop("n", _loop("halve")), _loop("log", _loop("n"))])
     if target == "n2":
         if level == 1:
             return _loop("n", _loop("n", const if rng.random() < 0.5 else None))
-        return rng.choice([_loop("n", _loop("tri")), Seq((_loop("n", _loop("tri")), _loop("n"))),
-                           _loop("n", _loop("n", const))])  # fmt: skip
+        choices = [_loop("n", _loop("tri")), Seq((_loop("n", _loop("tri")), _loop("n"))),
+                   _loop("n", _loop("n", const))]  # fmt: skip
+        return rng.choice(choices)
     if level == 1:
         return _loop("n", _loop("n", _loop("n")))
     return rng.choice([_loop("n", _loop("tri", _loop("tri"))), _loop("n", _loop("n", _loop("n")))])

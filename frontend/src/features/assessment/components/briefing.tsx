@@ -1,7 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import type { Catalog } from '@/client'
 import { ErrorState, PageHeader, StickyActionBar } from '@/components/app'
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -12,20 +11,20 @@ import { errorMessage, hasCode, isApiError } from '@/lib/api'
 import { PLURALS, plural } from '@/lib/format'
 import { invalidateGuardData } from '@/lib/guards'
 import { assessmentStateQuery } from '@/lib/query'
-import { blueprintsQuery, createQuickSession, createSession } from '../api'
+import { blueprintsQuery, createSession } from '../api'
 import { ASSESSMENT } from '../content'
 import { Tile } from './briefing-parts'
 import { unavailableReason } from './next-actions'
 
 const ITEMS = PLURALS.task
 
-export function Briefing({ catalog, grade }: { catalog: Catalog | null; grade?: string }) {
+export function Briefing({ grade }: { grade?: string }) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const state = useQuery(assessmentStateQuery)
   const blueprints = useQuery(blueprintsQuery)
   const [confirmed, setConfirmed] = useState(false)
-  const [busy, setBusy] = useState<'start' | 'quick' | null>(null)
+  const [busy, setBusy] = useState(false)
   const [error, setError] = useState<{ message: string; gradeNotAllowed?: boolean } | null>(null)
 
   const gradeCode = grade ?? state.data?.claimed_grade?.code ?? null
@@ -83,12 +82,11 @@ export function Briefing({ catalog, grade }: { catalog: Catalog | null; grade?: 
     )
   }
 
-  const handle = async (kind: 'start' | 'quick') => {
-    setBusy(kind)
+  const handle = async () => {
+    setBusy(true)
     setError(null)
     try {
-      const id =
-        kind === 'start' ? (await createSession(gradeCode)).id : (await createQuickSession(gradeCode)).session_id
+      const id = (await createSession(gradeCode)).id
       await invalidateGuardData(queryClient)
       await navigate({ to: '/candidate/test/$sessionId', params: { sessionId: id } })
     } catch (e) {
@@ -105,11 +103,9 @@ export function Briefing({ catalog, grade }: { catalog: Catalog | null; grade?: 
         setError({ message: errorMessage(e), gradeNotAllowed: hasCode(e, 'grade_not_allowed') })
       }
     } finally {
-      setBusy(null)
+      setBusy(false)
     }
   }
-
-  const demo = catalog?.features.demo === true
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
@@ -169,7 +165,6 @@ export function Briefing({ catalog, grade }: { catalog: Catalog | null; grade?: 
           ) : null}
         </Alert>
       ) : null}
-      {demo ? <p className="type-caption min-w-0 text-ink-muted">{ASSESSMENT.briefing.quickHint}</p> : null}
       <StickyActionBar
         note={confirmed || blocked ? undefined : ASSESSMENT.briefing.needCheck}
         secondary={
@@ -180,22 +175,7 @@ export function Briefing({ catalog, grade }: { catalog: Catalog | null; grade?: 
           )
         }
       >
-        {demo ? (
-          <Button
-            variant="secondary"
-            loading={busy === 'quick'}
-            disabled={busy != null || blocked}
-            onClick={() => handle('quick')}
-          >
-            {ASSESSMENT.briefing.quick}
-          </Button>
-        ) : null}
-        <Button
-          variant="primary"
-          loading={busy === 'start'}
-          disabled={!confirmed || busy != null || blocked}
-          onClick={() => handle('start')}
-        >
+        <Button variant="primary" loading={busy} disabled={!confirmed || busy || blocked} onClick={() => handle()}>
           {ASSESSMENT.briefing.start}
         </Button>
       </StickyActionBar>

@@ -22,6 +22,7 @@ from app.modules.matching.ranking import (
     DEFAULT_KEY_ORDER,
     KEY_ORDER_V10,
     KEY_ORDER_V11,
+    KEY_ORDER_V12,
     RankedItem,
     rank_need,
 )
@@ -159,14 +160,15 @@ def tfidf_order(case: Case, items: Sequence[RankedItem]) -> list[UUID]:
 
 #: Абляции нашей системы: каждая отключает одно решение (Арх. 12.3).
 ABLATIONS: dict[str, tuple[str, dict[str, object]]] = {
+    "order_v12": ("порядок до ревью: сила → подтверждённое покрытие", {"key_order": KEY_ORDER_V12}),
     "order_v11": ("порядок версии 1.1: подтверждённое покрытие → сила", {"key_order": KEY_ORDER_V11}),
     "order_v10": ("порядок версии 1.0: покрытие с заявленным → сила", {"key_order": KEY_ORDER_V10}),
     "strength3": (
         "сила в трёх полосах по подписи (high / medium / base)",
-        {"key_order": ("strength_label", "confirmed", "coverage")},
+        {"key_order": ("confirmed", "strength_label", "coverage")},
     ),
-    "confirmed3": ("confirmed_band из трёх ступеней", {"key_order": ("strength", "confirmed3", "coverage")}),
-    "no_bands": ("без полос (сырые значения)", {"key_order": ("strength_raw", "confirmed_raw", "coverage_raw")}),
+    "confirmed3": ("confirmed_band из трёх ступеней", {"key_order": ("confirmed3", "strength", "coverage")}),
+    "no_bands": ("без полос (сырые значения)", {"key_order": ("confirmed_raw", "strength_raw", "coverage_raw")}),
     "additive": ("аддитивная сумма покрытия, силы и свежести", {"key_order": ("additive",)}),
     "no_gradation": (
         "без градации доказательств (все веса 1)",

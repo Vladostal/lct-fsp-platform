@@ -14,7 +14,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY . .
-# Сборка без проверки типов: её выполняет `npm run typecheck` в `make lint`. Так недописанный экран соседнего
+# Сборка без проверки типов: её выполняет отдельный шаг `npm run typecheck` в CI. Так недописанный экран соседнего
 # пакета не роняет запуск стенда (план работ, раздел 3).
 RUN npm run build
 

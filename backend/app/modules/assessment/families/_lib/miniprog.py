@@ -13,6 +13,7 @@
 
 from __future__ import annotations
 
+import builtins
 import contextlib
 import copy
 import io
@@ -51,7 +52,7 @@ __all__ = [
 
 #: Встроенные функции, доступные программам банка. Ни `open`, ни `import`, ни `eval`.
 SAFE_BUILTINS: dict[str, Any] = {
-    name: __builtins__[name] if isinstance(__builtins__, dict) else getattr(__builtins__, name)
+    name: getattr(builtins, name)
     for name in (
         "range", "len", "print", "sum", "min", "max", "abs", "sorted", "list", "set", "dict", "tuple",
         "enumerate", "zip", "reversed", "int", "str", "bool", "isinstance", "any", "all",

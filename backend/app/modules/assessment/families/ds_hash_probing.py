@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from random import Random
+from typing import TypedDict
 
 from app.modules.assessment.families._lib.contract import AnswerSpec, InputHint, Reject, Variant
 from app.modules.assessment.families.registry import family_meta
@@ -52,7 +53,14 @@ def _search(cells: list[int | None], k: int, *, stop_at_tomb: bool = False) -> i
     return m
 
 
-def _level1(rng: Random) -> dict[str, object]:
+class ChainInput(TypedDict):
+    """Параметры таблицы с цепочками: число ячеек и ключи."""
+
+    m: int
+    keys: list[int]
+
+
+def _level1(rng: Random) -> ChainInput:
     m = rng.randint(4, 6)
     target = rng.randint(2, 6)
     hot = rng.randrange(m)
@@ -102,7 +110,7 @@ def generate(level: int, seed: int) -> Variant:
         m = rng.randint(7, 10)
         count = rng.randint(5, 8)
         cells: list[int | None] = [None] * m
-        keys: list[int] = []
+        keys = []
         used: set[int] = set()
         while len(keys) < count:
             k = rng.randint(10, 99)

@@ -70,12 +70,12 @@ def generate(level: int, seed: int) -> Variant:
     else:
         refs = rng.sample(range(1, 7), 4)
         accounts = [(r, rng.choice(["gold", "basic", "basic"])) for r in refs] + [(None, rng.choice(["gold", "basic"]))]
-        orders = [
+        joined_orders = [
             (i, rng.choice([*refs, None, None]) if rng.random() < 0.9 else rng.randint(7, 9), rng.randrange(10, 100, 5))
             for i in range(1, 9)
         ]
         tables = [
-            Tbl("orders", ("id", "ref", "amount"), tuple(orders)),
+            Tbl("orders", ("id", "ref", "amount"), tuple(joined_orders)),
             Tbl("accounts", ("ref", "tier"), tuple(accounts)),
         ]
         query = "SELECT SUM(o.amount)\nFROM orders o\nLEFT JOIN accounts a ON o.ref = a.ref\nWHERE a.tier <> 'gold'"

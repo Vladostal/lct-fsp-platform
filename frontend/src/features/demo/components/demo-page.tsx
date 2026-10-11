@@ -4,33 +4,14 @@ import { toast } from 'sonner'
 import type { MeView } from '@/client'
 import { ErrorState, ExternalLink, PageHeader } from '@/components/app'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import {
-  AlertDialog,
-  AlertDialogBody,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useEnterSession } from '@/features/auth'
 import { errorMessage, hasCode, hasStatus } from '@/lib/api'
 import { MAILPIT_PUBLIC_URL } from '@/lib/config'
 import { formatDateTime, formatDuration } from '@/lib/format'
-import { DEMO, HOST_KEY_STORAGE, RESTART_STORAGE } from '../content'
-import {
-  useAdvanceClock,
-  useDemoAccounts,
-  useDemoClock,
-  useDemoLogin,
-  useResetDemo,
-  useRestartScenario,
-} from '../hooks'
+import { DEMO, RESTART_STORAGE } from '../content'
+import { useDemoAccounts, useDemoLogin, useRestartScenario } from '../hooks'
 
 function read(key: string, storage: 'session' | 'local'): string {
   try {
@@ -196,153 +177,6 @@ export function DemoPage({ me, expired }: Props) {
           </li>
         </ul>
       </section>
-
-      <HostBlock />
     </div>
-  )
-}
-
-function HostBlock() {
-  const [key, setKey] = useState(() => read(HOST_KEY_STORAGE, 'session'))
-  const [draft, setDraft] = useState('')
-  const [open, setOpen] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [confirmReset, setConfirmReset] = useState(false)
-  const clock = useDemoClock(Boolean(key), key)
-  const advance = useAdvanceClock(key)
-  const reset = useResetDemo(key)
-
-  const bad = (e: unknown) => {
-    if (hasStatus(e, 403) || hasStatus(e, 401)) {
-      setError(DEMO.hostBad)
-      setKey('')
-      write(HOST_KEY_STORAGE, null, 'session')
-    } else setError(errorMessage(e))
-  }
-
-  const shift = (hours: number, force = false) => {
-    setError(null)
-    advance.mutate(
-      { hours, force },
-      {
-        onSuccess: () => {
-          toast.success(DEMO.clockDone)
-          void clock.refetch()
-        },
-        onError: (e) => {
-          if (hasCode(e, 'sessions_in_progress') && !force) {
-            if (window.confirm(DEMO.inProgress)) shift(hours, true)
-          } else bad(e)
-        },
-      },
-    )
-  }
-
-  if (!key && !open) {
-    return (
-      <p>
-        <Button type="button" variant="link" size="sm" onClick={() => setOpen(true)}>
-          {DEMO.host}
-        </Button>
-      </p>
-    )
-  }
-
-  return (
-    <section aria-labelledby="demo-host" className="surface-card flex min-w-0 flex-col gap-3 p-5">
-      <h2 id="demo-host" className="type-h3">
-        {DEMO.host}
-      </h2>
-      {error ? (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      ) : null}
-      {!key ? (
-        <form
-          className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-end"
-          onSubmit={(e) => {
-            e.preventDefault()
-            if (!draft.trim()) return
-            write(HOST_KEY_STORAGE, draft.trim(), 'session')
-            setKey(draft.trim())
-            setDraft('')
-          }}
-        >
-          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-            <Label htmlFor="host-key">{DEMO.hostKey}</Label>
-            <Input
-              id="host-key"
-              type="password"
-              autoComplete="off"
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-            />
-          </div>
-          <Button type="submit" variant="secondary">
-            {DEMO.hostSave}
-          </Button>
-        </form>
-      ) : (
-        <>
-          <p className="type-sm num">
-            {DEMO.serverTime}: {clock.data ? formatDateTime(clock.data.now) : '—'}
-          </p>
-          <div className="flex min-w-0 flex-wrap gap-2">
-            <Button type="button" variant="secondary" loading={advance.isPending} onClick={() => shift(24)}>
-              {DEMO.plus1}
-            </Button>
-            <Button type="button" variant="secondary" loading={advance.isPending} onClick={() => shift(24 * 7)}>
-              {DEMO.plus7}
-            </Button>
-            <Button type="button" variant="ghost" onClick={() => setConfirmReset(true)}>
-              {DEMO.reset}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => {
-                setKey('')
-                write(HOST_KEY_STORAGE, null, 'session')
-              }}
-            >
-              {DEMO.hostForget}
-            </Button>
-          </div>
-        </>
-      )}
-      <AlertDialog open={confirmReset} onOpenChange={setConfirmReset}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{DEMO.resetTitle}</AlertDialogTitle>
-          </AlertDialogHeader>
-          <AlertDialogBody>
-            <AlertDialogDescription>{DEMO.resetText}</AlertDialogDescription>
-          </AlertDialogBody>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{DEMO.cancel}</AlertDialogCancel>
-            <Button
-              type="button"
-              variant="destructive"
-              loading={reset.isPending}
-              onClick={() =>
-                reset.mutate(undefined, {
-                  onSuccess: () => {
-                    setConfirmReset(false)
-                    toast.success(DEMO.resetDone)
-                  },
-                  onError: (e) => {
-                    setConfirmReset(false)
-                    bad(e)
-                  },
-                })
-              }
-            >
-              {DEMO.resetConfirm}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </section>
   )
 }

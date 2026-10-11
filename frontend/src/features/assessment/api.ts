@@ -20,7 +20,6 @@ import {
   type SurveyUpdate,
   type TestResultView,
 } from '@/client'
-import { api } from '@/lib/api'
 
 export const assessmentKeys = {
   survey: ['assessment', 'survey'] as const,
@@ -93,11 +92,6 @@ export async function putClaim(gradeCode: string) {
 
 export async function createSession(gradeCode: string) {
   return (await assessmentCreateSession({ body: { grade_code: gradeCode }, throwOnError: true })).data
-}
-
-/** «Быстрый демо-тест» (Арх. 13.5): отдельный эндпоинт стенда с `DEMO_MODE`; в сгенерированном клиенте его нет. */
-export function createQuickSession(gradeCode: string) {
-  return api.post<{ session_id: string }>('/demo/assessment/quick-session', { grade_code: gradeCode })
 }
 
 export async function postAnswer(sessionId: string, body: AnswerRequest) {

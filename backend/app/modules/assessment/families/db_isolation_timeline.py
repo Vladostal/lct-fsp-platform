@@ -231,12 +231,18 @@ def generate(level: int, seed: int) -> Variant:
     rng = Random(seed)
     init = {"x": rng.randrange(20, 90, 5), "y": rng.randrange(20, 90, 5)}
     letters = iter("abcdef")
-    begin = [("T1", "BEGIN", None, None, None), ("T2", "BEGIN", None, None, None)]
+    begin: list[Step] = [
+        ("T1", "BEGIN", None, None, None), ("T2", "BEGIN", None, None, None)
+    ]
     if level == 1:
         mode_name, mode = "READ COMMITTED", RC
         key = rng.choice("xy")
-        reads = [("T1", "READ", key, next(letters), None) for _ in range(rng.randint(2, 3))]
-        writes = [("T2", "WRITE", key, None, str(rng.randrange(10, 100, 5))) for _ in range(rng.randint(1, 2))]
+        reads: list[Step] = [
+            ("T1", "READ", key, next(letters), None) for _ in range(rng.randint(2, 3))
+        ]
+        writes: list[Step] = [
+            ("T2", "WRITE", key, None, str(rng.randrange(10, 100, 5))) for _ in range(rng.randint(1, 2))
+        ]
         end = ("T2", rng.choice(["COMMIT", "COMMIT", "ROLLBACK"]), None, None, None)
         # Чтение до первой записи, чтение сразу после неё (пока T2 не завершена), остальное — вперемешку.
         body = [reads[0], writes[0], reads[1], *_merge(rng, reads[2:], [*writes[1:], end])]
@@ -247,8 +253,12 @@ def generate(level: int, seed: int) -> Variant:
         mode_name, mode = "SNAPSHOT", SNAPSHOT
         key2 = "x" if rng.random() < 0.9 else "y"
         a, b = next(letters), next(letters)
-        t1 = [("T1", "READ", "x", a, None), ("T1", "WRITE", "x", None, f"{a} + {rng.randrange(5, 50, 5)}")]
-        t2 = [("T2", "READ", key2, b, None), ("T2", "WRITE", key2, None, f"{b} + {rng.randrange(5, 50, 5)}")]
+        t1: list[Step] = [
+            ("T1", "READ", "x", a, None), ("T1", "WRITE", "x", None, f"{a} + {rng.randrange(5, 50, 5)}")
+        ]
+        t2: list[Step] = [
+            ("T2", "READ", key2, b, None), ("T2", "WRITE", key2, None, f"{b} + {rng.randrange(5, 50, 5)}")
+        ]
         t1.append(("T1", rng.choice(["COMMIT"] * 9 + ["ROLLBACK"]), None, None, None))
         t2.append(("T2", "COMMIT", None, None, None))
         shape = rng.choice(["overlap", "late_read", "late_read"])

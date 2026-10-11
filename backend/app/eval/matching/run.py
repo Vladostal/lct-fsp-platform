@@ -190,7 +190,8 @@ def stuffing(cases: Sequence[S.Case]) -> dict[str, dict[str, float]]:
     """Накрутка заявленным: каждому десятому кандидату в профиль добавляются все навыки потребности.
 
     Для каждой системы: сколько таких кандидатов вошло в топ-10 (в среднем на потребность) и скольких более
-    сильных — с большей полосой силы либо с той же силой и большим подтверждённым покрытием — они вытеснили.
+    подходящих по приоритетным ключам — с большим подтверждённым покрытием либо при равном покрытии
+    с большей полосой силы — они вытеснили.
     """
     systems: dict[str, Callable[[S.Case, Sequence[RankedItem], dict[UUID, frozenset[str]]], list[UUID]]] = {
         "ours": lambda case, items, declared: S.ids(items),
@@ -216,7 +217,7 @@ def stuffing(cases: Sequence[S.Case]) -> dict[str, dict[str, float]]:
             after_items = S.ranked(case, key_order=key_orders[name], pool=pool)
             before, after = system(case, before_items, honest)[:10], system(case, after_items, declared)[:10]
             bands = {
-                row.candidate_id: (row.scored.strength.band, row.scored.coverage.confirmed_band) for row in after_items
+                row.candidate_id: (row.scored.coverage.confirmed_band, row.scored.strength.band) for row in after_items
             }
             inside = [cid for cid in after if cid in stuffed_ids and cid not in before]
             pushed = [cid for cid in before if cid not in after and cid not in stuffed_ids]
@@ -412,14 +413,16 @@ def run(out: Path, *, seeds: Sequence[int], quick: bool) -> dict[str, Any]:
     notes = []
     if not criteria[0]["ok"]:
         notes.append(
-            "Наш порядок не превосходит бейзлайн заявленного стека по P@10. Первым ключом внутри раздела стоит "
-            "сила профиля (Арх. 15.1, № 53), а релевантность в этом мире определяется владением навыками "
-            "потребности; цену решения показывают абляции порядка версий 1.0 и 1.1 и строка «Накрутка заявленным»."
+            "Наш порядок не превосходит бейзлайн заявленного стека по P@10. Подтверждённое покрытие имеет "
+            "приоритет над общей силой, но зависит от доступных доказательств навыков. Цена выбора порядка "
+            "показана в абляциях, включая порядок до ревью; этого прогона недостаточно для заявления "
+            "о превосходстве над бейзлайнами."
         )
     if not criteria[4]["ok"]:
         notes.append(
-            "Критерий по страте «обязательные проверяются тестом» не выполнен: потребность в первую очередь "
-            "работает через раздел категории и условия, а не через порядок внутри раздела."
+            "Критерий по страте «обязательные проверяются тестом» не выполнен. В этой страте покрытие "
+            "по наблюдаемым доказательствам не улучшило P@10 относительно общей силы; нужны анализ ошибок "
+            "и проверка на независимых данных."
         )
     if not criteria[3]["ok"]:
         notes.append("Наш порядок уступает бейзлайну «только сила профиля»: ключи покрытия отнимают, а не добавляют.")
@@ -622,7 +625,7 @@ def render(report: dict[str, Any]) -> str:
         f"| B1 заявленный стек | {stuff['declared']['entered']:.2f} | {stuff['declared']['displaced']:.2f} |",
         f"| Порядок версии 1.0 | {stuff['order_v10']['entered']:.2f} | {stuff['order_v10']['displaced']:.2f} |",
         "",
-        "«Более сильный» — кандидат с большей полосой силы либо с той же силой и большим подтверждённым покрытием.",
+        "«Более сильный» — кандидат с большим подтверждённым покрытием либо с тем же покрытием и большей полосой силы.",
         "",
         "## Ручной слой",
         "",
@@ -656,7 +659,7 @@ def console(report: dict[str, Any]) -> str:
         for row in report["criteria"]
     ]
     lines.append("Абляции порядка (P@10; вариант − наша):")
-    for name in ("order_v10", "order_v11"):
+    for name in ("order_v10", "order_v11", "order_v12"):
         row = report["ablations"][name]
         lines.append(f"  {row['label']}: {row['p10']:.3f}; {_ci(row['vs_ours'])}")
     twin = report["twins"]

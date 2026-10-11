@@ -85,7 +85,7 @@ class Pool:
     profiles: dict[UUID, PoolProfile] = field(default_factory=dict)
     signals: dict[UUID, FspSignal] = field(default_factory=dict)
     #: Кандидаты, которых этот работодатель не видит по правилу демо-стенда.
-    demo_blocked: set[UUID] = field(default_factory=set)
+    employer_blocked: set[UUID] = field(default_factory=set)
 
     def visible(self) -> list[CandidateFeatures]:
         """Признаки кандидатов с состоянием показа `visible` — вход ранжирования."""
@@ -113,7 +113,7 @@ class Pool:
         return C.FSP_SIGNAL_VERSION_FALLBACK
 
     def scorer_version(self) -> str:
-        """`"match-1+{fsp_signal.version}+skills-{SKILLS_VERSION}"` (Арх. 6.10)."""
+        """Версия формулы, сигнала ФСП и каталога навыков (Арх. 6.10)."""
         return f"{C.SCORER_VERSION}+{self.fsp_version()}+skills-{catalog.SKILLS_VERSION}"
 
 
@@ -135,6 +135,15 @@ def blocked_for_demo(db: Session, employer_id: UUID | None, candidate_ids: Colle
     if employer is None or not employer.is_demo:
         return set()
     return {cid for cid in candidate_ids if not (cid in users and users[cid].is_demo)}
+
+
+def blocked_for_employer(db: Session, employer_id: UUID | None, candidate_ids: Collection[UUID]) -> set[UUID]:
+    """Запрет показа работодателю: правило демо и скрытие от домена компании, включая раскрытые пары."""
+    if employer_id is None or not candidate_ids:
+        return set()
+    return blocked_for_demo(db, employer_id, candidate_ids) | profile.hidden_from_employer(
+        db, employer_id, candidate_ids
+    )
 
 
 def subjects_for(levels: Mapping[UUID, LevelDTO], profiles: Mapping[UUID, PoolProfile]) -> list[FspSubject]:
@@ -178,8 +187,8 @@ def load_pool(
     pool.levels = {item.candidate_id: item for item in levels}
     if not pool.levels:
         return pool
-    pool.demo_blocked = blocked_for_demo(db, employer_id, list(pool.levels))
-    for cid in pool.demo_blocked:
+    pool.employer_blocked = blocked_for_employer(db, employer_id, list(pool.levels))
+    for cid in pool.employer_blocked:
         del pool.levels[cid]
     ids = list(pool.levels)
     pool.profiles = profile.pool_view(db, ids, now)

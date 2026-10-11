@@ -9,7 +9,6 @@ export const Route = createFileRoute('/candidate/_wizard/test/new')({
 })
 
 function Screen() {
-  const { catalog } = Route.useRouteContext()
   const { grade } = Route.useSearch()
-  return <Briefing catalog={catalog} grade={grade} />
+  return <Briefing grade={grade} />
 }

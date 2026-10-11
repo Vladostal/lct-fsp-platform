@@ -80,7 +80,7 @@ def _level2(rng: Random, n: int, counter: str, loop_vars: list[str]) -> tuple[st
         "n" if outer_start == 0 and outer_step == 1 else
         f"{outer_start}, n" if outer_step == 1 else f"{outer_start}, n, {outer_step}"
     )  # fmt: skip
-    kinds = [
+    kinds: list[tuple[str, Callable[[int], range]]] = [
         (f"{i}", lambda x: range(x)),
         (f"{i} + 1", lambda x: range(x + 1)),
         (f"{i}, n", lambda x: range(x, n)),
@@ -92,7 +92,8 @@ def _level2(rng: Random, n: int, counter: str, loop_vars: list[str]) -> tuple[st
     if step == 2 and ", n" in text:
         text += ", 2"
         base = inner
-        inner = lambda x, base=base: range(base(x).start, base(x).stop, 2)  # noqa: E731
+        def inner(x: int) -> range:
+            return range(base(x).start, base(x).stop, 2)
     outer = range(outer_start, n, outer_step)
     src = (
         f"n = {n}\n{counter} = 0\nfor {i} in range({outer_text}):\n    for {j} in range({text}):\n"
@@ -116,7 +117,7 @@ def _level3(rng: Random, counter: str, loop_vars: list[str]) -> tuple[str, Model
         n = rng.randint(20, 900)
         src = f"n = {n}\n{counter} = 0\n{i} = 1\nwhile {i} < n:\n    {counter} += 1\n    {i} *= {c}\nprint({counter})"
 
-        def model(flag: str | None) -> int:
+        def _double_model(flag: str | None) -> int:
             if flag == "log_as_linear":
                 return n - 1
             steps, x = 0, 1
@@ -124,12 +125,12 @@ def _level3(rng: Random, counter: str, loop_vars: list[str]) -> tuple[str, Model
                 steps, x = steps + 1, x * c
             return steps
 
-        return src, model, 1, 2, n
+        return src, _double_model, 1, 2, n
     if kind == "halve":
         n = rng.randint(30, 1000)
         src = f"n = {n}\n{counter} = 0\n{i} = n\nwhile {i} > 1:\n    {counter} += 1\n    {i} //= {c}\nprint({counter})"
 
-        def model(flag: str | None) -> int:
+        def _halve_model(flag: str | None) -> int:
             if flag == "log_as_linear":
                 return n - 1
             steps, x = 0, n
@@ -137,7 +138,7 @@ def _level3(rng: Random, counter: str, loop_vars: list[str]) -> tuple[str, Model
                 steps, x = steps + 1, x // c
             return steps
 
-        return src, model, 1, 2, n
+        return src, _halve_model, 1, 2, n
     if kind == "sqrt_exit":
         n = rng.randint(30, 400)
         cmp_ = rng.choice([">", ">="])
@@ -146,7 +147,7 @@ def _level3(rng: Random, counter: str, loop_vars: list[str]) -> tuple[str, Model
             f"    {counter} += 1\nprint({counter})"
         )
 
-        def model(flag: str | None) -> int:
+        def _sqrt_model(flag: str | None) -> int:
             if flag == "ignore_early_exit":
                 return n
             steps = 0
@@ -156,7 +157,7 @@ def _level3(rng: Random, counter: str, loop_vars: list[str]) -> tuple[str, Model
                 steps += 1
             return steps
 
-        return src, model, 2, 3, n
+        return src, _sqrt_model, 2, 3, n
     if kind == "exit_third":
         n = rng.randint(20, 300)
         k = rng.choice([3, 4, 5])
@@ -165,7 +166,7 @@ def _level3(rng: Random, counter: str, loop_vars: list[str]) -> tuple[str, Model
             f"print({counter})"
         )
 
-        def model(flag: str | None) -> int:
+        def _early_exit_model(flag: str | None) -> int:
             if flag == "ignore_early_exit":
                 return n
             steps = 0
@@ -175,7 +176,7 @@ def _level3(rng: Random, counter: str, loop_vars: list[str]) -> tuple[str, Model
                     break
             return steps
 
-        return src, model, 2, 3, n
+        return src, _early_exit_model, 2, 3, n
     n = rng.randint(20, 300)
     m = rng.randint(3, 6)
     src = (
@@ -183,14 +184,14 @@ def _level3(rng: Random, counter: str, loop_vars: list[str]) -> tuple[str, Model
         f"        {j} *= 2\nprint({counter})"
     )
 
-    def model(flag: str | None) -> int:
+    def _nested_log_model(flag: str | None) -> int:
         inner = 0
         x = 1
         while x < n:
             inner, x = inner + 1, x * 2
         return m * ((n - 1) if flag == "log_as_linear" else inner)
 
-    return src, model, 2, 2, n
+    return src, _nested_log_model, 2, 2, n
 
 
 def generate(level: int, seed: int) -> Variant:
